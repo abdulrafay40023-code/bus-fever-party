@@ -19,7 +19,7 @@
     <div id="game-container">
 
       <!-- =================================================================
-           CHROME WEB PORTAL: ENTER NAME -> 1-CLICK SINGLE APK DOWNLOAD -> "DOWNLOADED"
+           NATIVE APP INSTALL PORTAL (NO APK FILE WARNINGS, DEVICE-LOCAL NAME ONLY)
            ================================================================= -->
       <div id="download-portal-screen">
         <div class="portal-card">
@@ -37,8 +37,8 @@
               <span class="portal-stat-lbl">Progression</span>
             </div>
             <div class="portal-stat-box">
-              <span class="portal-stat-val">4.7 MB</span>
-              <span class="portal-stat-lbl">APK App</span>
+              <span class="portal-stat-val">3D App</span>
+              <span class="portal-stat-lbl">Instant Install</span>
             </div>
           </div>
 
@@ -65,9 +65,15 @@
       </div>
       <script>
         (function () {
-          // Block Chrome's automatic PWA install banner so only 1 single APK download happens
+          // Register Service Worker so Chrome/Android/Desktop enables native 1-click App Install onto Home Screen / Desktop
+          if ('serviceWorker' in navigator && window.location.protocol.indexOf('http') === 0) {
+            navigator.serviceWorker.register('/sw.js').catch(function () {});
+          }
+
+          window._deferredPrompt = null;
           window.addEventListener('beforeinstallprompt', function (e) {
             e.preventDefault();
+            window._deferredPrompt = e;
           });
 
           var portal = document.getElementById('download-portal-screen');
@@ -80,20 +86,8 @@
           var dlText = document.getElementById('dl-btn-text');
 
           var urlParams = new URLSearchParams(window.location.search);
-          var urlPlayer = urlParams.get('player') || '';
-          if (urlPlayer) {
-            try { localStorage.setItem('BFP_PLAYER_NAME', urlPlayer); } catch (e) {}
-          }
 
-          var savedName = '';
-          try {
-            savedName = localStorage.getItem('BFP_PLAYER_NAME') || '';
-          } catch (e) {}
-          if (nameInput && savedName) {
-            nameInput.value = savedName;
-          }
-
-          // Detect if running inside the Installed App (APK / TWA / Standalone / Windows EXE)
+          // Detect if running inside the Installed App on Home Screen / Desktop
           var isStandaloneMode =
             window.location.protocol === 'file:' ||
             window.BFP_STANDALONE === true ||
@@ -101,33 +95,26 @@
             (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
             (window.matchMedia && window.matchMedia('(display-mode: fullscreen)').matches) ||
             window.navigator.standalone === true ||
-            (document.referrer && document.referrer.indexOf('android-app://') === 0) ||
-            /; wv\)/i.test(navigator.userAgent);
+            (document.referrer && document.referrer.indexOf('android-app://') === 0);
 
           if (isStandaloneMode) {
+            // Running inside the Installed App! Hide download screen and use ONLY this device's saved name
             portal.style.display = 'none';
             window.BFP_PORTAL_ACTIVE = false;
-
-            if (window.location.protocol.indexOf('http') === 0) {
-              fetch('/api/player-name')
-                .then(function (r) { return r.json(); })
-                .then(function (data) {
-                  if (data && data.name) {
-                    try { localStorage.setItem('BFP_PLAYER_NAME', data.name); } catch (e) {}
-                    var hudName = document.getElementById('hud-player-name');
-                    if (hudName) hudName.textContent = data.name;
-                    if (window.busFeverGame && window.busFeverGame.profile) {
-                      window.busFeverGame.profile.playerName = data.name;
-                      window.busFeverGame.saveGameProgress(false);
-                    }
-                  }
-                })
-                .catch(function () {});
+            var localSavedName = '';
+            try {
+              localSavedName = localStorage.getItem('BFP_PLAYER_NAME') || 'Player';
+            } catch (e) {
+              localSavedName = 'Player';
             }
+            var hudName = document.getElementById('hud-player-name');
+            if (hudName) hudName.textContent = localSavedName;
             return;
           }
 
+          // Running in browser tab: keep name box blank for every new visitor!
           window.BFP_PORTAL_ACTIVE = true;
+          if (nameInput) nameInput.value = '';
           var hasDownloadedOnce = false;
 
           function syncButtonsLockState() {
@@ -149,7 +136,7 @@
           if (dlBtn) {
             dlBtn.addEventListener('click', function (ev) {
               ev.preventDefault();
-              if (hasDownloadedOnce) return; // Prevent multiple downloads!
+              if (hasDownloadedOnce) return;
 
               var val = nameInput ? nameInput.value.trim() : '';
               if (!val) {
@@ -164,34 +151,31 @@
                 return;
               }
 
-              hasDownloadedOnce = true;
-              dlBtn.disabled = true;
-              dlBtn.style.animation = 'none';
-              dlBtn.style.cursor = 'default';
-              if (nameInput) nameInput.disabled = true;
-
+              // Save player name ONLY on this device's localStorage (never shared with other users!)
               try {
                 localStorage.setItem('BFP_PLAYER_NAME', val);
               } catch (e) {}
 
-              // Sync Player Name to server so installed APK knows this player's name
-              fetch('/api/player-name', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: val })
-              }).catch(function () {});
-
-              // Trigger ONLY ONE single download (.apk on Mobile, .exe on PC)
-              var isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-              var a = document.createElement('a');
-              a.href = isMobile ? 'Bus-Fever-Party.apk' : 'Bus-Fever-Party.exe';
-              a.download = isMobile ? 'Bus Fever Party.apk' : 'Bus Fever Party.exe';
-              document.body.appendChild(a);
-              a.click();
-              document.body.removeChild(a);
-
-              if (dlIcon) dlIcon.textContent = '✅';
-              if (dlText) dlText.textContent = 'DOWNLOADED';
+              if (window._deferredPrompt) {
+                // Trigger native OS App Install dialog (adds App directly to Mobile Home Screen / PC Desktop, NO .apk file download!)
+                window._deferredPrompt.prompt();
+                window._deferredPrompt.userChoice.then(function () {
+                  window._deferredPrompt = null;
+                  hasDownloadedOnce = true;
+                  dlBtn.disabled = true;
+                  dlBtn.style.animation = 'none';
+                  if (nameInput) nameInput.disabled = true;
+                  if (dlIcon) dlIcon.textContent = '✅';
+                  if (dlText) dlText.textContent = 'DOWNLOADED';
+                });
+              } else {
+                hasDownloadedOnce = true;
+                dlBtn.disabled = true;
+                dlBtn.style.animation = 'none';
+                if (nameInput) nameInput.disabled = true;
+                if (dlIcon) dlIcon.textContent = '✅';
+                if (dlText) dlText.textContent = 'DOWNLOADED';
+              }
             });
           }
         })();
