@@ -12,7 +12,7 @@
 (function () {
   'use strict';
 
-  const SAVE_KEY = 'BUS_FEVER_PARTY_SAVE_V3';
+  const SAVE_KEY = 'BUS_FEVER_PARTY_SAVE_V4';
   const RING_SLOT_COUNT = 28; // 28 radial rows of 4 passengers revolving around the central oval
   const ROW_PASSENGERS = 4;   // 4 stickmen side-by-side per row
 
@@ -719,10 +719,11 @@
       this.slotBadgesLayer = document.getElementById('slot-badges-layer');
       this.fxLayer = document.getElementById('floating-fx-layer');
 
-      // Persistent Player Profile (Starts at Level 3 by default so user immediately sees the Video Level 3, and progresses 3 -> 4 -> 5 -> ...!)
+      // Persistent Player Profile (Always starts from Level 1 -> Level 2 -> Level 3 -> ...!)
       this.profile = {
-        currentLevel: 3,
-        highestLevel: 3,
+        playerName: '',
+        currentLevel: 1,
+        highestLevel: 1,
         coins: 140,
         boosters: {
           shuffle: 3,
@@ -737,7 +738,7 @@
       };
 
       // Live Level State
-      this.levelNum = 3;
+      this.levelNum = 1;
       this.lotVehicles = [];
       this.movingVehicles = [];
       this.departingVehicles = [];
@@ -764,6 +765,7 @@
       this.isLevelOver = false;
       this.boardingCooldown = 0;
       this.emojiCooldown = 2.5;
+      this._splashStarted = false;
 
       this.initThreeScene();
       this.buildEnvironment3D();
@@ -773,7 +775,10 @@
       this.drawLuckySpinWheel();
 
       // Run Opening Studio Splash ("Novaria") + Castle Loading Screen (0% -> 100%)
-      this.runOpeningSplashSequence();
+      // If web portal is active, wait until user enters name & clicks PLAY NOW / DOWNLOAD!
+      if (!window.BFP_PORTAL_ACTIVE) {
+        this.runOpeningSplashSequence();
+      }
 
       this.lastFrameTime = performance.now();
       this.animate = this.animate.bind(this);
@@ -784,6 +789,8 @@
     // OPENING SPLASH SCREEN SEQUENCE (Video 00:04 - 00:27)
     // -----------------------------------------------------------------------
     runOpeningSplashSequence() {
+      if (this._splashStarted) return;
+      this._splashStarted = true;
       const studioEl = document.getElementById('splash-studio');
       const loadingEl = document.getElementById('splash-loading');
       const fillEl = document.getElementById('loading-fill');
@@ -838,8 +845,12 @@
             ...(parsed.boosters || {})
           };
           // Lock progression strictly to currentLevel so player cannot skip ahead or go back
-          this.profile.currentLevel = Math.max(1, this.profile.currentLevel || 3);
+          this.profile.currentLevel = Math.max(1, this.profile.currentLevel || 1);
           this.profile.highestLevel = this.profile.currentLevel;
+        }
+        const savedName = localStorage.getItem('BFP_PLAYER_NAME');
+        if (savedName && !this.profile.playerName) {
+          this.profile.playerName = savedName;
         }
       } catch (e) {
         console.warn('Could not read save data:', e);
@@ -2628,6 +2639,12 @@
       document.getElementById('level-title-text').textContent = `Level ${this.levelNum}`;
       document.getElementById('coin-count-text').textContent = `${this.profile.coins}`;
       document.getElementById('passenger-left-text').textContent = `${this.getTotalRemainingPassengers()}`;
+
+      const hudNameEl = document.getElementById('hud-player-name');
+      if (hudNameEl) {
+        const pName = this.profile.playerName || localStorage.getItem('BFP_PLAYER_NAME') || 'Player';
+        hudNameEl.textContent = `👤 ${pName}`;
+      }
 
       this.renderBoosterCard(
         'shuffle',

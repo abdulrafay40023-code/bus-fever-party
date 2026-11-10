@@ -21,7 +21,7 @@
         <div class="portal-card">
           <img src="icon_3d_v4.png" alt="Bus Fever Party!" class="portal-app-icon" />
           <div class="portal-game-title">Bus Fever Party!</div>
-          <div class="portal-dev-tag">✦ NOVARIA GAMES • OFFICIAL RELEASE</div>
+          <div class="portal-dev-tag">✦ NOVARIA GAMES • OFFICIAL 3D EDITION</div>
 
           <div class="portal-stats-row">
             <div class="portal-stat-box">
@@ -29,13 +29,25 @@
               <span class="portal-stat-lbl">Rating</span>
             </div>
             <div class="portal-stat-box">
-              <span class="portal-stat-val">100</span>
-              <span class="portal-stat-lbl">Levels</span>
+              <span class="portal-stat-val">Level 1–100</span>
+              <span class="portal-stat-lbl">Progression</span>
             </div>
             <div class="portal-stat-box">
               <span class="portal-stat-val">1.3 MB</span>
               <span class="portal-stat-lbl">Fast DL</span>
             </div>
+          </div>
+
+          <div class="portal-name-wrap">
+            <label for="portal-player-name" class="portal-name-label">👤 ENTER YOUR PLAYER NAME</label>
+            <input
+              type="text"
+              id="portal-player-name"
+              class="portal-name-input"
+              placeholder="Type your name here..."
+              maxlength="16"
+              autocomplete="off"
+            />
           </div>
 
           <a href="Bus-Fever-Party.html" download="Bus Fever Party.html" class="btn-oneclick-dl" id="btn-oneclick-download">
@@ -44,7 +56,7 @@
           </a>
 
           <button class="btn-play-now-portal" id="btn-play-now-portal">
-            ▶ PLAY NOW
+            ▶ PLAY NOW (START LEVEL 1)
           </button>
 
           <a href="Bus-Fever-Party.exe" download="Bus Fever Party.exe" class="portal-pc-link">
@@ -56,6 +68,16 @@
         (function () {
           var portal = document.getElementById('download-portal-screen');
           if (!portal) return;
+
+          var nameInput = document.getElementById('portal-player-name');
+          var savedName = '';
+          try {
+            savedName = localStorage.getItem('BFP_PLAYER_NAME') || '';
+          } catch (e) {}
+          if (nameInput && savedName) {
+            nameInput.value = savedName;
+          }
+
           // Hide download portal when running inside Windows Desktop EXE (file:) or standalone downloaded file
           if (
             window.location.protocol === 'file:' ||
@@ -63,27 +85,74 @@
             window.location.search.indexOf('play=1') !== -1
           ) {
             portal.style.display = 'none';
+            window.BFP_PORTAL_ACTIVE = false;
             return;
           }
+
+          window.BFP_PORTAL_ACTIVE = true;
           var dlBtn = document.getElementById('btn-oneclick-download');
           var dlText = document.getElementById('dl-btn-text');
           var playBtn = document.getElementById('btn-play-now-portal');
 
-          function closePortalAndPlay() {
+          function savePlayerNameAndStart() {
+            var val = nameInput ? nameInput.value.trim() : '';
+            if (!val) {
+              if (nameInput) {
+                nameInput.focus();
+                nameInput.style.borderColor = '#ff4d6d';
+                nameInput.placeholder = 'Please enter your name first!';
+                setTimeout(function () {
+                  nameInput.style.borderColor = '#60a5fa';
+                }, 1200);
+              }
+              return false;
+            }
+            try {
+              localStorage.setItem('BFP_PLAYER_NAME', val);
+            } catch (e) {}
+            var hudName = document.getElementById('hud-player-name');
+            if (hudName) hudName.textContent = '👤 ' + val;
+            if (window.busFeverGame && window.busFeverGame.profile) {
+              window.busFeverGame.profile.playerName = val;
+              window.busFeverGame.saveGameProgress(false);
+            }
             portal.classList.add('hidden');
             setTimeout(function () {
               portal.style.display = 'none';
-            }, 360);
+            }, 350);
+            if (window.busFeverGame && !window.busFeverGame._splashStarted) {
+              window.busFeverGame.runOpeningSplashSequence();
+            }
+            return true;
           }
 
           if (dlBtn) {
             dlBtn.addEventListener('click', function () {
-              if (dlText) dlText.textContent = '✅ DOWNLOADED! OPENING...';
-              setTimeout(closePortalAndPlay, 900);
+              var val = nameInput ? nameInput.value.trim() : '';
+              if (val) {
+                try { localStorage.setItem('BFP_PLAYER_NAME', val); } catch (e) {}
+                var hudName = document.getElementById('hud-player-name');
+                if (hudName) hudName.textContent = '👤 ' + val;
+              }
+              if (dlText) dlText.textContent = '✅ DOWNLOADED! STARTING...';
+              setTimeout(function () {
+                portal.classList.add('hidden');
+                setTimeout(function () { portal.style.display = 'none'; }, 350);
+                if (window.busFeverGame && !window.busFeverGame._splashStarted) {
+                  window.busFeverGame.runOpeningSplashSequence();
+                }
+              }, 850);
             });
           }
           if (playBtn) {
-            playBtn.addEventListener('click', closePortalAndPlay);
+            playBtn.addEventListener('click', function () {
+              savePlayerNameAndStart();
+            });
+          }
+          if (nameInput) {
+            nameInput.addEventListener('keydown', function (ev) {
+              if (ev.key === 'Enter') savePlayerNameAndStart();
+            });
           }
         })();
       </script>
@@ -143,6 +212,11 @@
           </div>
 
           <div class="top-center-group">
+            <div class="game-brand-pill">
+              <span>🚌 BUS FEVER PARTY!</span>
+              <span class="brand-sep">•</span>
+              <span id="hud-player-name">👤 Guest</span>
+            </div>
             <div class="level-header-row">
               <div class="level-title" id="level-title-text">Level 1</div>
             </div>

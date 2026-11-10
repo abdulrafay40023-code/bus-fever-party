@@ -22,7 +22,7 @@ html, body {
   display: flex;
   justify-content: center;
   align-items: center;
-  background: #cfd5e6;
+  background: radial-gradient(circle at 50% 45%, #24304d 0%, #0f1422 100%);
 }
 
 #game-container {
@@ -31,6 +31,16 @@ html, body {
   height: 100%;
   background: #cfd5e6;
   overflow: hidden;
+}
+
+@media (min-width: 560px) {
+  #game-container {
+    max-width: 500px;
+    max-height: 96vh;
+    border-radius: 22px;
+    border: 3px solid rgba(255, 255, 255, 0.85);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.75);
+  }
 }
 
 /* =========================================================================
@@ -1217,4 +1227,61 @@ html, body {
   color: #fde047;
   opacity: 1;
 }
+
+.portal-name-wrap {
+  width: 100%;
+  margin-bottom: 14px;
+  text-align: left;
+}
+
+.portal-name-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 900;
+  color: #fde047;
+  letter-spacing: 0.5px;
+  margin-bottom: 5px;
+  padding-left: 4px;
+}
+
+.portal-name-input {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 2.5px solid #60a5fa;
+  background: rgba(15, 23, 42, 0.88);
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 800;
+  outline: none;
+  user-select: text;
+  -webkit-user-select: text;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.portal-name-input:focus {
+  border-color: #fde047;
+  box-shadow: 0 0 12px rgba(253, 224, 71, 0.45);
+}
+
+.game-brand-pill {
+  background: linear-gradient(90deg, #6d28d9 0%, #2563eb 100%);
+  border: 1.5px solid rgba(255, 255, 255, 0.75);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 900;
+  padding: 3px 11px;
+  border-radius: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+  margin-bottom: 2px;
+  letter-spacing: 0.4px;
+}
+
+.brand-sep {
+  opacity: 0.65;
+}
+
 
