@@ -2018,9 +2018,8 @@
       this.boardingCooldown -= dt;
       if (this.boardingCooldown > 0) return;
 
-      // Ensure that if a vehicle is parked in a slot, its matching passenger color (if waiting in feeder lanes)
-      // can enter the revolving oval ring so the player never deadlocks waiting for a feeder color!
-      this.ensureParkedColorsPresentInRing();
+      // Strict revolving loop rule: Parked vehicles ONLY board if their color is genuinely inside the revolving circle!
+      // Colors waiting in feeder roads only enter the circle naturally when existing circle rows are cleared.
 
       // Find any row in the revolving oval ring that is near the bottom boarding gate (theta around PI/2 = 1.57)
       // and matches a parked vehicle's color!

@@ -1359,7 +1359,7 @@ html, body {
     <div id="game-container">
 
       <!-- =================================================================
-           CHROME WEB PORTAL: ENTER NAME -> 1-CLICK SINGLE APK DOWNLOAD -> "DOWNLOADED"
+           NATIVE APP INSTALL PORTAL (DEVICE-LOCAL NAME ONLY, BLANK FOR NEW USERS)
            ================================================================= -->
       <div id="download-portal-screen">
         <div class="portal-card">
@@ -1405,7 +1405,10 @@ html, body {
       </div>
       <script>
         (function () {
-          // Block Chrome's automatic PWA install banner so only 1 single APK download happens
+          if ('serviceWorker' in navigator && window.location.protocol.indexOf('http') === 0) {
+            navigator.serviceWorker.register('/sw.js').catch(function () {});
+          }
+
           window.addEventListener('beforeinstallprompt', function (e) {
             e.preventDefault();
           });
@@ -1420,18 +1423,6 @@ html, body {
           var dlText = document.getElementById('dl-btn-text');
 
           var urlParams = new URLSearchParams(window.location.search);
-          var urlPlayer = urlParams.get('player') || '';
-          if (urlPlayer) {
-            try { localStorage.setItem('BFP_PLAYER_NAME', urlPlayer); } catch (e) {}
-          }
-
-          var savedName = '';
-          try {
-            savedName = localStorage.getItem('BFP_PLAYER_NAME') || '';
-          } catch (e) {}
-          if (nameInput && savedName) {
-            nameInput.value = savedName;
-          }
 
           // Detect if running inside the Installed App (APK / TWA / Standalone / Windows EXE)
           var isStandaloneMode =
@@ -1448,14 +1439,23 @@ html, body {
             portal.style.display = 'none';
             window.BFP_PORTAL_ACTIVE = false;
 
-            if (window.location.protocol.indexOf('http') === 0) {
+            var localSavedName = '';
+            try {
+              localSavedName = localStorage.getItem('BFP_PLAYER_NAME') || '';
+            } catch (e) {}
+
+            if (localSavedName) {
+              var hudName = document.getElementById('hud-player-name');
+              if (hudName) hudName.textContent = localSavedName;
+            } else if (window.location.protocol.indexOf('http') === 0) {
+              // Fetch name only if entered on this exact IP + Phone Model within last 10 mins
               fetch('/api/player-name')
                 .then(function (r) { return r.json(); })
                 .then(function (data) {
                   if (data && data.name) {
                     try { localStorage.setItem('BFP_PLAYER_NAME', data.name); } catch (e) {}
-                    var hudName = document.getElementById('hud-player-name');
-                    if (hudName) hudName.textContent = data.name;
+                    var hudNameEl = document.getElementById('hud-player-name');
+                    if (hudNameEl) hudNameEl.textContent = data.name;
                     if (window.busFeverGame && window.busFeverGame.profile) {
                       window.busFeverGame.profile.playerName = data.name;
                       window.busFeverGame.saveGameProgress(false);
@@ -1467,7 +1467,9 @@ html, body {
             return;
           }
 
+          // Running in browser tab: ALWAYS keep name box blank so every user enters their own name!
           window.BFP_PORTAL_ACTIVE = true;
+          if (nameInput) nameInput.value = '';
           var hasDownloadedOnce = false;
 
           function syncButtonsLockState() {
@@ -1489,7 +1491,7 @@ html, body {
           if (dlBtn) {
             dlBtn.addEventListener('click', function (ev) {
               ev.preventDefault();
-              if (hasDownloadedOnce) return; // Prevent multiple downloads!
+              if (hasDownloadedOnce) return;
 
               var val = nameInput ? nameInput.value.trim() : '';
               if (!val) {
@@ -1507,14 +1509,13 @@ html, body {
               hasDownloadedOnce = true;
               dlBtn.disabled = true;
               dlBtn.style.animation = 'none';
-              dlBtn.style.cursor = 'default';
               if (nameInput) nameInput.disabled = true;
 
               try {
                 localStorage.setItem('BFP_PLAYER_NAME', val);
               } catch (e) {}
 
-              // Sync Player Name to server so installed APK knows this player's name
+              // Save name strictly for this device's IP + Phone Model
               fetch('/api/player-name', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
