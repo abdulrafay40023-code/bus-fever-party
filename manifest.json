@@ -5,7 +5,7 @@
   "description": "3D Traffic Jam & Revolving Passenger Loop Puzzle Game",
   "start_url": "/?play=1",
   "scope": "/",
-  "display": "fullscreen",
+  "display": "standalone",
   "orientation": "portrait",
   "background_color": "#480ca8",
   "theme_color": "#480ca8",
@@ -17,22 +17,10 @@
       "purpose": "any"
     },
     {
-      "src": "/icon_192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "maskable"
-    },
-    {
       "src": "/icon_512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
-    },
-    {
-      "src": "/icon_512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "maskable"
     }
   ]
 }
