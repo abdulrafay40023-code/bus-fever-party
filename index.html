@@ -3,10 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#480ca8" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Bus Fever Party" />
   <title>Bus Fever Party!</title>
-  <link rel="icon" type="image/png" sizes="256x256" href="icon_3d_v4.png" />
+  <link rel="icon" type="image/png" sizes="192x192" href="icon_192.png" />
   <link rel="shortcut icon" type="image/x-icon" href="bus_fever_hd.ico" />
-  <link rel="apple-touch-icon" href="icon_3d_v4.png" />
+  <link rel="apple-touch-icon" href="icon_192.png" />
   <link rel="manifest" href="manifest.json" />
   <link rel="stylesheet" href="styles.css" />
 </head>
@@ -15,13 +19,13 @@
     <div id="game-container">
 
       <!-- =================================================================
-           VERCEL 1-CLICK DOWNLOAD & PLAY STORE INTERFACE
+           VERCEL 1-CLICK APP DOWNLOAD & PLAYER NAME GATE INTERFACE
            ================================================================= -->
       <div id="download-portal-screen">
         <div class="portal-card">
-          <img src="icon_3d_v4.png" alt="Bus Fever Party!" class="portal-app-icon" />
+          <img src="icon_192.png" alt="Bus Fever Party!" class="portal-app-icon" />
           <div class="portal-game-title">Bus Fever Party!</div>
-          <div class="portal-dev-tag">✦ NOVARIA GAMES • OFFICIAL 3D EDITION</div>
+          <div class="portal-dev-tag">✦ NOVARIA GAMES • OFFICIAL 3D APP</div>
 
           <div class="portal-stats-row">
             <div class="portal-stat-box">
@@ -33,43 +37,58 @@
               <span class="portal-stat-lbl">Progression</span>
             </div>
             <div class="portal-stat-box">
-              <span class="portal-stat-val">1.3 MB</span>
-              <span class="portal-stat-lbl">Fast DL</span>
+              <span class="portal-stat-val">3D App</span>
+              <span class="portal-stat-lbl">Mobile &amp; PC</span>
             </div>
           </div>
 
           <div class="portal-name-wrap">
-            <label for="portal-player-name" class="portal-name-label">👤 ENTER YOUR PLAYER NAME</label>
+            <label for="portal-player-name" class="portal-name-label">👤 ENTER YOUR PLAYER NAME (REQUIRED)</label>
             <input
               type="text"
               id="portal-player-name"
               class="portal-name-input"
-              placeholder="Type your name here..."
+              placeholder="Type your name first..."
               maxlength="16"
               autocomplete="off"
             />
+            <div id="portal-name-error" class="portal-name-error" style="display:none;">
+              ⚠️ Pehle apna Name likhein! Name ke bina Play ya Download nahi hoga.
+            </div>
           </div>
 
-          <a href="Bus-Fever-Party.html" download="Bus Fever Party.html" class="btn-oneclick-dl" id="btn-oneclick-download">
-            <span>⬇</span>
-            <span id="dl-btn-text">DOWNLOAD GAME</span>
-          </a>
-
-          <button class="btn-play-now-portal" id="btn-play-now-portal">
-            ▶ PLAY NOW (START LEVEL 1)
+          <button type="button" class="btn-oneclick-dl disabled-gate" id="btn-oneclick-download">
+            <span>📲</span>
+            <span id="dl-btn-text">DOWNLOAD APP &amp; OPEN</span>
           </button>
 
-          <a href="Bus-Fever-Party.exe" download="Bus Fever Party.exe" class="portal-pc-link">
-            💻 Download for Windows PC (.EXE)
-          </a>
+          <button type="button" class="btn-play-now-portal disabled-gate" id="btn-play-now-portal">
+            ▶ PLAY NOW (START LEVEL 1)
+          </button>
         </div>
       </div>
       <script>
         (function () {
+          // Register Service Worker so Android Chrome installs Bus Fever Party as a real Native WebAPK App
+          if ('serviceWorker' in navigator && window.location.protocol.indexOf('http') === 0) {
+            navigator.serviceWorker.register('/sw.js').catch(function () {});
+          }
+
+          window._deferredPrompt = null;
+          window.addEventListener('beforeinstallprompt', function (e) {
+            e.preventDefault();
+            window._deferredPrompt = e;
+          });
+
           var portal = document.getElementById('download-portal-screen');
           if (!portal) return;
 
           var nameInput = document.getElementById('portal-player-name');
+          var errEl = document.getElementById('portal-name-error');
+          var dlBtn = document.getElementById('btn-oneclick-download');
+          var dlText = document.getElementById('dl-btn-text');
+          var playBtn = document.getElementById('btn-play-now-portal');
+
           var savedName = '';
           try {
             savedName = localStorage.getItem('BFP_PLAYER_NAME') || '';
@@ -78,11 +97,29 @@
             nameInput.value = savedName;
           }
 
-          // Hide download portal when running inside Windows Desktop EXE (file:) or standalone downloaded file
+          function syncButtonsLockState() {
+            var hasName = nameInput && nameInput.value.trim().length > 0;
+            if (dlBtn) {
+              dlBtn.classList.toggle('disabled-gate', !hasName);
+            }
+            if (playBtn) {
+              playBtn.classList.toggle('disabled-gate', !hasName);
+            }
+            if (hasName && errEl) {
+              errEl.style.display = 'none';
+            }
+          }
+
+          if (nameInput) {
+            nameInput.addEventListener('input', syncButtonsLockState);
+            syncButtonsLockState();
+          }
+
+          // Hide download portal only when running inside Windows Desktop EXE (file:) or standalone downloaded file with a saved name
           if (
-            window.location.protocol === 'file:' ||
-            window.BFP_STANDALONE ||
-            window.location.search.indexOf('play=1') !== -1
+            (window.location.protocol === 'file:' && savedName) ||
+            (window.BFP_STANDALONE && savedName) ||
+            (window.location.search.indexOf('play=1') !== -1 && savedName)
           ) {
             portal.style.display = 'none';
             window.BFP_PORTAL_ACTIVE = false;
@@ -90,32 +127,40 @@
           }
 
           window.BFP_PORTAL_ACTIVE = true;
-          var dlBtn = document.getElementById('btn-oneclick-download');
-          var dlText = document.getElementById('dl-btn-text');
-          var playBtn = document.getElementById('btn-play-now-portal');
 
-          function savePlayerNameAndStart() {
+          function requireValidPlayerName() {
             var val = nameInput ? nameInput.value.trim() : '';
             if (!val) {
+              if (errEl) errEl.style.display = 'block';
               if (nameInput) {
                 nameInput.focus();
-                nameInput.style.borderColor = '#ff4d6d';
-                nameInput.placeholder = 'Please enter your name first!';
-                setTimeout(function () {
-                  nameInput.style.borderColor = '#60a5fa';
-                }, 1200);
+                nameInput.style.borderColor = '#ff3b5c';
+                nameInput.classList.remove('shake-input');
+                void nameInput.offsetWidth;
+                nameInput.classList.add('shake-input');
               }
-              return false;
+              return null;
             }
             try {
               localStorage.setItem('BFP_PLAYER_NAME', val);
             } catch (e) {}
             var hudName = document.getElementById('hud-player-name');
-            if (hudName) hudName.textContent = '👤 ' + val;
+            if (hudName) hudName.textContent = val;
             if (window.busFeverGame && window.busFeverGame.profile) {
               window.busFeverGame.profile.playerName = val;
               window.busFeverGame.saveGameProgress(false);
             }
+            return val;
+          }
+
+          function launchGameNow() {
+            try {
+              var docEl = document.documentElement;
+              if (docEl.requestFullscreen && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+                docEl.requestFullscreen().catch(function () {});
+              }
+            } catch (e) {}
+
             portal.classList.add('hidden');
             setTimeout(function () {
               portal.style.display = 'none';
@@ -123,35 +168,59 @@
             if (window.busFeverGame && !window.busFeverGame._splashStarted) {
               window.busFeverGame.runOpeningSplashSequence();
             }
-            return true;
           }
 
           if (dlBtn) {
-            dlBtn.addEventListener('click', function () {
-              var val = nameInput ? nameInput.value.trim() : '';
-              if (val) {
-                try { localStorage.setItem('BFP_PLAYER_NAME', val); } catch (e) {}
-                var hudName = document.getElementById('hud-player-name');
-                if (hudName) hudName.textContent = '👤 ' + val;
+            dlBtn.addEventListener('click', function (ev) {
+              ev.preventDefault();
+              var val = requireValidPlayerName();
+              if (!val) return; // Strictly block download if name is not entered!
+
+              var isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+              if (window._deferredPrompt) {
+                // Native Android WebAPK App Installer — installs real app on phone & auto-opens game!
+                window._deferredPrompt.prompt();
+                window._deferredPrompt.userChoice.finally(function () {
+                  window._deferredPrompt = null;
+                  if (dlText) dlText.textContent = '✅ APP INSTALLED! OPENING...';
+                  setTimeout(launchGameNow, 300);
+                });
+              } else if (isMobile) {
+                // On mobile browsers where beforeinstallprompt already installed or in-app WebView:
+                // Open directly in Fullscreen App Mode and save shortcut!
+                if (dlText) dlText.textContent = '✅ OPENING MOBILE APP...';
+                setTimeout(launchGameNow, 350);
+              } else {
+                // On Windows PC: Download native Bus Fever Party.exe + auto-open game!
+                var a = document.createElement('a');
+                a.href = 'Bus-Fever-Party.exe';
+                a.download = 'Bus Fever Party.exe';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+
+                if (dlText) dlText.textContent = '✅ APP DOWNLOADED! OPENING...';
+                setTimeout(launchGameNow, 550);
               }
-              if (dlText) dlText.textContent = '✅ DOWNLOADED! STARTING...';
-              setTimeout(function () {
-                portal.classList.add('hidden');
-                setTimeout(function () { portal.style.display = 'none'; }, 350);
-                if (window.busFeverGame && !window.busFeverGame._splashStarted) {
-                  window.busFeverGame.runOpeningSplashSequence();
-                }
-              }, 850);
             });
           }
+
           if (playBtn) {
-            playBtn.addEventListener('click', function () {
-              savePlayerNameAndStart();
+            playBtn.addEventListener('click', function (ev) {
+              ev.preventDefault();
+              var val = requireValidPlayerName();
+              if (!val) return; // Strictly block Play Now if name is not entered!
+              launchGameNow();
             });
           }
+
           if (nameInput) {
             nameInput.addEventListener('keydown', function (ev) {
-              if (ev.key === 'Enter') savePlayerNameAndStart();
+              if (ev.key === 'Enter') {
+                var val = requireValidPlayerName();
+                if (val) launchGameNow();
+              }
             });
           }
         })();
@@ -202,7 +271,12 @@
       <div id="hud-layer">
         <!-- Top Bar -->
         <div class="top-bar">
+          <!-- TOP-LEFT CORNER: Player Name Badge + Restart Button -->
           <div class="top-left-group">
+            <div class="top-corner-name-badge" id="top-corner-player-badge" title="Current Player">
+              <span class="corner-user-icon">👤</span>
+              <span id="hud-player-name">Player</span>
+            </div>
             <button class="circle-btn" id="btn-restart" title="Restart Current Level">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
@@ -214,8 +288,6 @@
           <div class="top-center-group">
             <div class="game-brand-pill">
               <span>🚌 BUS FEVER PARTY!</span>
-              <span class="brand-sep">•</span>
-              <span id="hud-player-name">👤 Guest</span>
             </div>
             <div class="level-header-row">
               <div class="level-title" id="level-title-text">Level 1</div>
@@ -341,7 +413,7 @@
           <button class="modal-close" id="btn-close-pause">✕</button>
           <div class="modal-title">⏸️ Game Paused</div>
           <div class="modal-subtitle" id="pause-stats-line">
-            Level 3 • Auto-Save Active
+            Level 1 • Auto-Save Active
           </div>
 
           <div class="setting-row">
@@ -357,21 +429,6 @@
             <button class="btn-primary" id="btn-resume">▶ Continue Playing</button>
             <button class="btn-secondary" id="btn-pause-restart">↺ Restart Current Level</button>
           </div>
-        </div>
-      </div>
-
-      <!-- MODAL 4: Level Map (100 Distinct Levels) -->
-      <div class="modal-backdrop" id="modal-map">
-        <div class="modal-card">
-          <button class="modal-close" id="btn-close-map">✕</button>
-          <div class="modal-title">🗺️ Select Level (1 - 100)</div>
-          <div class="modal-subtitle">
-            Every level has a unique formation & progressive difficulty!
-          </div>
-          <div class="level-grid" id="level-grid-container"></div>
-          <button class="btn-secondary" id="btn-unlock-all-levels" style="font-size:13px;">
-            🔓 Unlock All 100 Levels
-          </button>
         </div>
       </div>
 

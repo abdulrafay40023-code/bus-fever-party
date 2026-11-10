@@ -1285,3 +1285,54 @@ html, body {
 }
 
 
+
+.portal-name-error {
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 800;
+  color: #ff6b81;
+  background: rgba(255, 59, 92, 0.16);
+  border: 1px solid rgba(255, 59, 92, 0.45);
+  border-radius: 10px;
+  padding: 6px 10px;
+  text-align: center;
+}
+
+.disabled-gate {
+  opacity: 0.52;
+  filter: grayscale(0.35);
+  animation: none !important;
+}
+
+@keyframes shakeInputAnim {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-7px); }
+  40%, 80% { transform: translateX(7px); }
+}
+
+.shake-input {
+  animation: shakeInputAnim 0.35s ease;
+}
+
+.top-corner-name-badge {
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  border: 2px solid #fde047;
+  border-radius: 16px;
+  padding: 5px 11px;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 900;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.45);
+  max-width: 125px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-bottom: 4px;
+}
+
+.corner-user-icon {
+  font-size: 13px;
+}
