@@ -70,8 +70,45 @@
       css: '#ff7b19',
       borderCss: '#ffd0ab',
       textCss: '#ffffff'
+    },
+    cyan: {
+      id: 'cyan',
+      name: 'Cyan',
+      hex: 0x06b6d4,
+      darkHex: 0x0e7490,
+      css: '#06b6d4',
+      borderCss: '#a5f3fc',
+      textCss: '#042f2e'
+    },
+    pink: {
+      id: 'pink',
+      name: 'Pink',
+      hex: 0xec4899,
+      darkHex: 0x9d174d,
+      css: '#ec4899',
+      borderCss: '#fbcfe8',
+      textCss: '#ffffff'
+    },
+    lime: {
+      id: 'lime',
+      name: 'Lime',
+      hex: 0x84cc16,
+      darkHex: 0x3f6212,
+      css: '#84cc16',
+      borderCss: '#d9f99d',
+      textCss: '#1a2e05'
+    },
+    indigo: {
+      id: 'indigo',
+      name: 'Indigo',
+      hex: 0x6366f1,
+      darkHex: 0x3730a3,
+      css: '#6366f1',
+      borderCss: '#c7d2fe',
+      textCss: '#ffffff'
     }
   };
+  const ALL_COLOR_KEYS = Object.keys(COLORS);
 
   const PADLOCK_SVG = `
     <svg class="padlock-svg" viewBox="0 0 64 72" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -233,7 +270,7 @@
   const sound = new SoundEngine();
 
   // =========================================================================
-  // 100 DISTINCT, PROGRESSIVELY HARDER LEVELS GENERATOR
+  // 1000 DISTINCT, PROGRESSIVELY HARDER LEVELS GENERATOR (WITH DYNAMIC COLORS & TIMER)
   // =========================================================================
   class LevelGenerator {
     static createSeededRandom(seed) {
@@ -248,7 +285,7 @@
     static getLevelMeta(levelNum) {
       const titles = [
         'Warmup Cross',
-        'Twin Diamond Jam',
+        'Neon Diamond Jam',
         'Bus Fever Classic',
         '4-Color Pinwheel Lock',
         '🔥 Fortress Gate',
@@ -256,22 +293,64 @@
         '5-Color Crossroads',
         '🔥 BOSS: Twin Towers',
         'Spiral Labyrinth',
-        '🔥 MEGA: 6-Color Gridlock'
+        '🔥 MEGA: Highway Gridlock',
+        'Emerald Interchange',
+        '🔥 BOSS: Double Gauntlet',
+        'Sunset Boulevard Jam',
+        'Royal Plaza Rush',
+        '🔥 BOSS: Iron Citadel',
+        'Cyber Loop Express',
+        'Downtown Bottleneck',
+        '🔥 MEGA: 7-Color Vortex',
+        'Harbor Bridge Lock',
+        '🔥 BOSS: Grand Terminal'
       ];
       const name = titles[(levelNum - 1) % titles.length];
       const isHard = levelNum >= 4 && (levelNum % 5 === 0 || levelNum % 4 === 0);
       return { name, isHard };
     }
 
+    /**
+     * Picks a fresh, rotating subset of colors for each level so every next level
+     * looks visually distinct and introduces more colors as difficulty increases!
+     */
+    static getColorsForLevel(levelNum, rand) {
+      if (levelNum === 1) return ['yellow', 'blue', 'red'];
+      if (levelNum === 2) return ['green', 'purple', 'orange'];
+      if (levelNum === 3) return ['yellow', 'blue', 'red'];
+
+      let numColors = 4;
+      if (levelNum >= 7) numColors = 5;
+      if (levelNum >= 14) numColors = 6;
+      if (levelNum >= 28) numColors = 7;
+      if (levelNum >= 55 && levelNum % 5 === 0) numColors = 8;
+
+      // Rotate starting palette index every level so consecutive levels never feel repetitive
+      const rotated = [...ALL_COLOR_KEYS];
+      const offset = (levelNum * 3 + Math.floor(levelNum / 2)) % rotated.length;
+      const ordered = rotated.slice(offset).concat(rotated.slice(0, offset));
+
+      // Deterministic shuffle with level seed
+      for (let i = ordered.length - 1; i > 0; i--) {
+        const j = Math.floor(rand() * (i + 1));
+        const tmp = ordered[i];
+        ordered[i] = ordered[j];
+        ordered[j] = tmp;
+      }
+
+      return ordered.slice(0, numColors);
+    }
+
     static generateLevel(levelNum) {
-      if (levelNum === 1) return this.buildLevel1();
-      if (levelNum === 2) return this.buildLevel2();
-      if (levelNum === 3) return this.buildExactVideoLevel3();
-      return this.buildProgressiveHardLevel(levelNum);
+      const clampedLvl = Math.max(1, Math.min(1000, levelNum));
+      if (clampedLvl === 1) return this.buildLevel1();
+      if (clampedLvl === 2) return this.buildLevel2();
+      if (clampedLvl === 3) return this.buildExactVideoLevel3();
+      return this.buildProgressiveHardLevel(clampedLvl);
     }
 
     static buildLevel1() {
-      // Level 1: 10 Vehicles (Cross Pattern), 3 Colors
+      // Level 1: 10 Vehicles (Cross Pattern), 3 Colors (Yellow, Blue, Red)
       const vehicles = [
         { id: 'l1_1', x: -2.0, z: 1.0, dir: 'LEFT', type: 'bus', color: 'yellow', cap: 24 },
         { id: 'l1_2', x: 2.0, z: 1.0, dir: 'RIGHT', type: 'bus', color: 'blue', cap: 24 },
@@ -288,69 +367,61 @@
     }
 
     static buildLevel2() {
-      // Level 2: 14 Vehicles (Interlocking Diamond), 3 Colors
+      // Level 2: 14 Vehicles (Interlocking Diamond), Fresh Colors (Green, Purple, Orange!)
       const vehicles = [
-        { id: 'l2_1', x: -2.1, z: 0.7, dir: 'RIGHT', type: 'bus', color: 'red', cap: 28, tilt: -0.1 },
-        { id: 'l2_2', x: 2.1, z: 0.7, dir: 'LEFT', type: 'bus', color: 'yellow', cap: 28, tilt: 0.1 },
+        { id: 'l2_1', x: -2.1, z: 0.7, dir: 'RIGHT', type: 'bus', color: 'green', cap: 28, tilt: -0.1 },
+        { id: 'l2_2', x: 2.1, z: 0.7, dir: 'LEFT', type: 'bus', color: 'purple', cap: 28, tilt: 0.1 },
 
-        { id: 'l2_3', x: -2.8, z: 2.8, dir: 'UP', type: 'car', color: 'blue', cap: 16 },
-        { id: 'l2_4', x: -1.2, z: 2.8, dir: 'DOWN', type: 'car', color: 'yellow', cap: 16 },
-        { id: 'l2_5', x: 1.2, z: 2.8, dir: 'DOWN', type: 'car', color: 'red', cap: 16 },
-        { id: 'l2_6', x: 2.8, z: 2.8, dir: 'UP', type: 'car', color: 'blue', cap: 16 },
+        { id: 'l2_3', x: -2.8, z: 2.8, dir: 'UP', type: 'car', color: 'orange', cap: 16 },
+        { id: 'l2_4', x: -1.2, z: 2.8, dir: 'DOWN', type: 'car', color: 'purple', cap: 16 },
+        { id: 'l2_5', x: 1.2, z: 2.8, dir: 'DOWN', type: 'car', color: 'green', cap: 16 },
+        { id: 'l2_6', x: 2.8, z: 2.8, dir: 'UP', type: 'car', color: 'orange', cap: 16 },
 
-        { id: 'l2_7', x: -2.4, z: 4.9, dir: 'LEFT', type: 'bus', color: 'blue', cap: 28 },
-        { id: 'l2_8', x: 2.4, z: 4.9, dir: 'RIGHT', type: 'bus', color: 'yellow', cap: 28 },
+        { id: 'l2_7', x: -2.4, z: 4.9, dir: 'LEFT', type: 'bus', color: 'orange', cap: 28 },
+        { id: 'l2_8', x: 2.4, z: 4.9, dir: 'RIGHT', type: 'bus', color: 'purple', cap: 28 },
 
-        { id: 'l2_9', x: -3.2, z: 7.0, dir: 'LEFT', type: 'car', color: 'red', cap: 16 },
-        { id: 'l2_10', x: -1.1, z: 7.1, dir: 'DOWN', type: 'car', color: 'blue', cap: 16 },
-        { id: 'l2_11', x: 1.1, z: 7.1, dir: 'DOWN', type: 'car', color: 'yellow', cap: 16 },
-        { id: 'l2_12', x: 3.2, z: 7.0, dir: 'RIGHT', type: 'car', color: 'red', cap: 16 },
+        { id: 'l2_9', x: -3.2, z: 7.0, dir: 'LEFT', type: 'car', color: 'green', cap: 16 },
+        { id: 'l2_10', x: -1.1, z: 7.1, dir: 'DOWN', type: 'car', color: 'orange', cap: 16 },
+        { id: 'l2_11', x: 1.1, z: 7.1, dir: 'DOWN', type: 'car', color: 'purple', cap: 16 },
+        { id: 'l2_12', x: 3.2, z: 7.0, dir: 'RIGHT', type: 'car', color: 'green', cap: 16 },
 
-        { id: 'l2_13', x: -2.15, z: 9.5, dir: 'LEFT', type: 'bus', color: 'yellow', cap: 28 },
-        { id: 'l2_14', x: 2.15, z: 9.5, dir: 'RIGHT', type: 'bus', color: 'red', cap: 28 }
+        { id: 'l2_13', x: -2.15, z: 9.5, dir: 'LEFT', type: 'bus', color: 'purple', cap: 28 },
+        { id: 'l2_14', x: 2.15, z: 9.5, dir: 'RIGHT', type: 'bus', color: 'green', cap: 28 }
       ];
       return this.finalizeWithRevolvingFeederQueues(2, vehicles);
     }
 
     /**
      * Exact 19-Vehicle Replica of Video Level 3 (00:28 - 01:21)!
-     * Capacities match the video: Buses = 32/40, Cars = 16!
      */
     static buildExactVideoLevel3() {
       const vehicles = [
-        // Top angled buses (Yellow 32 on right, Blue 40 on left)
         { id: 'v3_top_l', x: -2.05, z: 0.55, dir: 'RIGHT', type: 'bus', color: 'blue', cap: 40, tilt: -0.12 },
         { id: 'v3_top_r', x: 2.05, z: 0.55, dir: 'RIGHT', type: 'bus', color: 'yellow', cap: 32, tilt: 0.12 },
 
-        // Upper row of 5 vertical vehicles: Yellow(↑), Red(↑), Blue Bus(↓), Red(↑), Yellow(↑)
         { id: 'v3_r1_1', x: -3.0, z: 2.75, dir: 'UP', type: 'car', color: 'yellow', cap: 16 },
         { id: 'v3_r1_2', x: -1.5, z: 2.75, dir: 'UP', type: 'car', color: 'red', cap: 16 },
         { id: 'v3_r1_3', x: 0.0, z: 2.65, dir: 'DOWN', type: 'bus', color: 'blue', cap: 40 },
         { id: 'v3_r1_4', x: 1.5, z: 2.75, dir: 'UP', type: 'car', color: 'red', cap: 16 },
         { id: 'v3_r1_5', x: 3.0, z: 2.75, dir: 'UP', type: 'car', color: 'yellow', cap: 16 },
 
-        // Middle horizontal row of 3 red vehicles: Red Car(←), Red Bus(←), Red Car(←)
         { id: 'v3_r2_1', x: -3.15, z: 4.75, dir: 'LEFT', type: 'car', color: 'red', cap: 16 },
         { id: 'v3_r2_2', x: 0.0, z: 4.75, dir: 'LEFT', type: 'bus', color: 'red', cap: 40 },
         { id: 'v3_r2_3', x: 3.15, z: 4.75, dir: 'LEFT', type: 'car', color: 'red', cap: 16 },
 
-        // Center vertical column of 2 cars: Red Car(↓), Yellow Car(↓)
         { id: 'v3_mid_1', x: 0.0, z: 6.7, dir: 'DOWN', type: 'car', color: 'red', cap: 16 },
         { id: 'v3_mid_2', x: 0.0, z: 8.8, dir: 'DOWN', type: 'car', color: 'yellow', cap: 16 },
 
-        // Left 2x2 block of 4 horizontal cars
         { id: 'v3_l_1', x: -4.2, z: 6.75, dir: 'LEFT', type: 'car', color: 'yellow', cap: 16 },
         { id: 'v3_l_2', x: -2.0, z: 6.75, dir: 'LEFT', type: 'car', color: 'blue', cap: 16 },
         { id: 'v3_l_3', x: -4.2, z: 8.15, dir: 'LEFT', type: 'car', color: 'blue', cap: 16 },
         { id: 'v3_l_4', x: -2.0, z: 8.15, dir: 'LEFT', type: 'car', color: 'blue', cap: 16 },
 
-        // Right 2x2 block of 4 horizontal cars
         { id: 'v3_rt_1', x: 2.0, z: 6.75, dir: 'RIGHT', type: 'car', color: 'blue', cap: 16 },
         { id: 'v3_rt_2', x: 4.2, z: 6.75, dir: 'RIGHT', type: 'car', color: 'yellow', cap: 16 },
         { id: 'v3_rt_3', x: 2.0, z: 8.15, dir: 'RIGHT', type: 'car', color: 'blue', cap: 16 },
         { id: 'v3_rt_4', x: 4.2, z: 8.15, dir: 'RIGHT', type: 'car', color: 'blue', cap: 16 },
 
-        // Bottom horizontal pair of buses: Yellow Bus(←), Blue Bus(→)
         { id: 'v3_bot_l', x: -2.15, z: 10.45, dir: 'LEFT', type: 'bus', color: 'yellow', cap: 40 },
         { id: 'v3_bot_r', x: 2.15, z: 10.45, dir: 'RIGHT', type: 'bus', color: 'blue', cap: 40 }
       ];
@@ -359,25 +430,22 @@
     }
 
     /**
-     * Generates distinct, progressively harder formations for Levels 4..100+
-     * Each level has a unique layout archetype, more vehicles, more colors, and deeper blocking chains!
+     * Generates distinct, progressively harder formations for Levels 4..1000!
      */
     static buildProgressiveHardLevel(levelNum) {
       const rand = this.createSeededRandom(levelNum * 12983 + 409);
+      const colorPool = this.getColorsForLevel(levelNum, rand);
 
-      // More colors unlock as levels increase
-      const colorPool = ['yellow', 'blue', 'red'];
-      if (levelNum >= 4) colorPool.push('green');
-      if (levelNum >= 6) colorPool.push('purple');
-      if (levelNum >= 9) colorPool.push('orange');
-
-      const archetype = levelNum % 6;
+      const archetype = levelNum % 8;
       const slots = this.buildDistinctFormationArchetype(archetype, levelNum, rand);
 
-      // Assign colors with intentional challenge (inner vehicles match early loop, outer vehicles require slot management!)
+      // Bus capacities scale with level difficulty (28 -> 32 -> 36 -> 40)
+      const busCap = levelNum < 8 ? 28 : levelNum < 20 ? 32 : levelNum % 5 === 0 ? 40 : 32;
+
       const vehicles = slots.map((s, idx) => {
-        const color = colorPool[Math.floor(rand() * colorPool.length)];
-        const cap = s.type === 'bus' ? 32 : 16;
+        // Ensure every color in colorPool appears and adjacent vehicles have varied colors
+        const color = colorPool[(idx + Math.floor(rand() * colorPool.length)) % colorPool.length];
+        const cap = s.type === 'bus' ? busCap : 16;
         return {
           id: `lvl${levelNum}_v${idx}`,
           x: s.x,
@@ -396,9 +464,11 @@
 
     static buildDistinctFormationArchetype(archetype, levelNum, rand) {
       const list = [];
+      const flipDir = (d) => (d === 'LEFT' ? 'RIGHT' : d === 'RIGHT' ? 'LEFT' : d === 'UP' ? 'DOWN' : 'UP');
+      const shouldFlip = levelNum % 2 === 1;
 
-      if (archetype === 4 % 6) {
-        // Archetype A (Level 4, 10, 16...): PINWHEEL FORTRESS (22-26 vehicles)
+      if (archetype === 0) {
+        // Archetype 0: PINWHEEL FORTRESS (22 vehicles)
         list.push({ x: -2.2, z: 0.45, dir: 'RIGHT', type: 'bus', tilt: -0.1 });
         list.push({ x: 2.2, z: 0.45, dir: 'LEFT', type: 'bus', tilt: 0.1 });
 
@@ -412,7 +482,7 @@
         });
 
         list.push({ x: -3.3, z: 4.55, dir: 'RIGHT', type: 'car' });
-        list.push({ x: 0.0, z: 4.55, dir: 'LEFT', type: 'bus' });
+        list.push({ x: 0.0, z: 4.55, dir: shouldFlip ? 'RIGHT' : 'LEFT', type: 'bus' });
         list.push({ x: 3.3, z: 4.55, dir: 'RIGHT', type: 'car' });
 
         [-3.8, -2.2, -0.7, 0.7, 2.2, 3.8].forEach((cx, i) => {
@@ -431,8 +501,8 @@
         list.push({ x: -2.2, z: 10.5, dir: 'LEFT', type: 'bus' });
         list.push({ x: 0.0, z: 10.5, dir: 'DOWN', type: 'car' });
         list.push({ x: 2.2, z: 10.5, dir: 'RIGHT', type: 'bus' });
-      } else if (archetype === 5 % 6) {
-        // Archetype B (Level 5, 11, 17...): TWIN TOWERS CITADEL (25 vehicles)
+      } else if (archetype === 1) {
+        // Archetype 1: TWIN TOWERS CITADEL (25 vehicles)
         list.push({ x: -3.2, z: 0.55, dir: 'LEFT', type: 'car' });
         list.push({ x: 0.0, z: 0.55, dir: 'RIGHT', type: 'bus' });
         list.push({ x: 3.2, z: 0.55, dir: 'RIGHT', type: 'car' });
@@ -443,7 +513,6 @@
           list.push({ x: cx, z: 7.4, dir: 'DOWN', type: 'bus' });
         });
 
-        // Inner locked column between towers
         list.push({ x: 0.0, z: 2.3, dir: 'LEFT', type: 'car' });
         list.push({ x: 0.0, z: 3.8, dir: 'RIGHT', type: 'car' });
         list.push({ x: 0.0, z: 5.3, dir: 'LEFT', type: 'bus' });
@@ -453,8 +522,8 @@
         list.push({ x: -3.2, z: 10.2, dir: 'LEFT', type: 'bus' });
         list.push({ x: 0.0, z: 10.2, dir: 'DOWN', type: 'car' });
         list.push({ x: 3.2, z: 10.2, dir: 'RIGHT', type: 'bus' });
-      } else if (archetype === 0) {
-        // Archetype C (Level 6, 12, 18...): CHEVRON WINGS & CONVOY (26 vehicles)
+      } else if (archetype === 2) {
+        // Archetype 2: CHEVRON WINGS & CONVOY (23 vehicles)
         list.push({ x: -2.2, z: 0.5, dir: 'LEFT', type: 'bus', tilt: -0.14 });
         list.push({ x: 2.2, z: 0.5, dir: 'RIGHT', type: 'bus', tilt: 0.14 });
 
@@ -485,8 +554,8 @@
 
         list.push({ x: -2.3, z: 10.3, dir: 'LEFT', type: 'bus' });
         list.push({ x: 2.3, z: 10.3, dir: 'RIGHT', type: 'bus' });
-      } else if (archetype === 1) {
-        // Archetype D (Level 7, 13, 19...): 5-COLOR CROSSROADS LABYRINTH (27 vehicles)
+      } else if (archetype === 3) {
+        // Archetype 3: CROSSROADS LABYRINTH (26 vehicles)
         [-3.2, 0.0, 3.2].forEach((cx, idx) => {
           list.push({ x: cx, z: 0.6, dir: idx === 1 ? 'UP' : idx === 0 ? 'LEFT' : 'RIGHT', type: 'bus' });
         });
@@ -509,8 +578,64 @@
 
         list.push({ x: -2.2, z: 10.4, dir: 'LEFT', type: 'bus' });
         list.push({ x: 2.2, z: 10.4, dir: 'RIGHT', type: 'bus' });
+      } else if (archetype === 4) {
+        // Archetype 4: SPIRAL VORTEX (24 vehicles)
+        list.push({ x: -2.4, z: 0.55, dir: 'LEFT', type: 'bus', tilt: -0.08 });
+        list.push({ x: 2.4, z: 0.55, dir: 'RIGHT', type: 'bus', tilt: 0.08 });
+
+        [-3.8, -1.9, 0.0, 1.9, 3.8].forEach((cx, i) => {
+          list.push({
+            x: cx,
+            z: 2.55,
+            dir: i < 2 ? 'UP' : i === 2 ? 'DOWN' : 'UP',
+            type: i % 2 === 1 ? 'bus' : 'car'
+          });
+        });
+
+        list.push({ x: -3.5, z: 4.75, dir: 'LEFT', type: 'car' });
+        list.push({ x: -1.2, z: 4.75, dir: 'LEFT', type: 'car' });
+        list.push({ x: 1.2, z: 4.75, dir: 'RIGHT', type: 'car' });
+        list.push({ x: 3.5, z: 4.75, dir: 'RIGHT', type: 'car' });
+
+        [-3.8, -1.9, 0.0, 1.9, 3.8].forEach((cx, i) => {
+          list.push({
+            x: cx,
+            z: 6.85,
+            dir: i % 2 === 0 ? 'DOWN' : 'UP',
+            type: i === 2 ? 'bus' : 'car'
+          });
+        });
+
+        list.push({ x: -3.3, z: 8.9, dir: 'LEFT', type: 'bus' });
+        list.push({ x: 0.0, z: 8.9, dir: 'DOWN', type: 'car' });
+        list.push({ x: 3.3, z: 8.9, dir: 'RIGHT', type: 'bus' });
+
+        list.push({ x: -2.2, z: 10.55, dir: 'LEFT', type: 'car' });
+        list.push({ x: 0.0, z: 10.55, dir: 'DOWN', type: 'car' });
+        list.push({ x: 2.2, z: 10.55, dir: 'RIGHT', type: 'car' });
+      } else if (archetype === 5) {
+        // Archetype 5: DOUBLE GAUNTLET (26 vehicles)
+        list.push({ x: -3.3, z: 0.55, dir: 'LEFT', type: 'bus' });
+        list.push({ x: 0.0, z: 0.55, dir: 'UP', type: 'car' });
+        list.push({ x: 3.3, z: 0.55, dir: 'RIGHT', type: 'bus' });
+
+        [-3.9, -2.6, -1.3, 1.3, 2.6, 3.9].forEach((cx, i) => {
+          list.push({ x: cx, z: 2.6, dir: i % 2 === 0 ? 'UP' : 'DOWN', type: 'car' });
+          list.push({ x: cx, z: 5.0, dir: i % 2 === 0 ? 'DOWN' : 'UP', type: 'car' });
+        });
+
+        list.push({ x: 0.0, z: 3.6, dir: 'DOWN', type: 'bus' });
+
+        [-3.4, 0.0, 3.4].forEach((cx, idx) => {
+          list.push({ x: cx, z: 7.2, dir: idx === 0 ? 'LEFT' : idx === 2 ? 'RIGHT' : 'LEFT', type: 'bus' });
+          list.push({ x: cx, z: 8.8, dir: idx === 0 ? 'LEFT' : idx === 2 ? 'RIGHT' : 'RIGHT', type: 'car' });
+        });
+
+        list.push({ x: -2.3, z: 10.5, dir: 'LEFT', type: 'bus' });
+        list.push({ x: 0.0, z: 10.5, dir: 'DOWN', type: 'car' });
+        list.push({ x: 2.3, z: 10.5, dir: 'RIGHT', type: 'bus' });
       } else {
-        // Archetype E/F (Level 8, 9, 14, 15...): MEGA HIGHWAY GRIDLOCK (28 vehicles)
+        // Archetype 6 & 7: MEGA HIGHWAY GRIDLOCK (28 vehicles)
         list.push({ x: -2.3, z: 0.5, dir: 'RIGHT', type: 'bus', tilt: -0.1 });
         list.push({ x: 2.3, z: 0.5, dir: 'LEFT', type: 'bus', tilt: 0.1 });
 
@@ -538,6 +663,14 @@
 
         list.push({ x: -2.2, z: 10.8, dir: 'LEFT', type: 'bus' });
         list.push({ x: 2.2, z: 10.8, dir: 'RIGHT', type: 'bus' });
+      }
+
+      if (shouldFlip) {
+        list.forEach((item) => {
+          if (item.dir === 'LEFT' || item.dir === 'RIGHT') {
+            item.dir = flipDir(item.dir);
+          }
+        });
       }
 
       return list;
@@ -568,7 +701,7 @@
 
         if (target.dir === 'UP') {
           const xOverlap = Math.min(b1.maxX, b2.maxX) - Math.max(b1.minX, b2.minX);
-          if (xOverlap > 0.14 && b2.maxZ <= b1.minZ + 0.32) {
+          if (xOverlap > 0.14 && b2.maxZ <= b1.minZ + 0.35) {
             const dist = b1.minZ - b2.maxZ;
             if (dist < minDist) {
               minDist = dist;
@@ -577,7 +710,7 @@
           }
         } else if (target.dir === 'DOWN') {
           const xOverlap = Math.min(b1.maxX, b2.maxX) - Math.max(b1.minX, b2.minX);
-          if (xOverlap > 0.14 && b2.minZ >= b1.maxZ - 0.32) {
+          if (xOverlap > 0.14 && b2.minZ >= b1.maxZ - 0.35) {
             const dist = b2.minZ - b1.maxZ;
             if (dist < minDist) {
               minDist = dist;
@@ -586,7 +719,7 @@
           }
         } else if (target.dir === 'LEFT') {
           const zOverlap = Math.min(b1.maxZ, b2.maxZ) - Math.max(b1.minZ, b2.minZ);
-          if (zOverlap > 0.14 && b2.maxX <= b1.minX + 0.32) {
+          if (zOverlap > 0.14 && b2.maxX <= b1.minX + 0.35) {
             const dist = b1.minX - b2.maxX;
             if (dist < minDist) {
               minDist = dist;
@@ -595,7 +728,7 @@
           }
         } else if (target.dir === 'RIGHT') {
           const zOverlap = Math.min(b1.maxZ, b2.maxZ) - Math.max(b1.minZ, b2.minZ);
-          if (zOverlap > 0.14 && b2.minX >= b1.maxX - 0.32) {
+          if (zOverlap > 0.14 && b2.minX >= b1.maxX - 0.35) {
             const dist = b2.minX - b1.maxX;
             if (dist < minDist) {
               minDist = dist;
@@ -609,31 +742,25 @@
     }
 
     static ensureNoCyclicDeadlock(vehicles) {
-      let outerPasses = 80;
-      while (outerPasses-- > 0) {
-        const remaining = [...vehicles];
-        while (remaining.length > 0) {
-          const freeIdx = remaining.findIndex((v) => !this.findBlockingVehicle(v, remaining));
-          if (freeIdx !== -1) {
-            remaining.splice(freeIdx, 1);
-          } else {
-            break;
+      const remaining = vehicles.map((v) => v);
+      const dirs = ['UP', 'LEFT', 'RIGHT', 'DOWN'];
+      let guard = 0;
+
+      while (remaining.length > 0 && guard < 200) {
+        guard++;
+        const unblocked = remaining.filter((v) => !this.findBlockingVehicle(v, remaining));
+        if (unblocked.length > 0) {
+          for (const u of unblocked) {
+            const idx = remaining.indexOf(u);
+            if (idx !== -1) remaining.splice(idx, 1);
           }
-        }
-        if (remaining.length === 0) {
-          // 100% Pure Directed Acyclic Graph (DAG) achieved! Every click order is guaranteed solvable!
-          return;
+          continue;
         }
 
-        // Unblock one vehicle in `remaining` and restart full DAG verification from scratch
         let fixed = false;
         for (const v of remaining) {
-          const isHoriz = v.dir === 'LEFT' || v.dir === 'RIGHT';
-          const tryDirs = isHoriz
-            ? ['LEFT', 'RIGHT', 'UP', 'DOWN']
-            : ['UP', 'DOWN', 'LEFT', 'RIGHT'];
           const origDir = v.dir;
-          for (const d of tryDirs) {
+          for (const d of dirs) {
             v.dir = d;
             if (!this.findBlockingVehicle(v, remaining)) {
               fixed = true;
@@ -653,7 +780,8 @@
 
     /**
      * Simulates peeling unblocked vehicles and builds the exact 4-abreast passenger rows
-     * for the Central Revolving Oval Ring + Left Feeder Road + Right Feeder Road!
+     * for the Central Revolving Oval Ring + Left Feeder Road + Right Feeder Road,
+     * plus calculates the level's Countdown Timer!
      */
     static finalizeWithRevolvingFeederQueues(levelNum, vehicles) {
       this.ensureNoCyclicDeadlock(vehicles);
@@ -674,15 +802,30 @@
       }
 
       // Convert exitSequence capacities into rows of 4 passengers (ROW_PASSENGERS = 4)
+      // Mix rows within small waves of 3 vehicles so the revolving ring has rich color variety
+      // while remaining 100% solvable without ever needing to auto-swap colors!
       const allRows = [];
-      for (const v of exitSequence) {
-        const numRows = Math.round(v.cap / ROW_PASSENGERS);
-        for (let r = 0; r < numRows; r++) {
-          allRows.push({
-            color: v.color,
-            count: ROW_PASSENGERS
-          });
+      const waveSize = 3;
+      for (let w = 0; w < exitSequence.length; w += waveSize) {
+        const waveVehicles = exitSequence.slice(w, w + waveSize);
+        const waveRows = [];
+        for (const v of waveVehicles) {
+          const numRows = Math.round(v.cap / ROW_PASSENGERS);
+          for (let r = 0; r < numRows; r++) {
+            waveRows.push({
+              color: v.color,
+              count: ROW_PASSENGERS
+            });
+          }
         }
+        // Interleave waveRows deterministically
+        for (let i = waveRows.length - 1; i > 0; i--) {
+          const j = Math.floor(rand() * (i + 1));
+          const tmp = waveRows[i];
+          waveRows[i] = waveRows[j];
+          waveRows[j] = tmp;
+        }
+        allRows.push(...waveRows);
       }
 
       // First 28 rows populate the Central Revolving Oval Ring; remaining rows split into Left & Right Feeder Roads!
@@ -699,12 +842,25 @@
         else rightFeederRows.push(allRows[i]);
       }
 
+      const totalPassengers = allRows.length * ROW_PASSENGERS;
+      // Well-balanced countdown timer so the player can comfortably complete the level with smart play
+      let timeLimitSeconds = 95;
+      if (levelNum === 1) timeLimitSeconds = 95;
+      else if (levelNum === 2) timeLimitSeconds = 115;
+      else if (levelNum === 3) timeLimitSeconds = 140;
+      else {
+        const baseForPassengers = Math.round(65 + totalPassengers * 0.16);
+        const difficultyTighten = Math.min(30, Math.floor(levelNum / 12));
+        timeLimitSeconds = Math.max(95, baseForPassengers - difficultyTighten);
+      }
+
       return {
         levelNum,
         vehicles,
         ovalRingSlots,
         leftFeederRows,
-        rightFeederRows
+        rightFeederRows,
+        timeLimitSeconds
       };
     }
   }
@@ -764,6 +920,9 @@
       this.shockwaves = [];
 
       this.totalBusesSentThisLevel = 0;
+      this.levelTimeTotal = 95;
+      this.levelTimeLeft = 95;
+      this._lastUrgentSecond = -1;
       this.activeBoosterMode = null;
       this.isLevelOver = false;
       this.boardingCooldown = 0;
@@ -925,7 +1084,9 @@
             ovalRingSlots: this.ovalRingSlots.map((r) => (r ? { ...r } : null)),
             leftFeederRows: this.leftFeederRows.map((r) => ({ ...r })),
             rightFeederRows: this.rightFeederRows.map((r) => ({ ...r })),
-            totalBusesSentThisLevel: this.totalBusesSentThisLevel
+            totalBusesSentThisLevel: this.totalBusesSentThisLevel,
+            levelTimeLeft: this.levelTimeLeft,
+            levelTimeTotal: this.levelTimeTotal
           };
         } else {
           this.profile.activeMidLevelState = null;
@@ -1520,7 +1681,8 @@
 
       // 2. Continuously rotate the Central Oval Ring counter-clockwise (matching Video 00:30-01:20!)
       const prevAngle = this.ringRotationAngle;
-      this.ringRotationAngle = (this.ringRotationAngle + dt * 1.25) % (Math.PI * 2);
+      const loopSpeed = Math.min(1.75, 1.25 + Math.floor(this.levelNum / 10) * 0.04);
+      this.ringRotationAngle = (this.ringRotationAngle + dt * loopSpeed) % (Math.PI * 2);
 
       // 3. Refill any empty slots in the revolving oval ring as they pass the Left or Right Feeder Junctions!
       const leftJunctionAngle = 3.55;  // Top-Left of oval ring
@@ -1648,6 +1810,9 @@
 
       const levelData = LevelGenerator.generateLevel(this.levelNum);
       this.totalBusesSentThisLevel = 0;
+      this.levelTimeTotal = levelData.timeLimitSeconds || 120;
+      this.levelTimeLeft = this.levelTimeTotal;
+      this._lastUrgentSecond = -1;
 
       levelData.vehicles.forEach((v) => {
         const vObj = {
@@ -1712,6 +1877,9 @@
       this.isLevelOver = false;
       this.levelNum = mid.levelNum;
       this.totalBusesSentThisLevel = mid.totalBusesSentThisLevel || 0;
+      this.levelTimeTotal = mid.levelTimeTotal || 120;
+      this.levelTimeLeft = typeof mid.levelTimeLeft === 'number' && mid.levelTimeLeft > 5 ? mid.levelTimeLeft : this.levelTimeTotal;
+      this._lastUrgentSecond = -1;
       this.levelIntroRushProgress = 1;
 
       (mid.lotVehicles || []).forEach((v) => {
@@ -2078,58 +2246,6 @@
       }
     }
 
-    ensureParkedColorsPresentInRing() {
-      const parkedColors = new Set();
-      for (const s of this.slots) {
-        if (s.vehicle && s.vehicle.cap - (s.vehicle.inFlightCount || 0) > 0) {
-          parkedColors.add(s.vehicle.color);
-        }
-      }
-      if (parkedColors.size === 0) return;
-
-      // Check if any parked color is already present inside the revolving oval ring
-      const colorsInRing = new Set();
-      for (const r of this.ovalRingSlots) {
-        if (r && r.count > 0) colorsInRing.add(r.color);
-      }
-
-      for (const pc of parkedColors) {
-        if (colorsInRing.has(pc)) return; // Already in ring, will revolve to gate naturally!
-      }
-
-      // None of the parked vehicles' colors are in the oval ring yet — pull a matching row from feeder lanes into a top slot of the ring!
-      for (const pc of parkedColors) {
-        let feederRow = null;
-        const lIdx = this.leftFeederRows.findIndex((r) => r && r.color === pc && r.count > 0);
-        if (lIdx !== -1) {
-          feederRow = this.leftFeederRows.splice(lIdx, 1)[0];
-        } else {
-          const rIdx = this.rightFeederRows.findIndex((r) => r && r.color === pc && r.count > 0);
-          if (rIdx !== -1) {
-            feederRow = this.rightFeederRows.splice(rIdx, 1)[0];
-          }
-        }
-
-        if (feederRow) {
-          // Find an empty slot in ovalRingSlots, or swap with a non-parked row near the top of the oval
-          const emptyIdx = this.ovalRingSlots.findIndex((r) => !r || r.count <= 0);
-          if (emptyIdx !== -1) {
-            this.ovalRingSlots[emptyIdx] = feederRow;
-          } else {
-            const swapIdx = this.ovalRingSlots.findIndex(
-              (r) => r && !parkedColors.has(r.color)
-            );
-            if (swapIdx !== -1) {
-              const displaced = this.ovalRingSlots[swapIdx];
-              this.ovalRingSlots[swapIdx] = feederRow;
-              this.leftFeederRows.unshift(displaced);
-            }
-          }
-          return;
-        }
-      }
-    }
-
     checkAllSlotsFullDeadlock() {
       if (this.movingVehicles.length > 0 || this.jumpingPassengers.length > 0) return;
 
@@ -2149,7 +2265,16 @@
 
       if (!anyMatchingInRing) {
         this.isLevelOver = true;
+        this.failReason = 'slots';
         sound.playFailAlert();
+        const fTitle = document.getElementById('fail-modal-title');
+        const fSub = document.getElementById('fail-modal-subtitle');
+        const btnSlot = document.getElementById('btn-revive-slot');
+        const btnFree = document.getElementById('btn-revive-free');
+        if (fTitle) fTitle.textContent = '🚨 All Slots Full!';
+        if (fSub) fSub.textContent = 'All boarding slots are occupied and none match the passengers in the spinning loop!';
+        if (btnSlot) btnSlot.textContent = '➕ Unlock Extra Slot & Clear 1 Bus (🪙 40)';
+        if (btnFree) btnFree.textContent = '🎁 Emergency VIP Rescue (Free)';
         setTimeout(() => {
           document.getElementById('modal-fail').classList.add('active');
         }, 450);
@@ -2537,6 +2662,36 @@
         }
       }
 
+      // 1B. Update Level Countdown Timer (when game is active and no modal is open)
+      if (!this.isLevelOver && this._splashStarted && !window.BFP_PORTAL_ACTIVE && this.levelIntroRushProgress >= 1) {
+        const anyModalOpen = document.querySelector('.modal-backdrop.active');
+        if (!anyModalOpen) {
+          this.levelTimeLeft = Math.max(0, this.levelTimeLeft - dt);
+          this.updateTimerDisplayOnly();
+          if (this.levelTimeLeft <= 10 && this.levelTimeLeft > 0) {
+            const sec = Math.ceil(this.levelTimeLeft);
+            if (sec !== this._lastUrgentSecond) {
+              this._lastUrgentSecond = sec;
+              sound.playTone(680, 'sine', 0.05, 0.08);
+            }
+          }
+          if (this.levelTimeLeft <= 0) {
+            this.isLevelOver = true;
+            this.failReason = 'timeout';
+            sound.playFailAlert();
+            const fTitle = document.getElementById('fail-modal-title');
+            const fSub = document.getElementById('fail-modal-subtitle');
+            const btnSlot = document.getElementById('btn-revive-slot');
+            const btnFree = document.getElementById('btn-revive-free');
+            if (fTitle) fTitle.textContent = "⏰ Time's Up!";
+            if (fSub) fSub.textContent = 'Time ran out before all passengers boarded the buses!';
+            if (btnSlot) btnSlot.textContent = '⏱️ +60s Extra Time & Clear 1 Bus (🪙 40)';
+            if (btnFree) btnFree.textContent = '🎁 +45s Bonus Time (Free)';
+            document.getElementById('modal-fail').classList.add('active');
+          }
+        }
+      }
+
       // 2. Continuously revolve Central Oval Ring & update Feeder Lanes
       this.updateRevolvingLoopAndFeederMeshes(dt, now);
 
@@ -2665,8 +2820,34 @@
     // -----------------------------------------------------------------------
     // HUD, BOOSTERS & LUCKY SPIN WHEEL UI
     // -----------------------------------------------------------------------
+    formatTimer(sec) {
+      const s = Math.max(0, Math.ceil(sec || 0));
+      const m = Math.floor(s / 60);
+      const r = s % 60;
+      return `${String(m).padStart(2, '0')}:${String(r).padStart(2, '0')}`;
+    }
+
+    updateTimerDisplayOnly() {
+      const timerEl = document.getElementById('level-timer-text');
+      const pillEl = document.getElementById('hud-timer-pill');
+      if (timerEl) {
+        const formatted = this.formatTimer(this.levelTimeLeft);
+        if (timerEl.textContent !== formatted) {
+          timerEl.textContent = formatted;
+        }
+      }
+      if (pillEl) {
+        if (this.levelTimeLeft <= 15 && this.levelTimeLeft > 0) {
+          pillEl.classList.add('timer-urgent');
+        } else {
+          pillEl.classList.remove('timer-urgent');
+        }
+      }
+    }
+
     updateHUD() {
       document.getElementById('level-title-text').textContent = `Level ${this.levelNum}`;
+      this.updateTimerDisplayOnly();
       document.getElementById('coin-count-text').textContent = `${this.profile.coins}`;
       document.getElementById('passenger-left-text').textContent = `${this.getTotalRemainingPassengers()}`;
 
@@ -2745,7 +2926,7 @@
       if (!grid) return;
       grid.innerHTML = '';
 
-      for (let lvl = 1; lvl <= 100; lvl++) {
+      for (let lvl = 1; lvl <= 1000; lvl++) {
         const cell = document.createElement('div');
         const unlocked = lvl <= Math.max(this.profile.highestLevel, 10);
         const isCurrent = lvl === this.levelNum;
@@ -2929,12 +3110,15 @@
         openSpin();
       });
 
-      // Fail / Revive Modal
+      // Fail / Revive Modal (handles both All Slots Full and Time's Up!)
       document.getElementById('btn-revive-slot').addEventListener('click', () => {
         if (this.profile.coins < 40) {
           this.profile.coins = 40;
         }
         this.profile.coins -= 40;
+        if (this.failReason === 'timeout' || this.levelTimeLeft <= 10) {
+          this.levelTimeLeft += 60;
+        }
         const lockedPlus = this.slots.find((s) => s.type === 'plus' && !s.unlocked);
         if (lockedPlus) {
           lockedPlus.unlocked = true;
@@ -2950,7 +3134,11 @@
       });
 
       document.getElementById('btn-revive-free').addEventListener('click', () => {
-        this.emergencyClearOneSlot();
+        if (this.failReason === 'timeout' || this.levelTimeLeft <= 10) {
+          this.levelTimeLeft += 45;
+        } else {
+          this.emergencyClearOneSlot();
+        }
         document.getElementById('modal-fail').classList.remove('active');
         this.isLevelOver = false;
         this.updateSlotOverlays();

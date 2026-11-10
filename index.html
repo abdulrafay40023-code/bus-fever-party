@@ -33,7 +33,7 @@
               <span class="portal-stat-lbl">Rating</span>
             </div>
             <div class="portal-stat-box">
-              <span class="portal-stat-val">Level 1–100</span>
+              <span class="portal-stat-val">Level 1–1000</span>
               <span class="portal-stat-lbl">Progression</span>
             </div>
             <div class="portal-stat-box">
@@ -270,6 +270,10 @@
                 <span>🪙</span>
                 <span id="coin-count-text">140</span>
               </div>
+              <div class="stat-pill timer-pill" id="hud-timer-pill" title="Level Time Remaining">
+                <span>⏱️</span>
+                <span id="level-timer-text">01:35</span>
+              </div>
               <div class="stat-pill" title="Remaining Passengers">
                 <span>👥</span>
                 <span id="passenger-left-text">0</span>
@@ -363,8 +367,8 @@
       <!-- MODAL 2: Parking Slots Full (Revive or Retry) -->
       <div class="modal-backdrop" id="modal-fail">
         <div class="modal-card">
-          <div class="modal-title" style="color:#ff6b6b;">🚨 All Slots Full!</div>
-          <div class="modal-subtitle">
+          <div class="modal-title" id="fail-modal-title" style="color:#ff6b6b;">🚨 All Slots Full!</div>
+          <div class="modal-subtitle" id="fail-modal-subtitle">
             All boarding slots are occupied and none match the passengers in the spinning loop!
           </div>
           <button class="btn-primary" id="btn-revive-slot">

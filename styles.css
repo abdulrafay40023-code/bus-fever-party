@@ -1336,3 +1336,25 @@ html, body {
 .corner-user-icon {
   font-size: 13px;
 }
+
+/* Level Countdown Timer Pill */
+.stat-pill.timer-pill {
+  background: linear-gradient(180deg, rgba(16, 48, 78, 0.9), rgba(10, 28, 48, 0.95));
+  border-color: #38bdf8;
+  color: #e0f2fe;
+  min-width: 72px;
+  justify-content: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-pill.timer-pill.timer-urgent {
+  background: linear-gradient(180deg, #dc2626, #991b1b);
+  border-color: #fca5a5;
+  color: #ffffff;
+  animation: pulseUrgentTimer 0.6s infinite alternate ease-in-out;
+}
+
+@keyframes pulseUrgentTimer {
+  0% { transform: scale(1); box-shadow: 0 0 6px rgba(239, 68, 68, 0.6); }
+  100% { transform: scale(1.08); box-shadow: 0 0 16px rgba(239, 68, 68, 1); }
+}
