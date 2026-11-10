@@ -755,6 +755,9 @@
       this.ringRowMeshes = [];        // 28 groups of 4 stickmen in the oval ring
       this.leftFeederMeshes = [];     // Stickmen rows on left feeder road
       this.rightFeederMeshes = [];    // Stickmen rows on right feeder road
+      (this.jumpingPassengers || []).forEach((jp) => {
+        if (jp.mesh) this.passengersGroup.remove(jp.mesh);
+      });
       this.jumpingPassengers = [];    // Passengers sprinting from gate into bus
       this.smokePuffs = [];           // Fluffy white exhaust smoke puffs
       this.confettiParticles = [];    // Colorful confetti bursts when bus fills
@@ -988,17 +991,18 @@
         antialias: true,
         powerPreference: 'high-performance'
       });
+      this.viewWidth = width;
+      this.viewHeight = height;
       this.renderer.setSize(width, height);
-      this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-      this.renderer.shadowMap.enabled = true;
-      this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.4));
+      this.renderer.shadowMap.enabled = false;
 
       const ambient = new THREE.AmbientLight(0xffffff, 0.76);
       this.scene.add(ambient);
 
       const dirLight = new THREE.DirectionalLight(0xfffaf0, 0.68);
       dirLight.position.set(10, 26, 12);
-      dirLight.castShadow = true;
+      dirLight.castShadow = false;
       dirLight.shadow.mapSize.width = 1024;
       dirLight.shadow.mapSize.height = 1024;
       const d = 16;
@@ -1029,6 +1033,8 @@
     onResize() {
       const width = this.container.clientWidth || 450;
       const height = this.container.clientHeight || 850;
+      this.viewWidth = width;
+      this.viewHeight = height;
       const aspect = width / height;
 
       const minWidthWorld = 15.2;
@@ -1429,28 +1435,46 @@
     // -----------------------------------------------------------------------
     // 3D REVOLVING OVAL LOOP & DUAL FEEDER PASSENGER MESHES
     // -----------------------------------------------------------------------
-    createStickmanMesh() {
-      const group = new THREE.Group();
-      const bodyMat = new THREE.MeshPhongMaterial({
-        color: 0xffcc18,
-        shininess: 85
+    initSharedStickmanResources() {
+      if (this._stickTorsoGeo) return;
+      this._stickTorsoGeo = new THREE.CylinderGeometry(0.145, 0.165, 0.36, 7);
+      this._stickHeadGeo = new THREE.SphereGeometry(0.175, 8, 7);
+      this._stickColorMats = {};
+      Object.keys(COLORS).forEach((k) => {
+        this._stickColorMats[k] = new THREE.MeshLambertMaterial({ color: COLORS[k].hex });
       });
+    }
 
-      const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.145, 0.165, 0.36, 10), bodyMat);
+    setStickmanColor(sm, colorKey) {
+      if (sm.userData.colorKey === colorKey) return;
+      this.initSharedStickmanResources();
+      const mat = this._stickColorMats[colorKey] || this._stickColorMats.blue;
+      sm.userData.torso.material = mat;
+      sm.userData.head.material = mat;
+      sm.userData.colorKey = colorKey;
+    }
+
+    createStickmanMesh() {
+      this.initSharedStickmanResources();
+      const group = new THREE.Group();
+      const defaultMat = this._stickColorMats.yellow;
+
+      const torso = new THREE.Mesh(this._stickTorsoGeo, defaultMat);
       torso.position.y = 0.2;
       group.add(torso);
 
-      const head = new THREE.Mesh(new THREE.SphereGeometry(0.175, 12, 10), bodyMat);
+      const head = new THREE.Mesh(this._stickHeadGeo, defaultMat);
       head.position.y = 0.48;
       group.add(head);
 
-      group.userData = { bodyMat, colorKey: null };
+      group.userData = { torso, head, colorKey: 'yellow' };
       return group;
     }
 
     buildPassengerMeshPools() {
-      while (this.passengersGroup.children.length > 0) {
-        this.passengersGroup.remove(this.passengersGroup.children[0]);
+      // Reuse existing pool if already built to avoid allocating 512 meshes per level!
+      if (this.ringRowMeshes && this.ringRowMeshes.length === RING_SLOT_COUNT) {
+        return;
       }
       this.ringRowMeshes = [];
       this.leftFeederMeshes = [];
@@ -1542,11 +1566,7 @@
             continue;
           }
           sm.visible = true;
-          const cInfo = COLORS[rowData.color] || COLORS.blue;
-          if (sm.userData.colorKey !== rowData.color) {
-            sm.userData.bodyMat.color.setHex(cInfo.hex);
-            sm.userData.colorKey = rowData.color;
-          }
+          this.setStickmanColor(sm, rowData.color);
 
           const radialOffset = (m - 1.5) * 0.36;
           const px = baseX + nx * radialOffset;
@@ -1579,11 +1599,7 @@
             continue;
           }
           sm.visible = true;
-          const cInfo = COLORS[rowData.color] || COLORS.blue;
-          if (sm.userData.colorKey !== rowData.color) {
-            sm.userData.bodyMat.color.setHex(cInfo.hex);
-            sm.userData.colorKey = rowData.color;
-          }
+          this.setStickmanColor(sm, rowData.color);
 
           const lateralOffset = (m - 1.5) * 0.35;
           const targetX = baseX + nx * lateralOffset;
@@ -1900,11 +1916,14 @@
     }
 
     spawnExhaustSmoke(x, z) {
-      const smokeGeo = new THREE.SphereGeometry(0.18 + Math.random() * 0.12, 8, 8);
+      if (!this._sharedSmokeGeo) {
+        this._sharedSmokeGeo = new THREE.SphereGeometry(0.22, 6, 6);
+      }
+      const smokeGeo = this._sharedSmokeGeo;
       const smokeMat = new THREE.MeshBasicMaterial({
         color: 0xf8fafc,
         transparent: true,
-        opacity: 0.85
+        opacity: 0.8
       });
       const puff = new THREE.Mesh(smokeGeo, smokeMat);
       puff.position.set(
@@ -2034,8 +2053,7 @@
           matchingSlot.vehicle.inFlightCount = (matchingSlot.vehicle.inFlightCount || 0) + 1;
 
           const jumper = this.createStickmanMesh();
-          const cInfo = COLORS[rowData.color] || COLORS.blue;
-          jumper.userData.bodyMat.color.setHex(cInfo.hex);
+          this.setStickmanColor(jumper, rowData.color);
           jumper.position.copy(startPos);
           this.passengersGroup.add(jumper);
 
@@ -2246,14 +2264,26 @@
     // 2D OVERLAY PROJECTION FOR SLOT CAPACITY BADGES & EMOJI BUBBLES
     // -----------------------------------------------------------------------
     projectToScreen(x, y, z) {
-      const vec = new THREE.Vector3(x, y, z);
-      vec.project(this.camera);
-      const width = this.container.clientWidth || 450;
-      const height = this.container.clientHeight || 850;
+      if (!this._projVec) this._projVec = new THREE.Vector3();
+      this._projVec.set(x, y, z).project(this.camera);
+      const width = this.viewWidth || this.container.clientWidth || 450;
+      const height = this.viewHeight || this.container.clientHeight || 850;
       return {
-        x: (vec.x * 0.5 + 0.5) * width,
-        y: (-(vec.y * 0.5) + 0.5) * height
+        x: (this._projVec.x * 0.5 + 0.5) * width,
+        y: (-(this._projVec.y * 0.5) + 0.5) * height
       };
+    }
+
+    updateSlotBadgeNumbersOnly() {
+      if (!this.slotBadgesLayer) return;
+      this.slots.forEach((slot) => {
+        if (slot.vehicle && slot.vehicle.cap > 0 && slot._badgeEl) {
+          slot._badgeEl.textContent = String(slot.vehicle.cap);
+        } else if (!slot.vehicle && slot._badgeEl) {
+          slot._badgeEl.remove();
+          slot._badgeEl = null;
+        }
+      });
     }
 
     updateSlotOverlays() {
@@ -2273,6 +2303,7 @@
           badge.style.color = cInfo.textCss;
           badge.style.borderColor = cInfo.borderCss;
           badge.textContent = `${slot.vehicle.cap}`;
+          slot._badgeEl = badge;
           this.slotBadgesLayer.appendChild(badge);
         }
 
@@ -2474,7 +2505,7 @@
         const mv = this.movingVehicles[i];
         mv.smokeTimer = (mv.smokeTimer || 0) - dt;
         if (mv.smokeTimer <= 0) {
-          mv.smokeTimer = 0.035;
+          mv.smokeTimer = 0.075;
           this.spawnExhaustSmoke(mv.mesh.position.x, mv.mesh.position.z);
         }
 
@@ -2541,7 +2572,7 @@
               }
             }, 65);
 
-            this.updateSlotOverlays();
+            this.updateSlotBadgeNumbersOnly();
             this.updateHUD();
 
             if (slot.vehicle.cap === 0) {
@@ -2573,7 +2604,7 @@
         dv.mesh.position.x += dv.speed * dt;
         dv.smokeTimer -= dt;
         if (dv.smokeTimer <= 0) {
-          dv.smokeTimer = 0.04;
+          dv.smokeTimer = 0.08;
           this.spawnExhaustSmoke(dv.mesh.position.x - 1.0, dv.mesh.position.z);
         }
         if (dv.mesh.position.x > 11) {

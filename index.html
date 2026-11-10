@@ -19,8 +19,7 @@
     <div id="game-container">
 
       <!-- =================================================================
-           CHROME WEB PORTAL: ENTER NAME -> DOWNLOAD APP ONLY -> OPEN IN APP
-           (Game NEVER opens inside Chrome web tab; only opens inside the App!)
+           CHROME WEB PORTAL: ENTER NAME -> 1-CLICK SINGLE APK DOWNLOAD -> "DOWNLOADED"
            ================================================================= -->
       <div id="download-portal-screen">
         <div class="portal-card">
@@ -54,37 +53,21 @@
               autocomplete="off"
             />
             <div id="portal-name-error" class="portal-name-error" style="display:none;">
-              ⚠️ Pehle apna Name likhein! Name ke bina App Download nahi hoga.
+              ⚠️ Pehle apna Name likhein!
             </div>
           </div>
 
           <button type="button" class="btn-oneclick-dl disabled-gate" id="btn-oneclick-download">
-            <span>📲</span>
+            <span id="dl-btn-icon">📲</span>
             <span id="dl-btn-text">DOWNLOAD APP</span>
           </button>
-
-          <!-- Shown after clicking Download in Chrome: launches the installed App & closes Chrome -->
-          <div id="post-download-box" style="display:none; width:100%; margin-top:6px;">
-            <div style="background:rgba(34,197,94,0.18); border:1.5px solid #4ade80; border-radius:14px; padding:10px 12px; font-size:13px; font-weight:800; color:#bbf7d0; margin-bottom:10px; line-height:1.45;">
-              ✅ <b>Bus Fever Party.apk</b> download ho gaya hai!<br/>
-              Install kar ke neechay button dabayein — Game seedha <b>App</b> mein khulega aur Chrome band ho jayega:
-            </div>
-            <button type="button" class="btn-oneclick-dl" id="btn-open-native-app" style="background:linear-gradient(180deg,#fbbf24 0%,#d97706 100%); border-color:#fef08a; box-shadow:0 5px 0 #78350f;">
-              🚀 OPEN IN APP &amp; CLOSE CHROME
-            </button>
-          </div>
         </div>
       </div>
       <script>
         (function () {
-          if ('serviceWorker' in navigator && window.location.protocol.indexOf('http') === 0) {
-            navigator.serviceWorker.register('/sw.js').catch(function () {});
-          }
-
-          window._deferredPrompt = null;
+          // Block Chrome's automatic PWA install banner so only 1 single APK download happens
           window.addEventListener('beforeinstallprompt', function (e) {
             e.preventDefault();
-            window._deferredPrompt = e;
           });
 
           var portal = document.getElementById('download-portal-screen');
@@ -93,11 +76,9 @@
           var nameInput = document.getElementById('portal-player-name');
           var errEl = document.getElementById('portal-name-error');
           var dlBtn = document.getElementById('btn-oneclick-download');
+          var dlIcon = document.getElementById('dl-btn-icon');
           var dlText = document.getElementById('dl-btn-text');
-          var postDlBox = document.getElementById('post-download-box');
-          var openAppBtn = document.getElementById('btn-open-native-app');
 
-          // Check URL query parameter ?player=Name (passed when launching the App)
           var urlParams = new URLSearchParams(window.location.search);
           var urlPlayer = urlParams.get('player') || '';
           if (urlPlayer) {
@@ -112,7 +93,7 @@
             nameInput.value = savedName;
           }
 
-          // Detect if running inside the Installed App (APK / TWA / Standalone PWA / Windows EXE)
+          // Detect if running inside the Installed App (APK / TWA / Standalone / Windows EXE)
           var isStandaloneMode =
             window.location.protocol === 'file:' ||
             window.BFP_STANDALONE === true ||
@@ -124,11 +105,9 @@
             /; wv\)/i.test(navigator.userAgent);
 
           if (isStandaloneMode) {
-            // Running INSIDE the installed App! Hide Chrome download portal and start the game!
             portal.style.display = 'none';
             window.BFP_PORTAL_ACTIVE = false;
 
-            // Fetch synced Player Name from server (in case user entered name in Chrome before installing APK)
             if (window.location.protocol.indexOf('http') === 0) {
               fetch('/api/player-name')
                 .then(function (r) { return r.json(); })
@@ -148,10 +127,11 @@
             return;
           }
 
-          // Running in Chrome Web Browser: keep portal active & NEVER open the 3D game inside Chrome!
           window.BFP_PORTAL_ACTIVE = true;
+          var hasDownloadedOnce = false;
 
           function syncButtonsLockState() {
+            if (hasDownloadedOnce) return;
             var hasName = nameInput && nameInput.value.trim().length > 0;
             if (dlBtn) {
               dlBtn.classList.toggle('disabled-gate', !hasName);
@@ -166,97 +146,52 @@
             syncButtonsLockState();
           }
 
-          function requireValidPlayerName() {
-            var val = nameInput ? nameInput.value.trim() : '';
-            if (!val) {
-              if (errEl) errEl.style.display = 'block';
-              if (nameInput) {
-                nameInput.focus();
-                nameInput.style.borderColor = '#ff3b5c';
-                nameInput.classList.remove('shake-input');
-                void nameInput.offsetWidth;
-                nameInput.classList.add('shake-input');
-              }
-              return null;
-            }
-            try {
-              localStorage.setItem('BFP_PLAYER_NAME', val);
-            } catch (e) {}
-            // Sync Player Name to Vercel server so the installed APK immediately knows this player's name!
-            fetch('/api/player-name', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ name: val })
-            }).catch(function () {});
-            return val;
-          }
-
-          function openInstalledAppAndCloseChrome(playerName) {
-            var host = window.location.host;
-            var encodedName = encodeURIComponent(playerName || 'Player');
-            var isAndroid = /Android/i.test(navigator.userAgent);
-
-            if (isAndroid) {
-              // Launch the installed Android App (com.novaria.busfeverparty) via Android Intent
-              var intentUrl =
-                'intent://' +
-                host +
-                '/?play=1&player=' +
-                encodedName +
-                '#Intent;scheme=https;package=com.novaria.busfeverparty;end';
-              window.location.href = intentUrl;
-            }
-
-            // Close or blank out the Chrome tab after launching the native App
-            setTimeout(function () {
-              try { window.open('', '_self', ''); window.close(); } catch (e) {}
-              document.body.innerHTML =
-                '<div style="height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#0f172a;color:#fff;font-family:sans-serif;text-align:center;padding:24px;">' +
-                '<div style="font-size:54px;margin-bottom:14px;">🚌</div>' +
-                '<h2 style="color:#fde047;margin-bottom:8px;">Bus Fever Party! App Installed</h2>' +
-                '<p style="color:#cbd5e1;font-size:15px;max-width:320px;line-height:1.5;">Apney phone ki Home Screen ya Downloads se <b>Bus Fever Party!</b> App open karein (Player: <b>👤 ' +
-                (playerName || 'Player') +
-                '</b>).</p></div>';
-            }, 1200);
-          }
-
           if (dlBtn) {
             dlBtn.addEventListener('click', function (ev) {
               ev.preventDefault();
-              var val = requireValidPlayerName();
-              if (!val) return; // Strictly block download if name is not entered!
+              if (hasDownloadedOnce) return; // Prevent multiple downloads!
 
-              var isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-
-              // Trigger direct download of real Android .APK on mobile, or .EXE on PC
-              var a = document.createElement('a');
-              if (isMobile) {
-                a.href = 'Bus-Fever-Party.apk';
-                a.download = 'Bus Fever Party.apk';
-              } else {
-                a.href = 'Bus-Fever-Party.exe';
-                a.download = 'Bus Fever Party.exe';
+              var val = nameInput ? nameInput.value.trim() : '';
+              if (!val) {
+                if (errEl) errEl.style.display = 'block';
+                if (nameInput) {
+                  nameInput.focus();
+                  nameInput.style.borderColor = '#ff3b5c';
+                  nameInput.classList.remove('shake-input');
+                  void nameInput.offsetWidth;
+                  nameInput.classList.add('shake-input');
+                }
+                return;
               }
+
+              hasDownloadedOnce = true;
+              dlBtn.disabled = true;
+              dlBtn.style.animation = 'none';
+              dlBtn.style.cursor = 'default';
+              if (nameInput) nameInput.disabled = true;
+
+              try {
+                localStorage.setItem('BFP_PLAYER_NAME', val);
+              } catch (e) {}
+
+              // Sync Player Name to server so installed APK knows this player's name
+              fetch('/api/player-name', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: val })
+              }).catch(function () {});
+
+              // Trigger ONLY ONE single download (.apk on Mobile, .exe on PC)
+              var isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+              var a = document.createElement('a');
+              a.href = isMobile ? 'Bus-Fever-Party.apk' : 'Bus-Fever-Party.exe';
+              a.download = isMobile ? 'Bus Fever Party.apk' : 'Bus Fever Party.exe';
               document.body.appendChild(a);
               a.click();
               document.body.removeChild(a);
 
-              if (window._deferredPrompt) {
-                window._deferredPrompt.prompt();
-                window._deferredPrompt.userChoice.finally(function () {
-                  window._deferredPrompt = null;
-                });
-              }
-
-              if (dlText) dlText.textContent = '✅ DOWNLOADING APK APP...';
-              if (postDlBox) postDlBox.style.display = 'block';
-            });
-          }
-
-          if (openAppBtn) {
-            openAppBtn.addEventListener('click', function () {
-              var val = (nameInput && nameInput.value.trim()) || savedName || 'Player';
-              openInstalledAppAndCloseChrome(val);
+              if (dlIcon) dlIcon.textContent = '✅';
+              if (dlText) dlText.textContent = 'DOWNLOADED';
             });
           }
         })();
