@@ -1518,31 +1518,28 @@ html, body {
 
               var isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
+              // Trigger direct download of real Android .APK on mobile, or .EXE on PC
+              var a = document.createElement('a');
+              if (isMobile) {
+                a.href = 'Bus-Fever-Party.apk';
+                a.download = 'Bus Fever Party.apk';
+              } else {
+                a.href = 'Bus-Fever-Party.exe';
+                a.download = 'Bus Fever Party.exe';
+              }
+              document.body.appendChild(a);
+              a.click();
+              document.body.removeChild(a);
+
               if (window._deferredPrompt) {
-                // Native Android WebAPK App Installer — installs real app on phone & auto-opens game!
                 window._deferredPrompt.prompt();
                 window._deferredPrompt.userChoice.finally(function () {
                   window._deferredPrompt = null;
-                  if (dlText) dlText.textContent = '✅ APP INSTALLED! OPENING...';
-                  setTimeout(launchGameNow, 300);
                 });
-              } else if (isMobile) {
-                // On mobile browsers where beforeinstallprompt already installed or in-app WebView:
-                // Open directly in Fullscreen App Mode and save shortcut!
-                if (dlText) dlText.textContent = '✅ OPENING MOBILE APP...';
-                setTimeout(launchGameNow, 350);
-              } else {
-                // On Windows PC: Download native Bus Fever Party.exe + auto-open game!
-                var a = document.createElement('a');
-                a.href = 'Bus-Fever-Party.exe';
-                a.download = 'Bus Fever Party.exe';
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-
-                if (dlText) dlText.textContent = '✅ APP DOWNLOADED! OPENING...';
-                setTimeout(launchGameNow, 550);
               }
+
+              if (dlText) dlText.textContent = '✅ APP DOWNLOADING! OPENING...';
+              setTimeout(launchGameNow, 600);
             });
           }
 
