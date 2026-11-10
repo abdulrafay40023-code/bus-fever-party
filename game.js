@@ -842,16 +842,14 @@
         else rightFeederRows.push(allRows[i]);
       }
 
-      const totalPassengers = allRows.length * ROW_PASSENGERS;
-      // Well-balanced countdown timer so the player can comfortably complete the level with smart play
-      let timeLimitSeconds = 95;
-      if (levelNum === 1) timeLimitSeconds = 95;
-      else if (levelNum === 2) timeLimitSeconds = 115;
-      else if (levelNum === 3) timeLimitSeconds = 140;
+      // Timer strictly between 60s (01:00) and 90s (01:30) as requested!
+      let timeLimitSeconds = 60;
+      if (levelNum === 1) timeLimitSeconds = 60;       // 01:00
+      else if (levelNum === 2) timeLimitSeconds = 70;  // 01:10
+      else if (levelNum === 3) timeLimitSeconds = 80;  // 01:20
       else {
-        const baseForPassengers = Math.round(65 + totalPassengers * 0.16);
-        const difficultyTighten = Math.min(30, Math.floor(levelNum / 12));
-        timeLimitSeconds = Math.max(95, baseForPassengers - difficultyTighten);
+        // Levels 4..1000: 75s (01:15) to 90s (01:30) max
+        timeLimitSeconds = Math.min(90, 70 + (levelNum % 5) * 5);
       }
 
       return {
@@ -1147,15 +1145,18 @@
       this.camera.position.set(0, 28, 11.2);
       this.camera.lookAt(0, 0, -0.55);
 
+      const isMobileGPU = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || width < 600;
       this.renderer = new THREE.WebGLRenderer({
         canvas: this.canvas,
-        antialias: true,
+        antialias: !isMobileGPU,
+        alpha: false,
+        stencil: false,
         powerPreference: 'high-performance'
       });
       this.viewWidth = width;
       this.viewHeight = height;
       this.renderer.setSize(width, height);
-      this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.4));
+      this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, isMobileGPU ? 1.15 : 1.5));
       this.renderer.shadowMap.enabled = false;
 
       const ambient = new THREE.AmbientLight(0xffffff, 0.76);
@@ -1464,85 +1465,83 @@
     }
 
     // -----------------------------------------------------------------------
-    // 3D VEHICLE BUILDER
+    // 3D VEHICLE BUILDER (SHARED GEOMETRIES & FAST LAMBERT MATERIALS)
     // -----------------------------------------------------------------------
-    createVehicleMesh(vehicleData) {
-      const group = new THREE.Group();
-      const cInfo = COLORS[vehicleData.color] || COLORS.blue;
-      const isBus = vehicleData.type === 'bus';
+    initSharedVehicleResources() {
+      if (this._vehResReady) return;
+      this._vehResReady = true;
 
-      const length = isBus ? 2.38 : 1.64;
-      const width = isBus ? 1.12 : 1.02;
-      const bodyHeight = isBus ? 0.78 : 0.48;
-
-      const bodyMat = new THREE.MeshPhongMaterial({
-        color: cInfo.hex,
-        shininess: 75,
-        specular: 0x444444
+      this._vehBodyMats = {};
+      this._vehDarkMats = {};
+      Object.keys(COLORS).forEach((k) => {
+        this._vehBodyMats[k] = new THREE.MeshLambertMaterial({ color: COLORS[k].hex });
+        this._vehDarkMats[k] = new THREE.MeshLambertMaterial({ color: COLORS[k].darkHex });
       });
-      const darkMat = new THREE.MeshLambertMaterial({ color: cInfo.darkHex });
-      const glassMat = new THREE.MeshPhongMaterial({ color: 0x1e293b, shininess: 110 });
-      const wheelMat = new THREE.MeshLambertMaterial({ color: 0x18181b });
+      this._vehGlassMat = new THREE.MeshLambertMaterial({ color: 0x1e293b });
+      this._vehWheelMat = new THREE.MeshBasicMaterial({ color: 0x18181b });
+      this._vehHlMat = new THREE.MeshBasicMaterial({ color: 0xfff799 });
 
-      const chassis = new THREE.Mesh(
-        new THREE.BoxGeometry(width, bodyHeight * 0.65, length),
-        darkMat
-      );
-      chassis.position.y = bodyHeight * 0.35;
-      chassis.castShadow = true;
-      chassis.receiveShadow = true;
+      const buildTypeGeos = (isBus) => {
+        const length = isBus ? 2.38 : 1.64;
+        const width = isBus ? 1.12 : 1.02;
+        const bodyHeight = isBus ? 0.78 : 0.48;
+        const cabinLen = isBus ? length * 0.94 : length * 0.68;
+
+        return {
+          length,
+          width,
+          bodyHeight,
+          cabinLen,
+          chassisGeo: new THREE.BoxGeometry(width, bodyHeight * 0.65, length),
+          cabinGeo: new THREE.BoxGeometry(width * 0.94, bodyHeight * 0.65, cabinLen),
+          glassGeo: new THREE.BoxGeometry(width * 0.97, bodyHeight * 0.38, cabinLen * 0.86),
+          axleGeo: new THREE.BoxGeometry(width * 1.06, 0.26, 0.34),
+          arrowGeo: new THREE.PlaneGeometry(width * 0.84, cabinLen * 0.78),
+          arrowMat: new THREE.MeshBasicMaterial({
+            map: this.getArrowTexture(),
+            transparent: true,
+            depthTest: false
+          })
+        };
+      };
+
+      this._busGeos = buildTypeGeos(true);
+      this._carGeos = buildTypeGeos(false);
+    }
+
+    createVehicleMesh(vehicleData) {
+      this.initSharedVehicleResources();
+      const group = new THREE.Group();
+      const colorKey = COLORS[vehicleData.color] ? vehicleData.color : 'blue';
+      const isBus = vehicleData.type === 'bus';
+      const g = isBus ? this._busGeos : this._carGeos;
+
+      const bodyMat = this._vehBodyMats[colorKey];
+      const darkMat = this._vehDarkMats[colorKey];
+
+      const chassis = new THREE.Mesh(g.chassisGeo, darkMat);
+      chassis.position.y = g.bodyHeight * 0.35;
       group.add(chassis);
 
-      const cabinLen = isBus ? length * 0.94 : length * 0.68;
-      const cabin = new THREE.Mesh(
-        new THREE.BoxGeometry(width * 0.94, bodyHeight * 0.65, cabinLen),
-        bodyMat
-      );
-      cabin.position.y = bodyHeight * 0.82;
-      cabin.castShadow = true;
+      const cabin = new THREE.Mesh(g.cabinGeo, bodyMat);
+      cabin.position.y = g.bodyHeight * 0.82;
       group.add(cabin);
 
-      const wsGeo = new THREE.BoxGeometry(width * 0.82, bodyHeight * 0.42, cabinLen + 0.04);
-      const wsMesh = new THREE.Mesh(wsGeo, glassMat);
-      wsMesh.position.y = bodyHeight * 0.82;
-      group.add(wsMesh);
+      const windows = new THREE.Mesh(g.glassGeo, this._vehGlassMat);
+      windows.position.y = g.bodyHeight * 0.84;
+      group.add(windows);
 
-      const sideWinGeo = new THREE.BoxGeometry(width * 0.97, bodyHeight * 0.36, cabinLen * 0.82);
-      const sideWin = new THREE.Mesh(sideWinGeo, glassMat);
-      sideWin.position.y = bodyHeight * 0.84;
-      group.add(sideWin);
+      const frontAxle = new THREE.Mesh(g.axleGeo, this._vehWheelMat);
+      frontAxle.position.set(0, 0.15, -g.length * 0.3);
+      group.add(frontAxle);
 
-      const roofGeo = new THREE.BoxGeometry(width * 0.88, 0.08, cabinLen * 0.92);
-      const roofMesh = new THREE.Mesh(roofGeo, bodyMat);
-      roofMesh.position.y = bodyHeight * 1.15;
-      group.add(roofMesh);
+      const rearAxle = new THREE.Mesh(g.axleGeo, this._vehWheelMat);
+      rearAxle.position.set(0, 0.15, g.length * 0.3);
+      group.add(rearAxle);
 
-      const hlMat = new THREE.MeshBasicMaterial({ color: 0xfff799 });
-      [-width * 0.32, width * 0.32].forEach((hx) => {
-        const hl = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.12, 0.06), hlMat);
-        hl.position.set(hx, bodyHeight * 0.4, -length / 2 - 0.01);
-        group.add(hl);
-      });
-
-      const wheelOffsets = [
-        [-width * 0.48, -length * 0.3],
-        [width * 0.48, -length * 0.3],
-        [-width * 0.48, length * 0.3],
-        [width * 0.48, length * 0.3]
-      ];
-      wheelOffsets.forEach(([wx, wz]) => {
-        const w = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.28, 0.34), wheelMat);
-        w.position.set(wx, 0.16, wz);
-        group.add(w);
-      });
-
-      const arrowTex = this.getArrowTexture();
-      const arrowPlane = new THREE.Mesh(
-        new THREE.PlaneGeometry(width * 0.84, cabinLen * 0.78),
-        new THREE.MeshBasicMaterial({ map: arrowTex, transparent: true, depthTest: false })
-      );
+      const arrowPlane = new THREE.Mesh(g.arrowGeo, g.arrowMat);
       arrowPlane.rotation.x = -Math.PI / 2;
-      arrowPlane.position.y = bodyHeight * 1.15 + 0.06;
+      arrowPlane.position.y = g.bodyHeight * 1.15 + 0.03;
       arrowPlane.renderOrder = 2;
       group.add(arrowPlane);
 
@@ -1594,12 +1593,33 @@
     }
 
     // -----------------------------------------------------------------------
-    // 3D REVOLVING OVAL LOOP & DUAL FEEDER PASSENGER MESHES
+    // 3D REVOLVING OVAL LOOP & DUAL FEEDER PASSENGER MESHES (SINGLE-MESH MERGED!)
     // -----------------------------------------------------------------------
     initSharedStickmanResources() {
-      if (this._stickTorsoGeo) return;
-      this._stickTorsoGeo = new THREE.CylinderGeometry(0.145, 0.165, 0.36, 7);
-      this._stickHeadGeo = new THREE.SphereGeometry(0.175, 8, 7);
+      if (this._mergedStickmanGeo) return;
+
+      const torsoGeo = new THREE.CylinderGeometry(0.145, 0.165, 0.36, 6).toNonIndexed();
+      torsoGeo.translate(0, 0.2, 0);
+      const headGeo = new THREE.SphereGeometry(0.175, 7, 5).toNonIndexed();
+      headGeo.translate(0, 0.48, 0);
+
+      const pos1 = torsoGeo.attributes.position.array;
+      const pos2 = headGeo.attributes.position.array;
+      const norm1 = torsoGeo.attributes.normal.array;
+      const norm2 = headGeo.attributes.normal.array;
+
+      const mergedPos = new Float32Array(pos1.length + pos2.length);
+      mergedPos.set(pos1, 0);
+      mergedPos.set(pos2, pos1.length);
+
+      const mergedNorm = new Float32Array(norm1.length + norm2.length);
+      mergedNorm.set(norm1, 0);
+      mergedNorm.set(norm2, norm1.length);
+
+      this._mergedStickmanGeo = new THREE.BufferGeometry();
+      this._mergedStickmanGeo.setAttribute('position', new THREE.BufferAttribute(mergedPos, 3));
+      this._mergedStickmanGeo.setAttribute('normal', new THREE.BufferAttribute(mergedNorm, 3));
+
       this._stickColorMats = {};
       Object.keys(COLORS).forEach((k) => {
         this._stickColorMats[k] = new THREE.MeshLambertMaterial({ color: COLORS[k].hex });
@@ -1609,31 +1629,19 @@
     setStickmanColor(sm, colorKey) {
       if (sm.userData.colorKey === colorKey) return;
       this.initSharedStickmanResources();
-      const mat = this._stickColorMats[colorKey] || this._stickColorMats.blue;
-      sm.userData.torso.material = mat;
-      sm.userData.head.material = mat;
+      sm.material = this._stickColorMats[colorKey] || this._stickColorMats.blue;
       sm.userData.colorKey = colorKey;
     }
 
     createStickmanMesh() {
       this.initSharedStickmanResources();
-      const group = new THREE.Group();
-      const defaultMat = this._stickColorMats.yellow;
-
-      const torso = new THREE.Mesh(this._stickTorsoGeo, defaultMat);
-      torso.position.y = 0.2;
-      group.add(torso);
-
-      const head = new THREE.Mesh(this._stickHeadGeo, defaultMat);
-      head.position.y = 0.48;
-      group.add(head);
-
-      group.userData = { torso, head, colorKey: 'yellow' };
-      return group;
+      const mesh = new THREE.Mesh(this._mergedStickmanGeo, this._stickColorMats.yellow);
+      mesh.userData = { colorKey: 'yellow' };
+      return mesh;
     }
 
     buildPassengerMeshPools() {
-      // Reuse existing pool if already built to avoid allocating 512 meshes per level!
+      // Reuse existing pool across levels (0 allocations on level change!)
       if (this.ringRowMeshes && this.ringRowMeshes.length === RING_SLOT_COUNT) {
         return;
       }
@@ -1652,8 +1660,8 @@
         this.ringRowMeshes.push(members);
       }
 
-      // 2. Up to 18 visible rows on Left Feeder Road & Right Feeder Road
-      for (let r = 0; r < 18; r++) {
+      // 2. 12 visible rows on Left Feeder Road & Right Feeder Road
+      for (let r = 0; r < 12; r++) {
         const leftRow = [];
         const rightRow = [];
         for (let m = 0; m < ROW_PASSENGERS; m++) {
@@ -1681,7 +1689,7 @@
 
       // 2. Continuously rotate the Central Oval Ring counter-clockwise (matching Video 00:30-01:20!)
       const prevAngle = this.ringRotationAngle;
-      const loopSpeed = Math.min(1.75, 1.25 + Math.floor(this.levelNum / 10) * 0.04);
+      const loopSpeed = Math.min(1.9, 1.45 + Math.floor(this.levelNum / 10) * 0.04);
       this.ringRotationAngle = (this.ringRotationAngle + dt * loopSpeed) % (Math.PI * 2);
 
       // 3. Refill any empty slots in the revolving oval ring as they pass the Left or Right Feeder Junctions!
@@ -2171,7 +2179,7 @@
         waypoints,
         wpIndex: 0,
         smokeTimer: 0,
-        speed: isAirlift ? 26 : 32
+        speed: isAirlift ? 34 : 40
       });
 
       this.saveGameProgress(false);
@@ -2209,7 +2217,7 @@
         );
 
         if (matchingSlot) {
-          this.boardingCooldown = 0.042; // Rapid continuous stream of passengers!
+          this.boardingCooldown = 0.025; // Ultra-snappy boarding stream!
           rowData.count -= 1;
           const startPos = this.ringRowMeshes[k][rowData.count].position;
 
@@ -2236,7 +2244,7 @@
           });
 
           boardedAny = true;
-          this.updateHUD();
+          this.updatePassengerCountOnly();
           break;
         }
       }
@@ -2664,8 +2672,7 @@
 
       // 1B. Update Level Countdown Timer (when game is active and no modal is open)
       if (!this.isLevelOver && this._splashStarted && !window.BFP_PORTAL_ACTIVE && this.levelIntroRushProgress >= 1) {
-        const anyModalOpen = document.querySelector('.modal-backdrop.active');
-        if (!anyModalOpen) {
+        if (!this.isAnyModalOpen()) {
           this.levelTimeLeft = Math.max(0, this.levelTimeLeft - dt);
           this.updateTimerDisplayOnly();
           if (this.levelTimeLeft <= 10 && this.levelTimeLeft > 0) {
@@ -2685,8 +2692,8 @@
             const btnFree = document.getElementById('btn-revive-free');
             if (fTitle) fTitle.textContent = "⏰ Time's Up!";
             if (fSub) fSub.textContent = 'Time ran out before all passengers boarded the buses!';
-            if (btnSlot) btnSlot.textContent = '⏱️ +60s Extra Time & Clear 1 Bus (🪙 40)';
-            if (btnFree) btnFree.textContent = '🎁 +45s Bonus Time (Free)';
+            if (btnSlot) btnSlot.textContent = '⏱️ +45s Extra Time & Clear 1 Bus (🪙 40)';
+            if (btnFree) btnFree.textContent = '🎁 +30s Bonus Time (Free)';
             document.getElementById('modal-fail').classList.add('active');
           }
         }
@@ -2698,17 +2705,17 @@
       // 3. Board matching passengers at the bottom gate of the revolving oval
       this.updateBoardingFromRevolvingLoop(dt);
 
-      // 4. Periodic cute passenger emoji bubble (Video 00:32, 00:37, 00:53)
+      // 4. Periodic cute passenger emoji bubble
       this.emojiCooldown -= dt;
       if (this.emojiCooldown <= 0 && !this.isLevelOver) {
-        this.emojiCooldown = 3.2 + Math.random() * 2.5;
+        this.emojiCooldown = 3.5 + Math.random() * 2.5;
         this.spawnRandomPassengerEmoji();
       }
 
       // 5. Animate jumping passengers sprinting into parked buses
       for (let i = this.jumpingPassengers.length - 1; i >= 0; i--) {
         const jp = this.jumpingPassengers[i];
-        jp.progress += dt * 4.8;
+        jp.progress += dt * 6.4;
         if (jp.progress >= 1) {
           this.passengersGroup.remove(jp.mesh);
           this.jumpingPassengers.splice(i, 1);
@@ -2719,25 +2726,24 @@
             slot.vehicle.inFlightCount = Math.max(0, (slot.vehicle.inFlightCount || 1) - 1);
             sound.playPassengerBoard();
 
-            slot.vehicle.mesh.scale.set(1.09, 1.13, 1.09);
-            setTimeout(() => {
-              if (slot.vehicle && slot.vehicle.mesh) {
-                slot.vehicle.mesh.scale.set(1, 1, 1);
-              }
-            }, 65);
+            slot.vehicle.bounceTimer = 0.065;
+            if (slot.vehicle.mesh) {
+              slot.vehicle.mesh.scale.set(1.08, 1.12, 1.08);
+            }
 
             this.updateSlotBadgeNumbersOnly();
-            this.updateHUD();
+            this.updatePassengerCountOnly();
 
             if (slot.vehicle.cap === 0) {
               const departingBus = slot.vehicle;
               slot.vehicle = null;
+              departingBus.mesh.scale.set(1, 1, 1);
               sound.playBusDepart();
               this.spawnConfettiBurst(slot.x, slot.z);
               this.departingVehicles.push({
                 mesh: departingBus.mesh,
                 smokeTimer: 0,
-                speed: 28
+                speed: 36
               });
               this.updateSlotOverlays();
               this.saveGameProgress(true);
@@ -2748,6 +2754,17 @@
           jp.mesh.position.x = jp.startX + (jp.endX - jp.startX) * t;
           jp.mesh.position.z = jp.startZ + (jp.endZ - jp.startZ) * t;
           jp.mesh.position.y = Math.sin(t * Math.PI) * 1.1;
+        }
+      }
+
+      // 5B. Decay slot vehicle bounce scale without setTimeout allocations
+      for (let sIdx = 0; sIdx < this.slots.length; sIdx++) {
+        const sv = this.slots[sIdx].vehicle;
+        if (sv && sv.bounceTimer > 0) {
+          sv.bounceTimer -= dt;
+          if (sv.bounceTimer <= 0 && sv.mesh) {
+            sv.mesh.scale.set(1, 1, 1);
+          }
         }
       }
 
@@ -2820,6 +2837,22 @@
     // -----------------------------------------------------------------------
     // HUD, BOOSTERS & LUCKY SPIN WHEEL UI
     // -----------------------------------------------------------------------
+    isAnyModalOpen() {
+      if (!this._modalEls) {
+        this._modalEls = [
+          document.getElementById('modal-pause'),
+          document.getElementById('modal-spin'),
+          document.getElementById('modal-win'),
+          document.getElementById('modal-fail'),
+          document.getElementById('modal-rate')
+        ].filter(Boolean);
+      }
+      for (let i = 0; i < this._modalEls.length; i++) {
+        if (this._modalEls[i].classList.contains('active')) return true;
+      }
+      return false;
+    }
+
     formatTimer(sec) {
       const s = Math.max(0, Math.ceil(sec || 0));
       const m = Math.floor(s / 60);
@@ -2828,33 +2861,47 @@
     }
 
     updateTimerDisplayOnly() {
-      const timerEl = document.getElementById('level-timer-text');
-      const pillEl = document.getElementById('hud-timer-pill');
-      if (timerEl) {
-        const formatted = this.formatTimer(this.levelTimeLeft);
-        if (timerEl.textContent !== formatted) {
-          timerEl.textContent = formatted;
+      if (!this._timerTextEl) this._timerTextEl = document.getElementById('level-timer-text');
+      if (!this._timerPillEl) this._timerPillEl = document.getElementById('hud-timer-pill');
+
+      const secInt = Math.max(0, Math.ceil(this.levelTimeLeft || 0));
+      if (this._lastShownTimerSec !== secInt) {
+        this._lastShownTimerSec = secInt;
+        if (this._timerTextEl) {
+          this._timerTextEl.textContent = this.formatTimer(secInt);
+        }
+        if (this._timerPillEl) {
+          if (secInt <= 15 && secInt > 0) {
+            this._timerPillEl.classList.add('timer-urgent');
+          } else {
+            this._timerPillEl.classList.remove('timer-urgent');
+          }
         }
       }
-      if (pillEl) {
-        if (this.levelTimeLeft <= 15 && this.levelTimeLeft > 0) {
-          pillEl.classList.add('timer-urgent');
-        } else {
-          pillEl.classList.remove('timer-urgent');
-        }
+    }
+
+    updatePassengerCountOnly() {
+      if (!this._passLeftEl) this._passLeftEl = document.getElementById('passenger-left-text');
+      const rem = this.getTotalRemainingPassengers();
+      if (this._lastShownPassCount !== rem && this._passLeftEl) {
+        this._lastShownPassCount = rem;
+        this._passLeftEl.textContent = String(rem);
       }
     }
 
     updateHUD() {
       document.getElementById('level-title-text').textContent = `Level ${this.levelNum}`;
+      this._lastShownTimerSec = -1;
       this.updateTimerDisplayOnly();
       document.getElementById('coin-count-text').textContent = `${this.profile.coins}`;
-      document.getElementById('passenger-left-text').textContent = `${this.getTotalRemainingPassengers()}`;
+      this._lastShownPassCount = -1;
+      this.updatePassengerCountOnly();
 
       const hudNameEl = document.getElementById('hud-player-name');
       if (hudNameEl) {
         const pName = this.profile.playerName || localStorage.getItem('BFP_PLAYER_NAME') || 'Player';
-        hudNameEl.textContent = `👤 ${pName}`;
+        const label = `👤 ${pName}`;
+        if (hudNameEl.textContent !== label) hudNameEl.textContent = label;
       }
 
       this.renderBoosterCard(
@@ -2894,13 +2941,19 @@
       const subEl = document.getElementById(`booster-${key}-sub`);
       const countEl = document.getElementById(`booster-${key}-count`);
 
-      if (this.levelNum < unlockLvl) {
-        iconEl.innerHTML = PADLOCK_SVG;
+      const isLocked = this.levelNum < unlockLvl;
+      const iconKey = isLocked ? 'locked' : 'unlocked';
+
+      if (iconEl.dataset.iconState !== iconKey) {
+        iconEl.dataset.iconState = iconKey;
+        iconEl.innerHTML = isLocked ? PADLOCK_SVG : `<span style="font-size:28px;">${emojiIcon}</span>`;
+      }
+
+      if (isLocked) {
         labelEl.textContent = `Level ${unlockLvl}`;
         subEl.textContent = '';
         countEl.style.display = 'none';
       } else {
-        iconEl.innerHTML = `<span style="font-size:28px;">${emojiIcon}</span>`;
         labelEl.textContent = unlockedTitle;
         subEl.textContent = count > 0 ? 'FREE' : priceSub;
         countEl.style.display = 'flex';
