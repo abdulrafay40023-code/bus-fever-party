@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Bus Fever Party!</title>
+  <link rel="icon" type="image/png" sizes="256x256" href="icon_3d_v4.png" />
+  <link rel="shortcut icon" type="image/x-icon" href="bus_fever_hd.ico" />
+  <link rel="apple-touch-icon" href="icon_3d_v4.png" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="app-wrapper">
+    <div id="game-container">
+
+      <!-- =================================================================
+           VERCEL 1-CLICK DOWNLOAD & PLAY STORE INTERFACE
+           ================================================================= -->
+      <div id="download-portal-screen">
+        <div class="portal-card">
+          <img src="icon_3d_v4.png" alt="Bus Fever Party!" class="portal-app-icon" />
+          <div class="portal-game-title">Bus Fever Party!</div>
+          <div class="portal-dev-tag">✦ NOVARIA GAMES • OFFICIAL RELEASE</div>
+
+          <div class="portal-stats-row">
+            <div class="portal-stat-box">
+              <span class="portal-stat-val">4.9 ★</span>
+              <span class="portal-stat-lbl">Rating</span>
+            </div>
+            <div class="portal-stat-box">
+              <span class="portal-stat-val">100</span>
+              <span class="portal-stat-lbl">Levels</span>
+            </div>
+            <div class="portal-stat-box">
+              <span class="portal-stat-val">1.3 MB</span>
+              <span class="portal-stat-lbl">Fast DL</span>
+            </div>
+          </div>
+
+          <a href="Bus-Fever-Party.html" download="Bus Fever Party.html" class="btn-oneclick-dl" id="btn-oneclick-download">
+            <span>⬇</span>
+            <span id="dl-btn-text">DOWNLOAD GAME</span>
+          </a>
+
+          <button class="btn-play-now-portal" id="btn-play-now-portal">
+            ▶ PLAY NOW
+          </button>
+
+          <a href="Bus-Fever-Party.exe" download="Bus Fever Party.exe" class="portal-pc-link">
+            💻 Download for Windows PC (.EXE)
+          </a>
+        </div>
+      </div>
+      <script>
+        (function () {
+          var portal = document.getElementById('download-portal-screen');
+          if (!portal) return;
+          // Hide download portal when running inside Windows Desktop EXE (file:) or standalone downloaded file
+          if (
+            window.location.protocol === 'file:' ||
+            window.BFP_STANDALONE ||
+            window.location.search.indexOf('play=1') !== -1
+          ) {
+            portal.style.display = 'none';
+            return;
+          }
+          var dlBtn = document.getElementById('btn-oneclick-download');
+          var dlText = document.getElementById('dl-btn-text');
+          var playBtn = document.getElementById('btn-play-now-portal');
+
+          function closePortalAndPlay() {
+            portal.classList.add('hidden');
+            setTimeout(function () {
+              portal.style.display = 'none';
+            }, 360);
+          }
+
+          if (dlBtn) {
+            dlBtn.addEventListener('click', function () {
+              if (dlText) dlText.textContent = '✅ DOWNLOADED! OPENING...';
+              setTimeout(closePortalAndPlay, 900);
+            });
+          }
+          if (playBtn) {
+            playBtn.addEventListener('click', closePortalAndPlay);
+          }
+        })();
+      </script>
+
+      <!-- =================================================================
+           SPLASH 1: STUDIO BRAND SCREEN (Replaces "Lumina" with "Novaria")
+           ================================================================= -->
+      <div id="splash-studio">
+        <div class="studio-logo-wrap">
+          <span class="studio-logo-text">Novar&#305;</span>
+          <span class="studio-star">✦</span>
+          <span class="studio-logo-text">a</span>
+        </div>
+      </div>
+
+      <!-- =================================================================
+           SPLASH 2: BUS FEVER PARTY CASTLE LOADING SCREEN (0% -> 100%)
+           ================================================================= -->
+      <div id="splash-loading">
+        <div class="loading-bar-container">
+          <div class="loading-pct-text" id="loading-pct-text">0%</div>
+          <div class="loading-track">
+            <div class="loading-fill" id="loading-fill"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3D WebGL Canvas -->
+      <canvas id="webgl-canvas"></canvas>
+
+      <!-- Dynamic 3D-Projected Slot Capacity Badges, GO! Gates & + Unlock Hits -->
+      <div id="slot-badges-layer"></div>
+
+      <!-- Floating Text, Emoji Bubbles & Particle FX Layer -->
+      <div id="floating-fx-layer"></div>
+
+      <!-- "No spots available" Dark Banner (Video 00:56) -->
+      <div id="no-spots-banner">No spots available</div>
+
+      <!-- Active Booster Selection Banner -->
+      <div id="booster-mode-banner">
+        <span id="booster-mode-text">🚁 Tap ANY blocked bus/car to airlift to VIP Slot!</span>
+        <button id="btn-cancel-booster">Cancel</button>
+      </div>
+
+      <!-- Main HUD Layer -->
+      <div id="hud-layer">
+        <!-- Top Bar -->
+        <div class="top-bar">
+          <div class="top-left-group">
+            <button class="circle-btn" id="btn-restart" title="Restart Current Level">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                <path d="M3 3v5h5"/>
+              </svg>
+            </button>
+          </div>
+
+          <div class="top-center-group">
+            <div class="level-header-row">
+              <div class="level-title" id="level-title-text">Level 1</div>
+            </div>
+            <div class="difficulty-tag" id="difficulty-tag">⚡ Revolving Loop</div>
+            <div class="stats-strip">
+              <div class="stat-pill coin-pill" id="btn-open-spin-top" title="Lucky Spin & Coins">
+                <span>🪙</span>
+                <span id="coin-count-text">140</span>
+              </div>
+              <div class="stat-pill" title="Remaining Passengers">
+                <span>👥</span>
+                <span id="passenger-left-text">0</span>
+              </div>
+            </div>
+            <div class="save-toast" id="save-toast">💾 Progress Saved</div>
+          </div>
+
+          <div class="top-right-group">
+            <button class="circle-btn" id="btn-pause" title="Pause & Settings">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+                <rect x="6" y="4" width="4.5" height="16" rx="2"/>
+                <rect x="13.5" y="4" width="4.5" height="16" rx="2"/>
+              </svg>
+            </button>
+            <button class="circle-btn small-sub-btn spin-btn" id="btn-lucky-spin" title="Party Lucky Spin!">
+              🎡
+              <span class="badge-dot" id="spin-badge">!</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Tutorial Hint -->
+        <div id="tutorial-hint">👆 Watch the spinning passenger loop & tap matching unblocked buses!</div>
+
+        <!-- Bottom Boosters Bar (Exact Screenshot 3 & 4 Layout: Level 4, Level 8, Level 13) -->
+        <div class="bottom-bar">
+          <!-- Booster 1: Shuffle (Unlocks Level 4) -->
+          <div class="booster-card" id="booster-shuffle">
+            <div class="booster-top-icon" id="booster-shuffle-icon"></div>
+            <div class="booster-label" id="booster-shuffle-label">Level 4</div>
+            <div class="booster-sub" id="booster-shuffle-sub"></div>
+            <div class="booster-count-badge" id="booster-shuffle-count" style="display:none;">2</div>
+          </div>
+
+          <!-- Booster 2: VIP Airlift (Unlocks Level 8) -->
+          <div class="booster-card" id="booster-vip">
+            <div class="booster-top-icon" id="booster-vip-icon"></div>
+            <div class="booster-label" id="booster-vip-label">Level 8</div>
+            <div class="booster-sub" id="booster-vip-sub"></div>
+            <div class="booster-count-badge" id="booster-vip-count" style="display:none;">2</div>
+          </div>
+
+          <!-- Booster 3: Crowd Magnet (Unlocks Level 13) -->
+          <div class="booster-card" id="booster-magnet">
+            <div class="booster-top-icon" id="booster-magnet-icon"></div>
+            <div class="booster-label" id="booster-magnet-label">Level 13</div>
+            <div class="booster-sub" id="booster-magnet-sub"></div>
+            <div class="booster-count-badge" id="booster-magnet-count" style="display:none;">2</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MODAL 0: "Having Fun?" Rating Popup (Exact Video 01:22) -->
+      <div class="modal-backdrop" id="modal-rate">
+        <div class="rate-card">
+          <button class="modal-close" id="btn-close-rate" style="background:#f97316;">✕</button>
+          <div class="rate-title">Having Fun?</div>
+          <div class="rate-stars">⭐⭐⭐⭐⭐</div>
+          <div style="font-size:52px; margin-bottom:6px;">🙋‍♀️</div>
+          <div class="rate-sub">
+            Your opinion matters,<br/>
+            <span style="color:#e11d48;">rate us!</span>
+          </div>
+          <div class="rate-btns">
+            <button class="rate-btn-down" id="btn-rate-down">👎</button>
+            <button class="rate-btn-up" id="btn-rate-up">👍</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- MODAL 1: "GREAT JOB!" Level Complete Screen with Fireworks (Exact Video 01:25) -->
+      <div class="modal-backdrop" id="modal-win">
+        <canvas id="fireworks-canvas"></canvas>
+        <div class="win-Top-Coin-Pill">
+          <span style="font-size:22px;">🪙</span>
+          <span id="win-total-coins">140</span>
+        </div>
+        <div class="win-center-wrap">
+          <img src="great_job_banner.png" alt="Great Job!" class="great-job-hero-img" onerror="this.style.display='none'" />
+          <div class="great-job-title" id="win-title">GREAT JOB!</div>
+          <div class="win-coin-pile">
+            <div class="win-coin-icons">🪙🪙🪙</div>
+            <div class="win-coin-amount" id="win-coins-earned">20</div>
+          </div>
+          <button class="btn-win-next" id="btn-next-level">Next</button>
+          <button class="btn-secondary" id="btn-win-spin" style="width:210px;">🎡 Bonus Lucky Spin</button>
+        </div>
+      </div>
+
+      <!-- MODAL 2: Parking Slots Full (Revive or Retry) -->
+      <div class="modal-backdrop" id="modal-fail">
+        <div class="modal-card">
+          <div class="modal-title" style="color:#ff6b6b;">🚨 All Slots Full!</div>
+          <div class="modal-subtitle">
+            All boarding slots are occupied and none match the passengers in the spinning loop!
+          </div>
+          <button class="btn-primary" id="btn-revive-slot">
+            ➕ Unlock Extra Slot & Clear 1 Bus (🪙 40)
+          </button>
+          <button class="btn-warning" id="btn-revive-free">
+            🎁 Emergency VIP Rescue (Free)
+          </button>
+          <button class="btn-secondary" id="btn-fail-retry">
+            ↺ Retry Level
+          </button>
+        </div>
+      </div>
+
+      <!-- MODAL 3: Pause & Settings Menu -->
+      <div class="modal-backdrop" id="modal-pause">
+        <div class="modal-card">
+          <button class="modal-close" id="btn-close-pause">✕</button>
+          <div class="modal-title">⏸️ Game Paused</div>
+          <div class="modal-subtitle" id="pause-stats-line">
+            Level 3 • Auto-Save Active
+          </div>
+
+          <div class="setting-row">
+            <span>🔊 Sound Effects</span>
+            <button class="toggle-btn on" id="toggle-sfx">ON</button>
+          </div>
+          <div class="setting-row">
+            <span>🎵 Background Party Music</span>
+            <button class="toggle-btn on" id="toggle-music">ON</button>
+          </div>
+
+          <div style="margin-top: 14px;">
+            <button class="btn-primary" id="btn-resume">▶ Continue Playing</button>
+            <button class="btn-secondary" id="btn-pause-restart">↺ Restart Current Level</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- MODAL 4: Level Map (100 Distinct Levels) -->
+      <div class="modal-backdrop" id="modal-map">
+        <div class="modal-card">
+          <button class="modal-close" id="btn-close-map">✕</button>
+          <div class="modal-title">🗺️ Select Level (1 - 100)</div>
+          <div class="modal-subtitle">
+            Every level has a unique formation & progressive difficulty!
+          </div>
+          <div class="level-grid" id="level-grid-container"></div>
+          <button class="btn-secondary" id="btn-unlock-all-levels" style="font-size:13px;">
+            🔓 Unlock All 100 Levels
+          </button>
+        </div>
+      </div>
+
+      <!-- MODAL 5: Lucky Spin -->
+      <div class="modal-backdrop" id="modal-spin">
+        <div class="modal-card">
+          <button class="modal-close" id="btn-close-spin">✕</button>
+          <div class="modal-title">🎡 Party Lucky Spin!</div>
+          <div class="modal-subtitle" id="spin-result-text">
+            Spin the wheel to win Coins, VIP Picks & Boosters!
+          </div>
+          <div class="wheel-wrap">
+            <div class="wheel-pointer">🔻</div>
+            <canvas id="spin-wheel-canvas" width="260" height="260"></canvas>
+          </div>
+          <button class="btn-primary" id="btn-do-spin">🎰 SPIN NOW (FREE!)</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Local Bundled Three.js (100% Offline Ready) -->
+  <script src="three.min.js"></script>
+  <!-- Main Bus Fever Party 3D Engine -->
+  <script src="game.js"></script>
+</body>
+</html>
