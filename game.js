@@ -5626,15 +5626,15 @@
     initSharedStickmanResources() {
       if (this._mergedStickmanGeo) return;
 
-      // Plump 3D Clay Pawn with Vertex-Baked Ambient Occlusion (Rich Deep Competitor Colors!)
-      const headGeo = new THREE.SphereGeometry(0.225, 14, 10).toNonIndexed();
-      headGeo.translate(0, 0.50, 0);
+      // Plump 3D Clay Pawn with Vertex-Baked Ambient Occlusion (Exact Video Size & Plump Round Heads!)
+      const headGeo = new THREE.SphereGeometry(0.268, 16, 12).toNonIndexed();
+      headGeo.translate(0, 0.56, 0);
 
-      const torsoGeo = new THREE.CylinderGeometry(0.165, 0.195, 0.34, 12).toNonIndexed();
-      torsoGeo.translate(0, 0.22, 0);
+      const torsoGeo = new THREE.CylinderGeometry(0.205, 0.238, 0.38, 14).toNonIndexed();
+      torsoGeo.translate(0, 0.24, 0);
 
-      const feetGeo = new THREE.CylinderGeometry(0.195, 0.185, 0.08, 12).toNonIndexed();
-      feetGeo.translate(0, 0.04, 0);
+      const feetGeo = new THREE.CylinderGeometry(0.232, 0.218, 0.085, 14).toNonIndexed();
+      feetGeo.translate(0, 0.042, 0);
 
       const pos1 = headGeo.attributes.position.array;
       const pos2 = torsoGeo.attributes.position.array;
@@ -5658,13 +5658,13 @@
       const mergedCol = new Float32Array(totalLen);
       for (let i = 0; i < totalLen; i += 3) {
         const y = mergedPos[i + 1];
-        let ao = 0.94;
-        if (y < 0.14) {
-          ao = 0.38 + (y / 0.14) * 0.18;
-        } else if (y < 0.36) {
-          ao = 0.56 + ((y - 0.14) / 0.22) * 0.26;
+        let ao = 0.95;
+        if (y < 0.15) {
+          ao = 0.40 + (y / 0.15) * 0.18;
+        } else if (y < 0.39) {
+          ao = 0.58 + ((y - 0.15) / 0.24) * 0.25;
         } else {
-          ao = 0.82 + Math.min(1, (y - 0.36) / 0.36) * 0.15;
+          ao = 0.83 + Math.min(1, (y - 0.39) / 0.39) * 0.15;
         }
         mergedCol[i] = ao;
         mergedCol[i + 1] = ao;
@@ -5680,7 +5680,7 @@
       Object.keys(COLORS).forEach((k) => {
         this._stickColorMats[k] = new THREE.MeshStandardMaterial({
           color: COLORS[k].hex,
-          roughness: 0.42,
+          roughness: 0.38,
           metalness: 0.02,
           vertexColors: true
         });
@@ -5706,7 +5706,7 @@
         this.ringRowMeshes &&
         this.ringRowMeshes.length === RING_SLOT_COUNT &&
         this.leftFeederMeshes &&
-        this.leftFeederMeshes.length === 18
+        this.leftFeederMeshes.length === 24
       ) {
         return;
       }
@@ -5714,7 +5714,7 @@
       this.leftFeederMeshes = [];
       this.rightFeederMeshes = [];
 
-      // 1. 32 Radial Rows in the Central Oval Ring (4 clay pawns per row)
+      // 1. 32 Radial Rows in the Central Oval Ring (4 plump clay pawns per row)
       for (let k = 0; k < RING_SLOT_COUNT; k++) {
         const members = [];
         for (let m = 0; m < ROW_PASSENGERS; m++) {
@@ -5725,8 +5725,8 @@
         this.ringRowMeshes.push(members);
       }
 
-      // 2. 18 visible rows on Left & Right Curved U-Feeder Roads
-      for (let r = 0; r < 18; r++) {
+      // 2. 24 visible rows on Left & Right Curved U-Feeder Roads (fills full feeder road up to top of screen!)
+      for (let r = 0; r < 24; r++) {
         const leftRow = [];
         const rightRow = [];
         for (let m = 0; m < ROW_PASSENGERS; m++) {
@@ -5743,8 +5743,11 @@
     }
 
     /**
-     * Updates 3D positions of all revolving oval ring passengers & feeder lane passengers!
-     * AND handles refilling empty oval ring slots from the Left & Right Feeder Roads!
+     * Exact Video Level-Start Passenger March & Revolving Oval Loop Engine (Video 00:08 - 00:14!):
+     * - When level starts, passengers march down in two continuous 4-abreast columns from the top of the
+     *   Left & Right Feeder Roads behind the sliding "GO!" badges (with white footstep dust puffs),
+     *   flow clockwise into the Top Half (Left stream) and Bottom Half (Right stream) of the Central Oval Ring,
+     *   fill all 32 ring slots shoulder-to-shoulder, and revolve continuously at exact video speed!
      */
     updateRevolvingLoopAndFeederMeshes(dt, now) {
       if (this._passengersReleased === false) {
@@ -5764,101 +5767,192 @@
         return;
       }
 
-      // 1. Advance intro rush (when GO! gates open at level start)
-      if (this.levelIntroRushProgress < 1) {
-        this.levelIntroRushProgress = Math.min(1, this.levelIntroRushProgress + dt * 1.15);
+      const INTRO_TOTAL_STEPS = 38.0; // 23 steps down feeder road + 15 steps across half-oval = 38 steps (~2.75s)
+      const speedMult = this._isHoldingFastSpin ? 3.2 : 1.0;
+
+      if (typeof this.introMarchSteps !== 'number') {
+        this.introMarchSteps = INTRO_TOTAL_STEPS;
       }
 
-      // 2. Continuously rotate the Central Oval Ring (comfortable readable speed, 3.5x turbo while holding screen!)
-      const speedMult = this._isHoldingFastSpin ? 3.5 : 1.0;
-      const loopSpeed = Math.min(1.68, 1.22 + Math.floor(this.levelNum / 12) * 0.045) * speedMult;
-      this.ringRotationAngle = (this.ringRotationAngle + dt * loopSpeed) % (Math.PI * 2);
+      const isIntroMarching = this.introMarchSteps < INTRO_TOTAL_STEPS;
+      if (isIntroMarching) {
+        // March at 13.8 row-steps/sec so feeder roads + oval ring fill in ~2.75s (exact video t=8.60s -> 11.35s!)
+        this.introMarchSteps = Math.min(INTRO_TOTAL_STEPS, this.introMarchSteps + dt * 13.8 * speedMult);
+        this.levelIntroRushProgress = this.introMarchSteps / INTRO_TOTAL_STEPS;
+        this.ringRotationAngle = 0;
 
-      // 3. Refill any empty slots in the revolving oval ring as they pass the Left (PI) or Right (0) Curved Feeder Junctions!
-      const juncTol = this._isHoldingFastSpin ? 0.46 : 0.26;
-      for (let k = 0; k < RING_SLOT_COUNT; k++) {
-        const rowData = this.ovalRingSlots[k];
-        const isEmpty = !rowData || rowData.count <= 0;
-        if (!isEmpty) continue;
+        // Update sliding "GO!" badges riding right in front of the leading Left & Right Feeder rows + footstep dust puffs!
+        const leadStepsPastJunc = this.introMarchSteps - 23.0;
+        if (leadStepsPastJunc < 0.8) {
+          const leadU = Math.max(0.18, 0.225 + (-leadStepsPastJunc) * 0.041);
+          const goU = Math.max(0.14, leadU - 0.095);
+          const ptL = this.getFeederCurvePoint(-1, goU);
+          const ptR = this.getFeederCurvePoint(1, goU);
 
-        const theta = (this.ringRotationAngle + (k / RING_SLOT_COUNT) * Math.PI * 2) % (Math.PI * 2);
-        const distLeft = Math.abs(theta - Math.PI);
-        const distRight = Math.min(theta, Math.PI * 2 - theta);
+          if (this._goBadgeLeftEl) {
+            const scrL = this.projectToScreen(ptL.x, 0.65, ptL.z);
+            this._goBadgeLeftEl.style.left = `${scrL.x}px`;
+            this._goBadgeLeftEl.style.top = `${scrL.y}px`;
+            if (leadStepsPastJunc > -1.2) this._goBadgeLeftEl.classList.add('open');
+          }
+          if (this._goBadgeRightEl) {
+            const scrR = this.projectToScreen(ptR.x, 0.65, ptR.z);
+            this._goBadgeRightEl.style.left = `${scrR.x}px`;
+            this._goBadgeRightEl.style.top = `${scrR.y}px`;
+            if (leadStepsPastJunc > -1.2) this._goBadgeRightEl.classList.add('open');
+          }
 
-        if (this.leftFeederRows.length > 0 && distLeft < juncTol) {
-          const pulled = this.leftFeederRows.shift();
-          pulled.joinBlend = 0.0;
-          pulled.joinSide = -1;
-          this.ovalRingSlots[k] = pulled;
-          this._leftFeederSlideOffset = Math.min(6.0, (this._leftFeederSlideOffset || 0) + 1.0);
-        } else if (this.rightFeederRows.length > 0 && distRight < juncTol) {
-          const pulled = this.rightFeederRows.shift();
-          pulled.joinBlend = 0.0;
-          pulled.joinSide = 1;
-          this.ovalRingSlots[k] = pulled;
-          this._rightFeederSlideOffset = Math.min(6.0, (this._rightFeederSlideOffset || 0) + 1.0);
+          // Periodic white footstep dust puffs under the sprinting leading rows
+          this._introDustTimer = (this._introDustTimer || 0) - dt;
+          if (this._introDustTimer <= 0 && leadU < 1.15) {
+            this._introDustTimer = 0.095;
+            const dL = this.getFeederCurvePoint(-1, leadU);
+            const dR = this.getFeederCurvePoint(1, leadU);
+            this.spawnExhaustSmoke(dL.x, dL.z);
+            this.spawnExhaustSmoke(dR.x, dR.z);
+          }
+        } else {
+          if (this._goBadgeLeftEl) { this._goBadgeLeftEl.remove(); this._goBadgeLeftEl = null; }
+          if (this._goBadgeRightEl) { this._goBadgeRightEl.remove(); this._goBadgeRightEl = null; }
+        }
+      } else {
+        this.levelIntroRushProgress = 1;
+        if (this._goBadgeLeftEl) { this._goBadgeLeftEl.remove(); this._goBadgeLeftEl = null; }
+        if (this._goBadgeRightEl) { this._goBadgeRightEl.remove(); this._goBadgeRightEl = null; }
+
+        // Exact Video Revolving Loop Speed (~1.68 rad/s -> 0.86*PI every 1.6s, 3.2x turbo while holding screen!)
+        const loopSpeed = Math.min(2.05, 1.68 + Math.floor(this.levelNum / 15) * 0.035) * speedMult;
+        this.ringRotationAngle = (this.ringRotationAngle + dt * loopSpeed) % (Math.PI * 2);
+
+        // Refill any empty slots in the revolving oval ring as they pass the Left (PI) or Right (0) Curved Feeder Junctions!
+        const juncTol = this._isHoldingFastSpin ? 0.48 : 0.28;
+        for (let k = 0; k < RING_SLOT_COUNT; k++) {
+          const rowData = this.ovalRingSlots[k];
+          const isEmpty = !rowData || rowData.count <= 0;
+          if (!isEmpty) continue;
+
+          const theta = (this.ringRotationAngle + (k / RING_SLOT_COUNT) * Math.PI * 2) % (Math.PI * 2);
+          const distLeft = Math.abs(theta - Math.PI);
+          const distRight = Math.min(theta, Math.PI * 2 - theta);
+
+          if (this.leftFeederRows.length > 0 && distLeft < juncTol) {
+            const pulled = this.leftFeederRows.shift();
+            pulled.joinBlend = 0.0;
+            pulled.joinSide = -1;
+            this.ovalRingSlots[k] = pulled;
+            this._leftFeederSlideOffset = Math.min(6.0, (this._leftFeederSlideOffset || 0) + 1.0);
+          } else if (this.rightFeederRows.length > 0 && distRight < juncTol) {
+            const pulled = this.rightFeederRows.shift();
+            pulled.joinBlend = 0.0;
+            pulled.joinSide = 1;
+            this.ovalRingSlots[k] = pulled;
+            this._rightFeederSlideOffset = Math.min(6.0, (this._rightFeederSlideOffset || 0) + 1.0);
+          }
         }
       }
 
-      // 4. Position all 32 radial rows revolving around the Central Oval Ring (constant arc-spacing + true ellipse normals!)
-      const rx = 3.38;
-      const rz = 2.04;
+      // Position all 32 radial rows (either snake-marching along feeder -> oval during intro, or revolving around oval!)
+      const rx = 3.36;
+      const rz = 2.02;
       const centerZ = -8.55;
-      const rushT = 1 - Math.pow(1 - this.levelIntroRushProgress, 2.2);
 
       for (let k = 0; k < RING_SLOT_COUNT; k++) {
         const rowData = this.ovalRingSlots[k];
         const members = this.ringRowMeshes[k];
         if (!members) continue;
 
-        const rawTheta = (this.ringRotationAngle + (k / RING_SLOT_COUNT) * Math.PI * 2) % (Math.PI * 2);
-        // Warp angle slightly so rows pack shoulder-to-shoulder on top/bottom straightaways & never bunch at left/right!
-        const targetTheta = rawTheta + 0.21 * Math.sin(2 * rawTheta);
+        let baseX = 0;
+        let baseZ = 0;
+        let nx = 0;
+        let nz = 1;
+        let hideDuringIntro = false;
 
-        const ringX = Math.cos(targetTheta) * rx;
-        const ringZ = centerZ + Math.sin(targetTheta) * rz;
+        if (isIntroMarching) {
+          // k = 0..15 enter from Right Feeder (side = +1) into Bottom Half of Oval (baseSlot = 0, i = 15 - k)
+          // k = 16..31 enter from Left Feeder (side = -1) into Top Half of Oval (baseSlot = 16, i = 31 - k)
+          const isLeftStream = k >= 16;
+          const side = isLeftStream ? -1 : 1;
+          const orderInStream = isLeftStream ? (31 - k) : (15 - k); // 0 is leading row, 15 is 16th row
+          const baseSlot = isLeftStream ? 16 : 0;
+          const stepsPastJunction = this.introMarchSteps - 23.0 - orderInStream;
 
-        // Rush from the SAME side feeder gate so passengers never cut across the center grass island!
-        const fromLeft = ringX <= 0;
-        const startGateX = fromLeft ? -4.85 : 4.85;
-        const startGateZ = -10.2;
+          if (stepsPastJunction < 0) {
+            // Still marching down the Curved U-Feeder Road toward the oval junction!
+            const u = 0.225 + (-stepsPastJunction) * 0.041;
+            if (u > 1.38) {
+              hideDuringIntro = true;
+            } else {
+              const pt = this.getFeederCurvePoint(side, u);
+              baseX = pt.x;
+              baseZ = pt.z;
+              nx = pt.nx;
+              nz = pt.nz;
+            }
+          } else {
+            // Has entered the Central Oval Ring and is marching clockwise along its half-arc!
+            const slotPos = baseSlot + stepsPastJunction; // 0..15 or 16..31
+            const rawTheta = ((slotPos / RING_SLOT_COUNT) * Math.PI * 2) % (Math.PI * 2);
+            const targetTheta = rawTheta + 0.21 * Math.sin(2 * rawTheta);
+            baseX = Math.cos(targetTheta) * rx;
+            baseZ = centerZ + Math.sin(targetTheta) * rz;
 
-        let baseX = startGateX + (ringX - startGateX) * rushT;
-        let baseZ = startGateZ + (ringZ - startGateZ) * rushT;
+            const rawNx = Math.cos(targetTheta) * rz;
+            const rawNz = Math.sin(targetTheta) * rx;
+            const nLen = Math.hypot(rawNx, rawNz) || 1;
+            nx = rawNx / nLen;
+            nz = rawNz / nLen;
 
-        // True outward unit normal perpendicular to the oval curb
-        const rawNx = Math.cos(targetTheta) * rz;
-        const rawNz = Math.sin(targetTheta) * rx;
-        const nLen = Math.hypot(rawNx, rawNz) || 1;
-        let nx = rawNx / nLen;
-        let nz = rawNz / nLen;
+            // Smooth 1-step corner blend right at the junction entrance (0 <= stepsPastJunction < 1)
+            if (stepsPastJunction < 1.0) {
+              const jb = stepsPastJunction;
+              const mouthPt = this.getFeederCurvePoint(side, 0.225);
+              baseX = mouthPt.x + (baseX - mouthPt.x) * jb;
+              baseZ = mouthPt.z + (baseZ - mouthPt.z) * jb;
+              nx = mouthPt.nx + (nx - mouthPt.nx) * jb;
+              nz = mouthPt.nz + (nz - mouthPt.nz) * jb;
+            }
+          }
+        } else {
+          const rawTheta = (this.ringRotationAngle + (k / RING_SLOT_COUNT) * Math.PI * 2) % (Math.PI * 2);
+          const targetTheta = rawTheta + 0.21 * Math.sin(2 * rawTheta);
 
-        // Smoothly walk newly pulled feeder rows from the feeder waiting mouth (u=0.255) onto the revolving oval loop!
-        if (rowData && typeof rowData.joinBlend === 'number' && rowData.joinBlend < 1) {
-          rowData.joinBlend = Math.min(1, rowData.joinBlend + dt * (this._isHoldingFastSpin ? 13.5 : 5.4));
-          const jb = 1 - Math.pow(1 - rowData.joinBlend, 2);
-          const mouthPt = this.getFeederCurvePoint(rowData.joinSide || -1, 0.255);
-          baseX = mouthPt.x + (baseX - mouthPt.x) * jb;
-          baseZ = mouthPt.z + (baseZ - mouthPt.z) * jb;
-          nx = mouthPt.nx + (nx - mouthPt.nx) * jb;
-          nz = mouthPt.nz + (nz - mouthPt.nz) * jb;
+          baseX = Math.cos(targetTheta) * rx;
+          baseZ = centerZ + Math.sin(targetTheta) * rz;
+
+          const rawNx = Math.cos(targetTheta) * rz;
+          const rawNz = Math.sin(targetTheta) * rx;
+          const nLen = Math.hypot(rawNx, rawNz) || 1;
+          nx = rawNx / nLen;
+          nz = rawNz / nLen;
+
+          // Smoothly walk newly pulled feeder rows from the feeder waiting mouth (u=0.225) onto the revolving oval loop!
+          if (rowData && typeof rowData.joinBlend === 'number' && rowData.joinBlend < 1) {
+            rowData.joinBlend = Math.min(1, rowData.joinBlend + dt * (this._isHoldingFastSpin ? 14.0 : 6.2));
+            const jb = 1 - Math.pow(1 - rowData.joinBlend, 2);
+            const mouthPt = this.getFeederCurvePoint(rowData.joinSide || -1, 0.225);
+            baseX = mouthPt.x + (baseX - mouthPt.x) * jb;
+            baseZ = mouthPt.z + (baseZ - mouthPt.z) * jb;
+            nx = mouthPt.nx + (nx - mouthPt.nx) * jb;
+            nz = mouthPt.nz + (nz - mouthPt.nz) * jb;
+          }
         }
 
         for (let m = 0; m < ROW_PASSENGERS; m++) {
           const sm = members[m];
           if (!sm) continue;
-          if (!rowData || m >= rowData.count) {
+          if (hideDuringIntro || !rowData || m >= rowData.count) {
             sm.visible = false;
             continue;
           }
           sm.visible = true;
           this.setStickmanColor(sm, rowData.color);
 
-          const radialOffset = (m - 1.5) * 0.36;
+          // 0.425 radial spacing fills the full road width curb-to-curb with 4 plump shoulder-to-shoulder pawns!
+          const radialOffset = (m - 1.5) * 0.425;
           const px = baseX + nx * radialOffset;
           const pz = baseZ + nz * radialOffset;
-          const bobAmp = this.levelIntroRushProgress < 1 ? 0.18 : (this._isHoldingFastSpin ? 0.14 : 0.095);
-          const bobSpd = this._isHoldingFastSpin ? 0.028 : 0.014;
+          const bobAmp = isIntroMarching ? 0.16 : (this._isHoldingFastSpin ? 0.14 : 0.105);
+          const bobSpd = isIntroMarching ? 0.026 : (this._isHoldingFastSpin ? 0.028 : 0.017);
           const bobY = Math.abs(Math.sin(now * bobSpd + k * 0.55 + m * 0.25)) * bobAmp;
 
           sm.position.set(px, bobY, pz);
@@ -5866,44 +5960,51 @@
       }
 
       // 5. Position waiting rows smoothly marching forward along Left & Right Curved U-Feeder Roads
-      this.positionFeederLane(this.leftFeederRows, this.leftFeederMeshes, -1, now, dt);
-      this.positionFeederLane(this.rightFeederRows, this.rightFeederMeshes, 1, now, dt);
+      this.positionFeederLane(this.leftFeederRows, this.leftFeederMeshes, -1, now, dt, isIntroMarching);
+      this.positionFeederLane(this.rightFeederRows, this.rightFeederMeshes, 1, now, dt, isIntroMarching);
     }
 
-    positionFeederLane(feederQueue, meshRows, side, now, dt = 0.016) {
-      const decayRate = this._isHoldingFastSpin ? 14.5 : 5.6;
-      if (side < 0) {
-        this._leftFeederSlideOffset = (this._leftFeederSlideOffset || 0) * Math.exp(-dt * decayRate);
-        if (this._leftFeederSlideOffset < 0.003) this._leftFeederSlideOffset = 0;
-      } else {
-        this._rightFeederSlideOffset = (this._rightFeederSlideOffset || 0) * Math.exp(-dt * decayRate);
-        if (this._rightFeederSlideOffset < 0.003) this._rightFeederSlideOffset = 0;
+    positionFeederLane(feederQueue, meshRows, side, now, dt = 0.016, isIntroMarching = false) {
+      const decayRate = this._isHoldingFastSpin ? 14.5 : 6.2;
+      if (!isIntroMarching) {
+        if (side < 0) {
+          this._leftFeederSlideOffset = (this._leftFeederSlideOffset || 0) * Math.exp(-dt * decayRate);
+          if (this._leftFeederSlideOffset < 0.003) this._leftFeederSlideOffset = 0;
+        } else {
+          this._rightFeederSlideOffset = (this._rightFeederSlideOffset || 0) * Math.exp(-dt * decayRate);
+          if (this._rightFeederSlideOffset < 0.003) this._rightFeederSlideOffset = 0;
+        }
       }
 
-      const slideOff = side < 0 ? (this._leftFeederSlideOffset || 0) : (this._rightFeederSlideOffset || 0);
-      const isMarchingForward = slideOff > 0.025 || this._isHoldingFastSpin;
-      const walkSpd = isMarchingForward ? 0.024 : 0.013;
-      const walkAmp = isMarchingForward ? 0.135 : 0.085;
-      // Continuous subtle forward stepping wave along the feeder track
-      const stepWave = Math.sin(now * 0.009) * 0.008;
+      // During intro march, feeder rows follow directly behind the 16th ring row (38 - introMarchSteps steps behind junction!)
+      const introBackSteps = isIntroMarching ? Math.max(0, 38.0 - (this.introMarchSteps || 0)) : 0;
+      const slideOff = isIntroMarching
+        ? introBackSteps
+        : (side < 0 ? (this._leftFeederSlideOffset || 0) : (this._rightFeederSlideOffset || 0));
+
+      const isMarchingForward = isIntroMarching || slideOff > 0.025 || this._isHoldingFastSpin;
+      const walkSpd = isMarchingForward ? 0.025 : 0.014;
+      const walkAmp = isMarchingForward ? 0.145 : 0.09;
+      const stepWave = Math.sin(now * 0.01) * 0.006;
 
       for (let r = 0; r < meshRows.length; r++) {
         const rowData = feederQueue[r];
         const members = meshRows[r];
-        // Start at u = 0.255 (cleanly outside the revolving oval ring so waiting feeder rows NEVER overlap circle passengers!)
-        const u = 0.255 + (r + slideOff) * 0.052 + stepWave;
-        const pt = this.getFeederCurvePoint(side, u);
+        // Tight 0.041 row-to-row spacing along feeder road so rows pack shoulder-to-shoulder & back-to-front like the video!
+        const u = 0.232 + (r + slideOff) * 0.041 + stepWave;
+        const hideOffTop = u > 1.38;
+        const pt = this.getFeederCurvePoint(side, Math.min(1.42, u));
 
         for (let m = 0; m < ROW_PASSENGERS; m++) {
           const sm = members[m];
-          if (!rowData || m >= rowData.count) {
+          if (hideOffTop || !rowData || m >= rowData.count) {
             sm.visible = false;
             continue;
           }
           sm.visible = true;
           this.setStickmanColor(sm, rowData.color);
 
-          const lateralOffset = (m - 1.5) * 0.37;
+          const lateralOffset = (m - 1.5) * 0.42;
           const targetX = pt.x + pt.nx * lateralOffset;
           const targetZ = pt.z + pt.nz * lateralOffset;
           const bobY = Math.abs(Math.sin(now * walkSpd - r * 0.65 + m * 0.32)) * walkAmp;
@@ -6056,20 +6157,16 @@
       this.activeBoosterMode = null;
 
       this._passengersReleased = false;
+      this.introMarchSteps = 0;
       const gateDelay = fromTransition ? 1150 : 850;
       this._goGateDelayTimer = setTimeout(() => {
         if (tagEl) tagEl.classList.remove('show');
-        // Slide down Striped Carnival Awnings at top-left & top-right feeder entrances (Video 00:34 & 01:07)
-        if (awL) awL.classList.add('show');
-        if (awR) awR.classList.add('show');
-
-        setTimeout(() => {
-          this._passengersReleased = true;
-          this.levelIntroRushProgress = 0;
-          this._leftFeederSlideOffset = 7.5;
-          this._rightFeederSlideOffset = 7.5;
-          this.spawnGoGatesIntro();
-        }, 180);
+        this._passengersReleased = true;
+        this.introMarchSteps = 0;
+        this.levelIntroRushProgress = 0;
+        this._leftFeederSlideOffset = 0;
+        this._rightFeederSlideOffset = 0;
+        this.spawnGoGatesIntro();
       }, gateDelay);
 
       this.updateHUD();
@@ -6082,27 +6179,26 @@
       sound.playGoCheer();
       if (sound.musicEnabled) sound.startMusic();
 
-      const awL = document.getElementById('awning-left');
-      const awR = document.getElementById('awning-right');
+      if (this._goBadgeLeftEl) { this._goBadgeLeftEl.remove(); this._goBadgeLeftEl = null; }
+      if (this._goBadgeRightEl) { this._goBadgeRightEl.remove(); this._goBadgeRightEl = null; }
 
-      const leftPos = this.projectToScreen(-5.2, 0.5, -12.6);
-      const rightPos = this.projectToScreen(5.2, 0.5, -12.6);
+      const ptL = this.getFeederCurvePoint(-1, 1.08);
+      const ptR = this.getFeederCurvePoint(1, 1.08);
+      const leftPos = this.projectToScreen(ptL.x, 0.65, ptL.z);
+      const rightPos = this.projectToScreen(ptR.x, 0.65, ptR.z);
 
-      [leftPos, rightPos].forEach((pos) => {
+      const makeGoEl = (pos) => {
         const gate = document.createElement('div');
         gate.className = 'go-gate-badge';
         gate.style.left = `${pos.x}px`;
         gate.style.top = `${pos.y}px`;
         gate.textContent = 'GO!';
         this.fxLayer.appendChild(gate);
-        setTimeout(() => gate.classList.add('open'), 240);
-        setTimeout(() => gate.remove(), 820);
-      });
+        return gate;
+      };
 
-      setTimeout(() => {
-        if (awL) awL.classList.remove('show');
-        if (awR) awR.classList.remove('show');
-      }, 680);
+      this._goBadgeLeftEl = makeGoEl(leftPos);
+      this._goBadgeRightEl = makeGoEl(rightPos);
     }
 
     restoreMidLevelState(mid) {
@@ -6922,6 +7018,7 @@
     // -----------------------------------------------------------------------
     updateBoardingFromRevolvingLoop(dt) {
       if (this.isLevelOver) return;
+      if (typeof this.introMarchSteps === 'number' && this.introMarchSteps < 34) return;
 
       this.boardingCooldown -= dt;
       if (this.boardingCooldown > 0) return;
