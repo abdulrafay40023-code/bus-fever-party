@@ -1692,26 +1692,34 @@
 
       for (let w = 0; w < exitSequence.length; w += waveSize) {
         const waveVehicles = exitSequence.slice(w, w + waveSize);
-        const waveRows = [];
+        // Group rows into contiguous color chunks of 3..4 rows (with occasional 1-row accent) so loop has clean color blocks like the reference image!
+        const waveChunks = [];
 
         for (const v of waveVehicles) {
-          const numRows = Math.round(v.cap / ROW_PASSENGERS);
-          for (let r = 0; r < numRows; r++) {
-            waveRows.push({ color: v.color, count: ROW_PASSENGERS });
+          let remRows = Math.round(v.cap / ROW_PASSENGERS);
+          while (remRows > 0) {
+            const chunkLen = remRows >= 4 ? (rand() < 0.78 ? 4 : 3) : remRows;
+            const chunk = [];
+            for (let r = 0; r < chunkLen; r++) {
+              chunk.push({ color: v.color, count: ROW_PASSENGERS });
+            }
+            waveChunks.push(chunk);
+            remRows -= chunkLen;
           }
         }
 
-        for (let i = waveRows.length - 1; i > 0; i--) {
+        for (let i = waveChunks.length - 1; i > 0; i--) {
           const j = Math.floor(rand() * (i + 1));
-          [waveRows[i], waveRows[j]] = [waveRows[j], waveRows[i]];
+          [waveChunks[i], waveChunks[j]] = [waveChunks[j], waveChunks[i]];
         }
 
-        allRows.push(...waveRows);
+        for (const ch of waveChunks) {
+          allRows.push(...ch);
+        }
       }
 
       // On Levels 1..3 (tutorial), ensure all unblocked colors are in the ring;
-      // On Hard Levels (Level 4..5000), only guarantee the FIRST key exit vehicle's color is in the ring,
-      // and mix feeder rows with ring rows so decoy unblocked vehicles will trap careless players!
+      // On Hard Levels (Level 4..5000), only guarantee the FIRST key exit vehicle's color is in the ring!
       const ringWindow = Math.min(RING_SLOT_COUNT, allRows.length);
       if (levelNum <= 3) {
         const initialUnblockedColors = new Set(
@@ -1737,16 +1745,20 @@
             }
           }
         });
-      } else if (allRows.length > ringWindow + 6) {
-        // Cross-wave scramble between back half of initial ring (12..31) and front feeder rows (32..56)
-        const scrambleSwaps = Math.min(24, 4 + Math.floor((levelNum - 3) * 1.4));
-        const maxFeederIdx = Math.min(allRows.length - 1, ringWindow + 24);
-        for (let s = 0; s < scrambleSwaps; s++) {
-          const iA = 10 + Math.floor(rand() * Math.max(1, ringWindow - 10));
+      } else if (allRows.length > ringWindow + 8) {
+        // Swap 3-row contiguous color blocks between back half of initial ring and front feeder rows (keeps clean color blocks intact!)
+        const blockSwaps = Math.min(6, 2 + Math.floor((levelNum - 3) * 0.4));
+        const maxFeederIdx = Math.min(allRows.length - 3, ringWindow + 21);
+        for (let s = 0; s < blockSwaps; s++) {
+          const iA = 12 + Math.floor(rand() * Math.max(1, ringWindow - 15));
           const iB = ringWindow + Math.floor(rand() * Math.max(1, maxFeederIdx - ringWindow));
-          const tmp = allRows[iA];
-          allRows[iA] = allRows[iB];
-          allRows[iB] = tmp;
+          for (let b = 0; b < 3; b++) {
+            if (allRows[iA + b] && allRows[iB + b]) {
+              const tmp = allRows[iA + b];
+              allRows[iA + b] = allRows[iB + b];
+              allRows[iB + b] = tmp;
+            }
+          }
         }
         // Always ensure at least 4 rows of the #1 key exit vehicle's color remain in the initial ring so the level is 100% solvable!
         if (exitSequence.length > 0) {
@@ -1755,7 +1767,7 @@
           let curKeyInRing = allRows.slice(0, ringWindow).filter((r) => r && r.color === keyCol).length;
           for (let fIdx = ringWindow; fIdx < allRows.length && curKeyInRing < keyRowsNeeded; fIdx++) {
             if (allRows[fIdx] && allRows[fIdx].color === keyCol) {
-              const rPos = 4 + (curKeyInRing * 5) % Math.max(1, ringWindow - 5);
+              const rPos = Math.min(ringWindow - 1, 4 + curKeyInRing);
               if (allRows[rPos].color !== keyCol) {
                 const tmp = allRows[rPos];
                 allRows[rPos] = allRows[fIdx];
@@ -4780,54 +4792,40 @@
       this._currentArchIdx = archIdx;
 
       // 1. Place lush, organic rounded 3D Pixar Flowering Bushes & Rounded Trees cleanly on the outer park lawn
-      // (Moved back from the Boarding Bay curb at x = ±5.25, z = -6.18 so they NEVER touch the white road curb!)
+      // (Never place trees on the feeder roads at x = ±6.35, z = -12.6!)
       if (archType === 'fountain') {
         this.addBushWithFlowers(-5.25, -6.18);
         this.addBushWithFlowers(5.25, -6.18);
-        this.addTree(-7.15, -8.40);
-        this.addTree(7.15, -8.40);
-        this.addTree(-6.55, -12.65);
-        this.addTree(6.55, -12.65);
+        this.addTree(-7.25, -8.40);
+        this.addTree(7.25, -8.40);
       } else if (archType === 'palm_oasis') {
         this.addBushWithFlowers(-5.25, -6.18);
         this.addBushWithFlowers(5.25, -6.18);
-        this.addTree(-7.15, -8.40);
-        this.addTree(7.15, -8.40);
-        this.addMapleTree3D(-6.55, -12.65);
-        this.addMapleTree3D(6.55, -12.65);
+        this.addTree(-7.25, -8.40);
+        this.addTree(7.25, -8.40);
       } else if (archType === 'sakura_torii') {
-        this.addSakuraTree3D(-5.30, -6.22, 0.76);
-        this.addSakuraTree3D(5.30, -6.22, 0.76);
-        this.addSakuraTree3D(-7.20, -8.45, 1.02);
-        this.addSakuraTree3D(7.20, -8.45, 1.02);
-        this.addBushWithFlowers(-6.55, -12.55);
-        this.addBushWithFlowers(6.55, -12.55);
+        this.addBushWithFlowers(-5.25, -6.18);
+        this.addBushWithFlowers(5.25, -6.18);
+        this.addSakuraTree3D(-7.25, -8.45, 1.0);
+        this.addSakuraTree3D(7.25, -8.45, 1.0);
       } else if (archType === 'castle_kingdom') {
         this.addBushWithFlowers(-5.25, -6.18);
         this.addBushWithFlowers(5.25, -6.18);
-        this.addMapleTree3D(-7.15, -8.40);
-        this.addMapleTree3D(7.15, -8.40);
-        this.addTree(-6.55, -12.65);
-        this.addTree(6.55, -12.65);
+        this.addMapleTree3D(-7.25, -8.40);
+        this.addMapleTree3D(7.25, -8.40);
       } else if (archType === 'cyber_neon') {
-        // Level 11 Carnival Starlight Garden: Lush Flowering Park Bushes + Sakura & Emerald Trees (ZERO black/pink cones!)
         this.addBushWithFlowers(-5.25, -6.18);
         this.addBushWithFlowers(5.25, -6.18);
-        this.addSakuraTree3D(-7.15, -8.40, 0.96);
-        this.addSakuraTree3D(7.15, -8.40, 0.96);
-        this.addTree(-6.55, -12.65);
-        this.addTree(6.55, -12.65);
+        this.addSakuraTree3D(-7.25, -8.40, 0.96);
+        this.addSakuraTree3D(7.25, -8.40, 0.96);
       } else {
         this.addBushWithFlowers(-5.25, -6.18);
         this.addBushWithFlowers(5.25, -6.18);
-        this.addTree(-7.15, -8.40);
-        this.addTree(7.15, -8.40);
-        this.addSakuraTree3D(-6.55, -12.65, 0.88);
-        this.addSakuraTree3D(6.55, -12.65, 0.88);
+        this.addTree(-7.25, -8.40);
+        this.addTree(7.25, -8.40);
       }
 
-      // 2. Mount the Pixar 3D Architectural Landmark Sprite in the Center Kidney Grass Island (0, -8.55)
-      // + 2 matching Pixar 3D architectural garden pavilions on the upper-left & upper-right park lawn!
+      // 2. Mount the Pixar 3D Architectural Landmark Sprite DEAD-CENTER inside the Center Kidney Grass Island!
       this.syncLevelArchitecturePropsOverlay();
     }
 
@@ -4835,27 +4833,26 @@
       const layer = document.getElementById('go-awnings-layer');
       if (!layer) return;
 
-      const archIdx = typeof this._currentArchIdx === 'number' ? this._currentArchIdx : 0;
-      const specs = [
-        { id: 'lvl-arch-center', wx: 0.0,   wy: 0.15, wz: -8.56, sizePx: 66, idx: archIdx },
-        { id: 'lvl-arch-left',   wx: -3.15, wy: 0.12, wz: -13.1, sizePx: 48, idx: (archIdx + 5) % 6 },
-        { id: 'lvl-arch-right',  wx: 3.15,  wy: 0.12, wz: -13.1, sizePx: 48, idx: (archIdx + 1) % 6 }
-      ];
-
-      specs.forEach((sp) => {
-        let el = document.getElementById(sp.id);
-        if (!el) {
-          el = document.createElement('div');
-          el.id = sp.id;
-          layer.appendChild(el);
-        }
-        el.className = `level-arch-3d-prop level-arch-idx-${sp.idx}`;
-        el.style.width = `${sp.sizePx}px`;
-        el.style.height = `${sp.sizePx}px`;
-        const pt = this.projectToScreen(sp.wx, sp.wy, sp.wz);
-        el.style.left = `${pt.x}px`;
-        el.style.top = `${pt.y}px`;
+      // Remove any old left/right upper lawn icons so the upper lawn stays clean
+      ['lvl-arch-left', 'lvl-arch-right'].forEach((oldId) => {
+        const oldEl = document.getElementById(oldId);
+        if (oldEl) oldEl.remove();
       });
+
+      const archIdx = typeof this._currentArchIdx === 'number' ? this._currentArchIdx : 0;
+      let el = document.getElementById('lvl-arch-center');
+      if (!el) {
+        el = document.createElement('div');
+        el.id = 'lvl-arch-center';
+        layer.appendChild(el);
+      }
+      el.className = `level-arch-3d-prop level-arch-idx-${archIdx}`;
+      el.style.width = '48px';
+      el.style.height = '48px';
+      // Centered dead-center inside the green kidney grass island (wx = 0, wy = 0, wz = -8.35)
+      const pt = this.projectToScreen(0.0, 0.0, -8.35);
+      el.style.left = `${pt.x}px`;
+      el.style.top = `${pt.y}px`;
     }
 
     addPalmTree3D(x, z, leanSign = 1) {
@@ -5626,49 +5623,103 @@
     initSharedStickmanResources() {
       if (this._mergedStickmanGeo) return;
 
-      // Plump 3D Clay Pawn with Vertex-Baked Ambient Occlusion (Exact Video Size & Plump Round Heads!)
-      const headGeo = new THREE.SphereGeometry(0.268, 16, 12).toNonIndexed();
-      headGeo.translate(0, 0.56, 0);
-
-      const torsoGeo = new THREE.CylinderGeometry(0.205, 0.238, 0.38, 14).toNonIndexed();
-      torsoGeo.translate(0, 0.24, 0);
-
-      const feetGeo = new THREE.CylinderGeometry(0.232, 0.218, 0.085, 14).toNonIndexed();
-      feetGeo.translate(0, 0.042, 0);
-
-      const pos1 = headGeo.attributes.position.array;
-      const pos2 = torsoGeo.attributes.position.array;
-      const pos3 = feetGeo.attributes.position.array;
-      const norm1 = headGeo.attributes.normal.array;
-      const norm2 = torsoGeo.attributes.normal.array;
-      const norm3 = feetGeo.attributes.normal.array;
-
-      const totalLen = pos1.length + pos2.length + pos3.length;
-      const mergedPos = new Float32Array(totalLen);
-      mergedPos.set(pos1, 0);
-      mergedPos.set(pos2, pos1.length);
-      mergedPos.set(pos3, pos1.length + pos2.length);
-
-      const mergedNorm = new Float32Array(totalLen);
-      mergedNorm.set(norm1, 0);
-      mergedNorm.set(norm2, norm1.length);
-      mergedNorm.set(norm3, norm1.length + norm2.length);
-
-      // Vertex-color Ambient Occlusion: deep base shadow -> rich saturated head crown (never bleached!)
-      const mergedCol = new Float32Array(totalLen);
-      for (let i = 0; i < totalLen; i += 3) {
-        const y = mergedPos[i + 1];
-        let ao = 0.95;
-        if (y < 0.15) {
-          ao = 0.40 + (y / 0.15) * 0.18;
-        } else if (y < 0.39) {
-          ao = 0.58 + ((y - 0.15) / 0.24) * 0.25;
-        } else {
-          ao = 0.83 + Math.min(1, (y - 0.39) / 0.39) * 0.15;
+      // Full 3D Little Human Character Mesh with Head, Neck, Shoulders, Left/Right Swinging Arms & Hands ("Hath"),
+      // and Separated Left/Right Stepping Legs & Shoes ("Pair") clearly visible from the 62° camera angle!
+      const parts = [];
+      const addPart = (geo, aoMin, aoMax) => {
+        const g = geo.toNonIndexed();
+        const p = g.attributes.position.array;
+        const n = g.attributes.normal.array;
+        let minY = Infinity, maxY = -Infinity;
+        for (let i = 1; i < p.length; i += 3) {
+          if (p[i] < minY) minY = p[i];
+          if (p[i] > maxY) maxY = p[i];
         }
-        mergedCol[i] = ao;
-        mergedCol[i + 1] = ao;
-        mergedCol[i + 2] = ao;
+        const spanY = Math.max(0.01, maxY - minY);
+        const c = new Float32Array(p.length);
+        for (let i = 0; i < p.length; i += 3) {
+          const t = (p[i + 1] - minY) / spanY;
+          const ao = aoMin + t * (aoMax - aoMin);
+          c[i] = ao;
+          c[i + 1] = ao;
+          c[i + 2] = ao;
+        }
+        parts.push({ pos: p, norm: n, col: c });
+      };
+
+      // 1. Round Glossy 3D Head (compact enough that shoulders, arms & legs show clearly below it!)
+      const headGeo = new THREE.SphereGeometry(0.195, 16, 12);
+      headGeo.translate(0, 0.65, -0.04);
+      addPart(headGeo, 0.72, 0.98);
+
+      // 2. Neck Collar (darker AO crease separating head from torso so it NEVER looks like a single ball!)
+      const neckGeo = new THREE.CylinderGeometry(0.088, 0.115, 0.08, 12);
+      neckGeo.translate(0, 0.49, 0.0);
+      addPart(neckGeo, 0.45, 0.58);
+
+      // 3. Rounded Torso & Wide Shoulders
+      const torsoGeo = new THREE.CylinderGeometry(0.142, 0.128, 0.25, 14);
+      torsoGeo.scale(1.18, 1.0, 0.88);
+      torsoGeo.translate(0, 0.35, 0.04);
+      addPart(torsoGeo, 0.58, 0.90);
+
+      // 4. Left Arm & Left Round Hand ("Hath" sticking out on left side & swinging forward)
+      const lArmGeo = new THREE.CylinderGeometry(0.046, 0.042, 0.22, 10);
+      lArmGeo.rotateZ(0.34);
+      lArmGeo.rotateX(-0.28);
+      lArmGeo.translate(-0.205, 0.35, 0.08);
+      addPart(lArmGeo, 0.62, 0.88);
+
+      const lHandGeo = new THREE.SphereGeometry(0.052, 10, 8);
+      lHandGeo.translate(-0.242, 0.255, 0.115);
+      addPart(lHandGeo, 0.70, 0.92);
+
+      // 5. Right Arm & Right Round Hand ("Hath" sticking out on right side & swinging backward)
+      const rArmGeo = new THREE.CylinderGeometry(0.046, 0.042, 0.22, 10);
+      rArmGeo.rotateZ(-0.34);
+      rArmGeo.rotateX(0.24);
+      rArmGeo.translate(0.205, 0.35, 0.02);
+      addPart(rArmGeo, 0.62, 0.88);
+
+      const rHandGeo = new THREE.SphereGeometry(0.052, 10, 8);
+      rHandGeo.translate(0.242, 0.255, -0.01);
+      addPart(rHandGeo, 0.70, 0.92);
+
+      // 6. Left Stepping Leg & Left Shoe ("Pair" clearly separated on left side!)
+      const lLegGeo = new THREE.CylinderGeometry(0.058, 0.050, 0.21, 10);
+      lLegGeo.rotateX(0.24);
+      lLegGeo.translate(-0.085, 0.145, 0.05);
+      addPart(lLegGeo, 0.44, 0.72);
+
+      const lShoeGeo = new THREE.SphereGeometry(0.064, 10, 8);
+      lShoeGeo.scale(0.95, 0.65, 1.38);
+      lShoeGeo.translate(-0.085, 0.045, 0.095);
+      addPart(lShoeGeo, 0.38, 0.66);
+
+      // 7. Right Stepping Leg & Right Shoe ("Pair" stepping forward toward camera on right side!)
+      const rLegGeo = new THREE.CylinderGeometry(0.058, 0.050, 0.21, 10);
+      rLegGeo.rotateX(-0.28);
+      rLegGeo.translate(0.085, 0.145, 0.11);
+      addPart(rLegGeo, 0.48, 0.76);
+
+      const rShoeGeo = new THREE.SphereGeometry(0.064, 10, 8);
+      rShoeGeo.scale(0.95, 0.65, 1.38);
+      rShoeGeo.translate(0.085, 0.045, 0.165);
+      addPart(rShoeGeo, 0.42, 0.70);
+
+      let totalLen = 0;
+      for (const pt of parts) totalLen += pt.pos.length;
+
+      const mergedPos = new Float32Array(totalLen);
+      const mergedNorm = new Float32Array(totalLen);
+      const mergedCol = new Float32Array(totalLen);
+
+      let offset = 0;
+      for (const pt of parts) {
+        mergedPos.set(pt.pos, offset);
+        mergedNorm.set(pt.norm, offset);
+        mergedCol.set(pt.col, offset);
+        offset += pt.pos.length;
       }
 
       this._mergedStickmanGeo = new THREE.BufferGeometry();
@@ -5680,7 +5731,7 @@
       Object.keys(COLORS).forEach((k) => {
         this._stickColorMats[k] = new THREE.MeshStandardMaterial({
           color: COLORS[k].hex,
-          roughness: 0.38,
+          roughness: 0.36,
           metalness: 0.02,
           vertexColors: true
         });
@@ -5951,11 +6002,14 @@
           const radialOffset = (m - 1.5) * 0.425;
           const px = baseX + nx * radialOffset;
           const pz = baseZ + nz * radialOffset;
-          const bobAmp = isIntroMarching ? 0.16 : (this._isHoldingFastSpin ? 0.14 : 0.105);
-          const bobSpd = isIntroMarching ? 0.026 : (this._isHoldingFastSpin ? 0.028 : 0.017);
-          const bobY = Math.abs(Math.sin(now * bobSpd + k * 0.55 + m * 0.25)) * bobAmp;
+          const phase = now * (isIntroMarching ? 0.026 : (this._isHoldingFastSpin ? 0.028 : 0.017)) + k * 0.55 + m * 0.35;
+          const bobAmp = isIntroMarching ? 0.14 : (this._isHoldingFastSpin ? 0.13 : 0.095);
+          const bobY = Math.abs(Math.sin(phase)) * bobAmp;
 
           sm.position.set(px, bobY, pz);
+          // Lively walking waddle so arms ("hath") and legs ("pair") visibly swing as they march!
+          sm.rotation.z = Math.sin(phase) * 0.11;
+          sm.rotation.y = Math.cos(phase) * 0.14;
         }
       }
 
@@ -6007,9 +6061,12 @@
           const lateralOffset = (m - 1.5) * 0.42;
           const targetX = pt.x + pt.nx * lateralOffset;
           const targetZ = pt.z + pt.nz * lateralOffset;
-          const bobY = Math.abs(Math.sin(now * walkSpd - r * 0.65 + m * 0.32)) * walkAmp;
+          const phase = now * walkSpd - r * 0.65 + m * 0.35;
+          const bobY = Math.abs(Math.sin(phase)) * walkAmp;
 
           sm.position.set(targetX, bobY, targetZ);
+          sm.rotation.z = Math.sin(phase) * 0.11;
+          sm.rotation.y = Math.cos(phase) * 0.14;
         }
       }
     }
