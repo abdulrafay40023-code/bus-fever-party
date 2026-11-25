@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.novaria.busfeverparty",
+        "sha256_cert_fingerprints": ["92:47:36:35:FB:CE:80:76:05:27:8B:EF:73:02:B1:DC:53:66:53:A7:30:AC:AA:09:E5:0D:B8:32:FB:19:F8:98"]
+      }
+    }]

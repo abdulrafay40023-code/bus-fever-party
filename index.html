@@ -1,0 +1,1142 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#5ab2ff" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Bus Fever Party" />
+  <title>Bus Fever Party</title>
+  <link rel="icon" type="image/png" sizes="192x192" href="icon_192.png" />
+  <link rel="shortcut icon" type="image/x-icon" href="bus_fever_hd.ico" />
+  <link rel="apple-touch-icon" href="icon_192.png" />
+  <link rel="manifest" href="manifest.json" />
+  <style>
+    html, body { margin: 0; padding: 0; width: 100%; height: 100%; background: #2e0559; overflow: hidden; }
+    #app-wrapper { width: 100%; height: 100%; background: #2e0559; }
+  </style>
+  <link rel="stylesheet" href="styles.css?v=70" />
+</head>
+<body>
+  <div id="app-wrapper">
+    <div id="game-container">
+
+      <!-- =================================================================
+           1-CLICK DOWNLOAD PORTAL SCREEN (FOR USERS OPENING THE WEB LINK)
+           ================================================================= -->
+      <div id="download-portal-screen">
+        <div class="portal-card">
+          <img src="icon_192.png" alt="Bus Fever Party" class="portal-app-icon" />
+          <div class="portal-game-title">Bus Fever Party</div>
+          <div class="portal-dev-tag">⚡ TEALS FLASH • OFFICIAL 3D APP</div>
+
+          <div class="portal-stats-row">
+            <div class="portal-stat-box">
+              <span class="portal-stat-val">4.9 ★</span>
+              <span class="portal-stat-lbl">Rating</span>
+            </div>
+            <div class="portal-stat-box">
+              <span class="portal-stat-val">Level 1–5000</span>
+              <span class="portal-stat-lbl">Progression</span>
+            </div>
+            <div class="portal-stat-box">
+              <span class="portal-stat-val">4.7 MB</span>
+              <span class="portal-stat-lbl">APK App</span>
+            </div>
+          </div>
+
+          <div class="portal-name-wrap" id="portal-input-section">
+            <label for="portal-player-name" class="portal-name-label">👤 ENTER YOUR PLAYER NAME (REQUIRED)</label>
+            <input
+              type="text"
+              id="portal-player-name"
+              class="portal-name-input"
+              placeholder="Type your name first..."
+              maxlength="16"
+              autocomplete="off"
+            />
+            <div id="portal-name-error" class="portal-name-error" style="display:none; color:#f87171; font-size:12px; font-weight:800; margin-top:6px;">
+              ⚠️ Pehle apna Name likhein!
+            </div>
+          </div>
+
+          <button type="button" class="btn-oneclick-dl disabled-gate" id="btn-oneclick-download">
+            <span id="dl-btn-icon">📲</span>
+            <span id="dl-btn-text">DOWNLOAD APP</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Service Worker Cleanup & 1-Click Download Portal Controller -->
+      <script>
+        (function () {
+          if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(function (registrations) {
+              for (var i = 0; i < registrations.length; i++) {
+                registrations[i].unregister();
+              }
+            }).catch(function () {});
+            if (window.caches) {
+              caches.keys().then(function (names) {
+                for (var j = 0; j < names.length; j++) {
+                  caches.delete(names[j]);
+                }
+              }).catch(function () {});
+            }
+          }
+
+          var portal = document.getElementById('download-portal-screen');
+          if (!portal) return;
+
+          var urlParams = new URLSearchParams(window.location.search);
+          var isPlayTest =
+            window.location.protocol === 'file:' ||
+            window.BFP_STANDALONE === true ||
+            urlParams.get('play') === '1' ||
+            (document.referrer && document.referrer.indexOf('android-app://') === 0) ||
+            /; wv\)/i.test(navigator.userAgent) ||
+            (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
+            (window.matchMedia && window.matchMedia('(display-mode: fullscreen)').matches);
+
+          if (isPlayTest) {
+            portal.style.display = 'none';
+            window.BFP_PORTAL_ACTIVE = false;
+            return;
+          }
+
+          portal.style.display = 'flex';
+          portal.classList.remove('hidden');
+          window.BFP_PORTAL_ACTIVE = true;
+
+          var nameInput = document.getElementById('portal-player-name');
+          var errEl = document.getElementById('portal-name-error');
+          var dlBtn = document.getElementById('btn-oneclick-download');
+          var dlIcon = document.getElementById('dl-btn-icon');
+          var dlText = document.getElementById('dl-btn-text');
+
+          if (nameInput) nameInput.value = '';
+          var hasDownloadedOnce = false;
+
+          function syncButtonsLockState() {
+            if (hasDownloadedOnce) return;
+            var hasName = nameInput && nameInput.value.trim().length > 0;
+            if (dlBtn) {
+              dlBtn.classList.toggle('disabled-gate', !hasName);
+            }
+            if (hasName && errEl) {
+              errEl.style.display = 'none';
+            }
+          }
+
+          if (nameInput) {
+            nameInput.addEventListener('input', syncButtonsLockState);
+            syncButtonsLockState();
+          }
+
+          if (dlBtn) {
+            dlBtn.addEventListener('click', function (ev) {
+              ev.preventDefault();
+              if (hasDownloadedOnce) return;
+
+              var val = nameInput ? nameInput.value.trim() : '';
+              if (!val) {
+                if (errEl) errEl.style.display = 'block';
+                if (nameInput) {
+                  nameInput.focus();
+                  nameInput.style.borderColor = '#ff3b5c';
+                }
+                return;
+              }
+
+              hasDownloadedOnce = true;
+              dlBtn.disabled = true;
+              dlBtn.style.animation = 'none';
+              if (nameInput) nameInput.disabled = true;
+
+              try {
+                localStorage.setItem('BFP_PLAYER_NAME', val);
+              } catch (e) {}
+
+              var isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+              var a = document.createElement('a');
+              a.href = isMobile ? 'Bus-Fever-Party.apk' : 'Bus-Fever-Party.exe';
+              a.download = isMobile ? 'Bus Fever Party.apk' : 'Bus Fever Party.exe';
+              document.body.appendChild(a);
+              a.click();
+              document.body.removeChild(a);
+
+              if (dlIcon) dlIcon.textContent = '✅';
+              if (dlText) dlText.textContent = 'DOWNLOADED';
+            });
+          }
+        })();
+      </script>
+
+      <!-- =================================================================
+           SPLASH 1: TEALS BRAND SCREEN (Game Theme Matched!)
+           ================================================================= -->
+      <div id="splash-studio">
+        <div class="studio-bg-glow"></div>
+        <div class="studio-logo-wrap">
+          <div class="teals-wordmark-row">
+            <span class="teals-sparkle-star" aria-hidden="true">✦</span>
+            <span class="teals-word-teals">TEALS</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- =================================================================
+           SPLASH 2: BUS FEVER PARTY 60-FPS LIVE 3D ANIMATED LOADING SCREEN
+           ================================================================= -->
+      <div id="splash-loading">
+        <!-- Full-Screen 1152x2048 Retina 60-FPS Live 3D Loading Scene Canvas (+ GLB 3D Models) -->
+        <canvas id="loading-live-canvas" class="loading-live-canvas" width="1152" height="2048"></canvas>
+
+        <!-- Cheerful Stereo Loading Audio -->
+        <audio id="loading-live-audio" src="loading_audio.mp3?v=41" preload="auto"></audio>
+
+        <div class="loading-bar-container">
+          <div class="loading-pct-text" id="loading-pct-text">0%</div>
+          <div class="loading-track">
+            <div class="loading-fill" id="loading-fill"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- =================================================================
+           HOME LOBBY SCREEN (Exact Competitor Video 00:07 - 00:51 & 03:25!)
+           ================================================================= -->
+      <div id="home-lobby-screen" class="hidden">
+        <!-- Top Header: Exact 3D Avatar + 3D Coin Pill on Left | 3D Settings Gear on Right -->
+        <div class="home-top-bar" id="home-top-bar">
+          <div class="home-top-left">
+            <button type="button" class="home-avatar-btn img-3d-btn" id="btn-home-avatar" title="Player Profile">
+              <img src="home_avatar_3d.png?v=50" alt="Profile" class="img-3d-fill" />
+              <span class="home-avatar-emoji" id="home-avatar-emoji" style="display:none;">🧑🏼</span>
+            </button>
+            <button type="button" class="home-coin-pill img-3d-coin-pill" id="btn-home-coins" title="Coins & Shop">
+              <img src="home_coin_pill_3d.png?v=36" alt="Coins" class="img-3d-fill" />
+              <span class="home-coin-val" id="home-coin-text">215</span>
+            </button>
+          </div>
+
+          <button type="button" class="home-gear-btn img-3d-btn" id="btn-home-settings" title="Settings">
+            <img src="home_gear_3d.png?v=36" alt="Settings" class="img-3d-fill" />
+          </button>
+        </div>
+
+        <!-- ===============================================================
+             TAB 1: EXACT COMPETITOR SHOP PANEL (Video 00:26 - 00:35)
+             =============================================================== -->
+        <div class="home-subpanel shop-full-panel" id="home-panel-shop" style="display:none;">
+          <div class="top-tab-blue-banner">
+            <div class="shop-top-coin-pill">
+              <span class="coin-gold-badge">
+                <span class="coin-dollar">$</span>
+              </span>
+              <span id="shop-coin-text">215</span>
+            </div>
+            <div class="top-tab-banner-title">Shop</div>
+          </div>
+
+          <div class="shop-scroll-area">
+            <!-- 1. No Ads Card -->
+            <div class="comp-shop-card card-noads" data-pack="noads">
+              <div class="noads-circle-badge">
+                <span class="noads-txt">ADS</span>
+                <span class="noads-slash"></span>
+              </div>
+              <div class="noads-label">No Ads</div>
+              <button type="button" class="btn-comp-buy" data-pack="noads">Rs 2,200.00</button>
+            </div>
+
+            <!-- 2. Ad-Free Bundle Card -->
+            <div class="comp-shop-card card-adfree-bundle" data-pack="adfree_bundle">
+              <div class="afb-left-col">
+                <div class="noads-circle-badge big">
+                  <span class="noads-txt">ADS</span>
+                  <span class="noads-slash"></span>
+                </div>
+                <div class="comp-bundle-title">Ad-Free Bundle</div>
+              </div>
+              <div class="afb-right-col">
+                <div class="afb-items-box">
+                  <div class="afb-item"><span class="afb-ico"><span class="gp-coin-badge">$</span></span><span class="afb-cnt">1 500</span></div>
+                  <div class="afb-item"><span class="afb-ico">🔀</span><span class="afb-cnt">×1</span></div>
+                  <div class="afb-item"><span class="afb-ico">🚁</span><span class="afb-cnt">×1</span></div>
+                  <div class="afb-item"><span class="afb-ico">🚌</span><span class="afb-cnt">×1</span></div>
+                </div>
+                <div class="comp-buy-wrap">
+                  <button type="button" class="btn-comp-buy" data-pack="adfree_bundle">Rs 3,600.00</button>
+                  <div class="sale-starburst">35%<br/>OFF</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 3. Beginner Bundle Card -->
+            <div class="comp-shop-card card-beginner-bundle" data-pack="beginner_bundle">
+              <div class="beg-left-col">
+                <div class="afb-items-box beg-box">
+                  <div class="afb-item"><span class="afb-ico"><span class="gp-coin-badge">$</span></span><span class="afb-cnt">1 000</span></div>
+                  <div class="afb-item"><span class="afb-ico">🔀</span><span class="afb-cnt">×2</span></div>
+                  <div class="afb-item"><span class="afb-ico">🚁</span><span class="afb-cnt">×2</span></div>
+                  <div class="afb-item"><span class="afb-ico">🚌</span><span class="afb-cnt">×2</span></div>
+                </div>
+                <div class="comp-bundle-title gold-txt">Beginner Bundle</div>
+              </div>
+              <div class="beg-right-col">
+                <div class="beg-arrow-95">
+                  <span class="beg-95-big">95%</span>
+                  <span class="beg-95-sub">OFF</span>
+                </div>
+                <div class="comp-buy-wrap">
+                  <button type="button" class="btn-comp-buy" data-pack="beginner_bundle">Rs 590.00</button>
+                  <div class="sale-starburst">95%<br/>OFF</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 4. Advanced Bundle Card -->
+            <div class="comp-shop-card card-blue-bundle" data-pack="advanced_bundle">
+              <div class="bb-top-row">
+                <div class="bb-art-col">
+                  <div class="bb-art-emoji">🛒<span class="gp-coin-badge">$</span></div>
+                  <div class="bb-coins-amt">5 000</div>
+                </div>
+                <div class="bb-boosters-pill">
+                  <span>🔀<small>×1</small></span>
+                  <span>🚁<small>×1</small></span>
+                  <span>🚌<small>×1</small></span>
+                </div>
+              </div>
+              <div class="bb-bot-row">
+                <div class="comp-bundle-title">Advanced Bundle</div>
+                <button type="button" class="btn-comp-buy" data-pack="advanced_bundle">Rs 2,800.00</button>
+              </div>
+            </div>
+
+            <!-- 5. Expert Bundle Card -->
+            <div class="comp-shop-card card-blue-bundle" data-pack="expert_bundle">
+              <div class="bb-top-row">
+                <div class="bb-art-col">
+                  <div class="bb-art-emoji">🚗<span class="gp-coin-badge">$</span></div>
+                  <div class="bb-coins-amt">10 000</div>
+                </div>
+                <div class="bb-boosters-pill">
+                  <span>🔀<small>×3</small></span>
+                  <span>🚁<small>×3</small></span>
+                  <span>🚌<small>×3</small></span>
+                </div>
+              </div>
+              <div class="bb-bot-row">
+                <div class="comp-bundle-title">Expert Bundle</div>
+                <button type="button" class="btn-comp-buy" data-pack="expert_bundle">Rs 5,500.00</button>
+              </div>
+            </div>
+
+            <!-- 6. Ultimate Bundle Card -->
+            <div class="comp-shop-card card-blue-bundle" data-pack="ultimate_bundle">
+              <div class="bb-top-row">
+                <div class="bb-art-col">
+                  <div class="bb-art-emoji">🚌<span class="gp-coin-badge">$</span></div>
+                  <div class="bb-coins-amt">25 000</div>
+                </div>
+                <div class="bb-boosters-pill">
+                  <span>🔀<small>×4</small></span>
+                  <span>🚁<small>×4</small></span>
+                  <span>🚌<small>×4</small></span>
+                </div>
+              </div>
+              <div class="bb-bot-row">
+                <div class="comp-bundle-title">Ultimate Bundle</div>
+                <button type="button" class="btn-comp-buy" data-pack="ultimate_bundle">Rs 8,900.00</button>
+              </div>
+            </div>
+
+            <!-- 7. Six Coin Packs Grid (1000 to 100000 Coins) -->
+            <div class="comp-coins-grid">
+              <div class="comp-coin-tile" data-pack="coins_1000">
+                <div class="cct-amt">1 000</div>
+                <div class="cct-pile"><span class="gp-coin-badge">$</span></div>
+                <button type="button" class="btn-comp-buy small" data-pack="coins_1000">Rs 590.00</button>
+              </div>
+              <div class="comp-coin-tile" data-pack="coins_5000">
+                <div class="cct-amt">5 000</div>
+                <div class="cct-pile"><span class="gp-coin-badge">$</span><span class="gp-coin-badge">$</span></div>
+                <button type="button" class="btn-comp-buy small" data-pack="coins_5000">Rs 2,250.00</button>
+              </div>
+              <div class="comp-coin-tile" data-pack="coins_10000">
+                <div class="cct-amt">10 000</div>
+                <div class="cct-pile"><span class="gp-coin-badge">$</span><span class="gp-coin-badge">$</span><span class="gp-coin-badge">$</span></div>
+                <button type="button" class="btn-comp-buy small" data-pack="coins_10000">Rs 4,250.00</button>
+              </div>
+              <div class="comp-coin-tile" data-pack="coins_25000">
+                <div class="cct-amt">25 000</div>
+                <div class="cct-pile">💰<span class="gp-coin-badge">$</span></div>
+                <button type="button" class="btn-comp-buy small" data-pack="coins_25000">Rs 9,200.00</button>
+              </div>
+              <div class="comp-coin-tile" data-pack="coins_50000">
+                <div class="cct-amt">50 000</div>
+                <div class="cct-pile">💰💰</div>
+                <button type="button" class="btn-comp-buy small" data-pack="coins_50000">Rs 16,700.00</button>
+              </div>
+              <div class="comp-coin-tile" data-pack="coins_100000">
+                <div class="cct-amt">100 000</div>
+                <div class="cct-pile">👑💰</div>
+                <button type="button" class="btn-comp-buy small" data-pack="coins_100000">Rs 28,400.00</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===============================================================
+             TAB 2: MAIN SUNNY 3D CITY STAGE (1:1 Custom 3D GLB & 60-FPS Retina Road Map!)
+             =============================================================== -->
+        <div class="home-stage-main" id="home-panel-home">
+          <!-- Full-Screen 1152x2048 Retina 60-FPS Live 3D Interactive Canvas -->
+          <canvas id="home-3d-canvas" class="home-3d-canvas" width="1152" height="2048"></canvas>
+          <!-- Three.js WebGL GLB Asset Loader Canvas -->
+          <canvas id="home-glb-canvas" class="home-glb-canvas" width="576" height="1024" aria-hidden="true"></canvas>
+
+          <!-- Legacy video hidden -->
+          <video
+            id="home-live-bg-video"
+            class="home-live-bg-video"
+            style="display:none !important;"
+            muted
+            playsinline
+          ></video>
+
+          <!-- Left-Side Quick Pills below Avatar: Live Rank Badge & 1-Click Inventory Button -->
+          <div class="home-left-quick-pills" id="home-left-quick-pills">
+            <button type="button" class="hlq-pill hlq-rank-pill" id="btn-home-rank-badge" title="Ranks & Prizes">
+              <span class="hlq-ico" id="home-rank-ico">🥉</span>
+              <span class="hlq-txt" id="home-rank-name">Bronze</span>
+            </button>
+            <button type="button" class="hlq-pill hlq-inv-pill" id="btn-home-inventory" title="My Inventory">
+              <span class="hlq-ico">🎒</span>
+              <span class="hlq-txt">Inventory</span>
+            </button>
+          </div>
+
+          <!-- Right-Side 3D Feature Hit Buttons: Supplies & Spin -->
+          <div class="home-right-badges" id="home-right-badges">
+            <button type="button" class="home-feature-badge img-3d-badge badge-supplies-anim" id="btn-home-supplies" title="Supplies">
+              <span id="supplies-alert-dot" style="display:none;"></span>
+            </button>
+
+            <button type="button" class="home-feature-badge img-3d-badge badge-spin-anim" id="btn-home-spin" title="Lucky Spin">
+              <span id="home-spin-dot" style="display:none;"></span>
+            </button>
+          </div>
+
+          <!-- Hidden legacy bus container kept for DOM ID compatibility -->
+          <div class="home-bus-stage" style="display:none !important;">
+            <div class="home-double-bus img-3d-bus-wrap settled" id="home-double-bus">
+              <div class="hbus-seats-grid img-3d-seats-overlay" id="hbus-seats-grid">
+                <div class="hbus-seat" data-seat="0"></div><div class="hbus-seat" data-seat="1"></div>
+                <div class="hbus-seat" data-seat="2"></div><div class="hbus-seat" data-seat="3"></div>
+                <div class="hbus-seat" data-seat="4"></div><div class="hbus-seat" data-seat="5"></div>
+              </div>
+              <div class="img-3d-level-board">
+                <span id="home-bus-level-label">LEVEL 1</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Interactive Play Button Hit Target positioned over the 60-FPS 3D Play Button -->
+          <div class="home-play-wrap" id="home-play-wrap">
+            <button type="button" class="btn-home-play img-3d-play-btn" id="btn-home-play" aria-label="Play"></button>
+          </div>
+        </div>
+
+        <!-- ===============================================================
+             TAB 3: LEADERBOARD & RANKS PANEL (Exact Video 00:36 + Rank Roadmap!)
+             =============================================================== -->
+        <div class="home-subpanel ranks-full-panel" id="home-panel-ranks" style="display:none;">
+          <div class="top-tab-blue-banner">
+            <div class="top-tab-banner-title">Ranks &amp; Leaderboard</div>
+          </div>
+          <div class="ranks-top-summary-card" id="ranks-top-summary-card">
+            <div class="rtsc-left">
+              <span class="rtsc-badge-ico" id="rtsc-badge-ico">🥉</span>
+              <div class="rtsc-info">
+                <div class="rtsc-rank-title" id="rtsc-rank-title">Bronze Rank</div>
+                <div class="rtsc-next-sub" id="rtsc-next-sub">Next Prize at Level 5</div>
+              </div>
+            </div>
+            <div class="rtsc-actions">
+              <button type="button" class="btn-rtsc-open" id="btn-ranks-open-roadmap">🏆 Prizes</button>
+              <button type="button" class="btn-rtsc-open inv" id="btn-ranks-open-inv">🎒 Bag</button>
+            </div>
+          </div>
+          <div class="leaderboard-locked-body" id="leaderboard-locked-msg">
+            Reach level 29 to unlock<br/>Global Player Leaderboard!
+          </div>
+          <div class="ranks-list" id="home-ranks-list" style="display:none;"></div>
+        </div>
+
+        <!-- Exact 3D Bottom 3-Tab Navigation Bar: Shop | Home | Leaderboard -->
+        <div class="home-bottom-tabs img-3d-bottom-nav" id="home-bottom-tabs">
+          <img src="home_bottom_bar.png?v=51" alt="Navigation" class="img-3d-bottom-bar-art" id="home-bottom-bar-img" />
+          <button type="button" class="home-nav-tab" id="nav-tab-shop" data-tab="shop" aria-label="Shop"></button>
+          <button type="button" class="home-nav-tab active" id="nav-tab-home" data-tab="home" aria-label="Home"></button>
+          <button type="button" class="home-nav-tab" id="nav-tab-ranks" data-tab="ranks" aria-label="Leaderboard"></button>
+        </div>
+      </div>
+
+      <!-- =================================================================
+           FULL-SCREEN AIRPLANE IN SUNNY BLUE SKY + CLOUDS TRANSITION
+           ================================================================= -->
+      <div id="sky-plane-transition" aria-hidden="true">
+        <div class="sky-cloud sc-1"></div>
+        <div class="sky-cloud sc-2"></div>
+        <div class="sky-cloud sc-3"></div>
+        <div class="sky-cloud sc-4"></div>
+        <div class="sky-plane-actor">
+          <div class="plane-contrail"></div>
+          <svg class="plane-svg" viewBox="0 0 120 120" fill="none">
+            <path d="M88 26C93 21 99 19 102 22C105 25 103 31 98 36L77 57L94 94L84 101L59 73L41 91L44 106L36 112L26 96L10 86L16 78L31 81L49 63L21 38L28 28L65 45L88 26Z" fill="#60A5FA" stroke="#EFF6FF" stroke-width="3" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      </div>
+
+      <!-- 3D WebGL Canvas -->
+      <canvas id="webgl-canvas"></canvas>
+
+      <!-- Dynamic 3D-Projected Slot Capacity Badges & + Unlock Hits -->
+      <div id="slot-badges-layer"></div>
+
+      <!-- Striped Carnival Awnings at Top Left & Right Feeder Entrances -->
+      <div id="go-awnings-layer" aria-hidden="true">
+        <div class="feeder-awning left-awning" id="awning-left"></div>
+        <div class="feeder-awning right-awning" id="awning-right"></div>
+      </div>
+
+      <!-- Floating Text, GO! Signs, Emoji Bubbles & Particle FX Layer -->
+      <div id="floating-fx-layer"></div>
+
+      <!-- Flying Coins Celebration Layer (Video 03:21 - 03:23!) -->
+      <div id="flying-coins-layer">
+        <div class="flying-coin-hud-target" id="flying-coin-hud-pill" style="display:none;">
+          <span class="coin-gold-badge">
+            <span class="coin-dollar">$</span>
+            <span class="coin-plus-dot">+</span>
+          </span>
+          <span id="flying-coin-hud-val">215</span>
+        </div>
+      </div>
+
+      <!-- "No spots available" Dark Translucent Banner (Video 03:00) -->
+      <div id="no-spots-banner">No spots available</div>
+
+      <!-- "Out of Space!" Cream/Gold Full-Width Banner before Out of Spots Modal -->
+      <div id="out-of-space-banner"><span>Out of Space!</span></div>
+
+      <!-- Challenge Tagline Banner shown at Level Start (Video 00:57) -->
+      <div id="challenge-tagline">
+        <div class="challenge-tag-inner" id="challenge-tag-text"></div>
+      </div>
+
+      <!-- =================================================================
+           VIP VEHICLE SELECTION DIMMING OVERLAY & BOTTOM CARD (Video 01:12!)
+           ================================================================= -->
+      <div id="vip-selection-overlay" style="display:none;">
+        <div class="vip-dim-top" id="vip-dim-top"></div>
+        <div class="vip-select-bottom-card" id="booster-mode-banner">
+          <span id="booster-mode-text">Select a Vehicle for the<br/><strong class="vip-hl">VIP</strong> Spot</span>
+          <button id="btn-cancel-booster" style="display:none;">Cancel</button>
+        </div>
+      </div>
+
+      <!-- =================================================================
+           CLEAN COMPETITOR GAMEPLAY HUD (Exact Video 00:55 - 03:17!)
+           ================================================================= -->
+      <div id="hud-layer" style="display:none;">
+        <div class="top-bar">
+          <!-- Top-Left Group: Restart + 1-Click Undo Move Button -->
+          <div class="top-bar-side-group">
+            <button class="circle-btn" id="btn-restart" title="Restart Level">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 9V4h5"/>
+                <path d="M4.5 9A8.5 8.5 0 1 1 6 16.8"/>
+              </svg>
+            </button>
+            <button class="circle-btn" id="btn-undo" title="Undo Last Move">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 14L4 9l5-5"/>
+                <path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5v0a5.5 5.5 0 0 1-5.5 5.5H11"/>
+              </svg>
+            </button>
+          </div>
+
+          <!-- Top-Center: Clean Outlined "Level X" Title -->
+          <div class="top-center-group">
+            <div class="level-title" id="level-title-text">Level 1</div>
+            <!-- Hidden legacy nodes kept in DOM so zero JS null errors ever occur -->
+            <span id="coin-count-text" style="display:none;">215</span>
+            <span id="level-timer-text" style="display:none;">01:30</span>
+            <span id="passenger-left-text" style="display:none;">0</span>
+            <span id="hud-player-name" style="display:none;">Player</span>
+            <div id="save-toast" class="save-toast" style="display:none;"></div>
+          </div>
+
+          <!-- Top-Right Group: Smart AI Hint + Pause Button -->
+          <div class="top-bar-side-group">
+            <button class="circle-btn" id="btn-hint" title="Smart Move Hint">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fde047" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 18h6"/>
+                <path d="M10 22h4"/>
+                <path d="M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z" fill="rgba(253, 224, 71, 0.28)"/>
+              </svg>
+            </button>
+            <button class="circle-btn" id="btn-pause" title="Pause">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                <rect x="6" y="4" width="4.6" height="16" rx="2.2"/>
+                <rect x="13.4" y="4" width="4.6" height="16" rx="2.2"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div id="tutorial-hint"></div>
+
+        <!-- Bottom 3 Boosters Bar (Exact Video Order: VIP [Lv4] | Shuffle [Lv8] | Magnet [Lv13]) -->
+        <div class="bottom-bar">
+          <!-- Slot 1: VIP Airlift (Unlocks Level 4) -->
+          <div class="booster-card" id="booster-vip">
+            <div class="booster-top-icon" id="booster-vip-icon"></div>
+            <div class="booster-label" id="booster-vip-label">VIP</div>
+            <div class="booster-sub" id="booster-vip-sub"></div>
+            <div class="booster-count-badge" id="booster-vip-count" style="display:none;">1</div>
+          </div>
+
+          <!-- Slot 2: Shuffle (Unlocks Level 8) -->
+          <div class="booster-card" id="booster-shuffle">
+            <div class="booster-top-icon" id="booster-shuffle-icon"></div>
+            <div class="booster-label" id="booster-shuffle-label">Level 8</div>
+            <div class="booster-sub" id="booster-shuffle-sub"></div>
+            <div class="booster-count-badge" id="booster-shuffle-count" style="display:none;">2</div>
+          </div>
+
+          <!-- Slot 3: Magnet (Unlocks Level 13) -->
+          <div class="booster-card" id="booster-magnet">
+            <div class="booster-top-icon" id="booster-magnet-icon"></div>
+            <div class="booster-label" id="booster-magnet-label">Level 13</div>
+            <div class="booster-sub" id="booster-magnet-sub"></div>
+            <div class="booster-count-badge" id="booster-magnet-count" style="display:none;">2</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MODAL 0: "Having Fun?" Rating Popup -->
+      <div class="modal-backdrop" id="modal-rate">
+        <div class="rate-card">
+          <button class="modal-close" id="btn-close-rate" style="background:#f97316;">✕</button>
+          <div class="rate-title">Having Fun?</div>
+          <div class="rate-stars">⭐⭐⭐⭐⭐</div>
+          <div style="font-size:52px; margin-bottom:6px;">🙋‍♀️</div>
+          <div class="rate-sub">
+            Your opinion matters,<br/>
+            <span style="color:#e11d48;">rate us!</span>
+          </div>
+          <div class="rate-btns">
+            <button class="rate-btn-down" id="btn-rate-down">👎</button>
+            <button class="rate-btn-up" id="btn-rate-up">👍</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- =================================================================
+           MODAL 1: "GREAT JOB!" 3D ANIMATED VICTORY SCREEN
+           ================================================================= -->
+      <div class="modal-backdrop" id="modal-win" style="display:none !important;">
+        <canvas id="fireworks-canvas"></canvas>
+
+        <!-- Rotating Golden Victory Sunburst Rays behind 3D Character -->
+        <div class="win-sunburst-rays" aria-hidden="true"></div>
+
+        <div class="win-top-coin-bar">
+          <span class="coin-gold-badge">
+            <span class="coin-dollar">$</span>
+            <span class="coin-plus-dot">+</span>
+          </span>
+          <span id="win-total-coins">215</span>
+        </div>
+
+        <div class="win-character-wrap">
+          <!-- Real Three.js 3D WebGL Canvas rendering the 3D Articulated Conductor Girl, 3D "GREAT JOB!" Banner & 16 Real 3D Cylindrical Gold Coins! -->
+          <div class="win-3d-webgl-stage">
+            <canvas id="win-3d-canvas" class="win-3d-canvas"></canvas>
+          </div>
+          <div class="win-coins-earned-badge" id="win-coins-earned">+50</div>
+        </div>
+
+        <!-- Two Side-by-Side Buttons: Green "$ 100 ▶" (2x Ad) & Orange "Next" -->
+        <div class="win-buttons-row dual-win-btns">
+          <button type="button" class="btn-win-ad-40" id="btn-win-ad-double">
+            <span class="win-coin-ico">$</span>
+            <span>100</span>
+            <span class="ad-play-circle">▶</span>
+          </button>
+          <button type="button" class="btn-win-next-orange" id="btn-next-level">Next</button>
+        </div>
+      </div>
+
+      <!-- =================================================================
+           MODAL 2: EXACT COMPETITOR "Out of Spots" MODAL
+           ================================================================= -->
+      <div class="modal-backdrop oos-backdrop" id="modal-fail">
+        <div class="oos-top-coin-pill">
+          <span class="coin-gold-badge">
+            <span class="coin-dollar">$</span>
+            <span class="coin-plus-dot">+</span>
+          </span>
+          <span id="oos-coin-count">215</span>
+        </div>
+
+        <div class="oos-stack-wrap" id="oos-stack-wrap">
+          <div class="oos-main-card">
+            <div class="oos-header-title" id="fail-modal-title">Out of Spots</div>
+            <div class="oos-inner-cream">
+              <div class="oos-preview-frame">
+                <canvas id="oos-preview-canvas" width="320" height="146"></canvas>
+              </div>
+
+              <div class="oos-desc-text" id="fail-modal-subtitle">
+                <span class="oos-hl">Clear</span> all parked buses<br/>
+                and <span class="oos-hl">unlock</span> 1 extra spot!
+              </div>
+
+              <div class="oos-btn-row">
+                <button type="button" class="btn-oos-coins" id="btn-revive-slot">
+                  <span class="oos-coin-ico">$</span>
+                  <span>150</span>
+                </button>
+                <button type="button" class="btn-oos-free" id="btn-revive-free">
+                  <span class="oos-play-tri">▶</span>
+                  <span>Free</span>
+                </button>
+              </div>
+
+              <button type="button" class="btn-oos-restart" id="btn-fail-retry">Restart</button>
+            </div>
+          </div>
+
+          <div class="oos-boost-pack" id="btn-oos-boost-pack">
+            <div class="boost-pack-ribbon">Boost Pack</div>
+            <div class="boost-pack-sale-tag">40%<br/>OFF</div>
+            <div class="boost-pack-body">
+              <div class="boost-chest-col">
+                <div class="chest-illus">🧰<span class="gp-coin-badge">$</span></div>
+                <div class="chest-coins-num">3 000</div>
+              </div>
+              <div class="boost-items-col">
+                <div class="boost-mini-items">
+                  <span class="bmi-chip">🚁<small>×1</small></span>
+                  <span class="bmi-chip">🔀<small>×1</small></span>
+                  <span class="bmi-chip">🚌<small>×1</small></span>
+                </div>
+                <div class="btn-boost-price">Rs 2,200.00</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="oos-hold-map" id="hold-see-map-btn">Hold to see the map</div>
+        </div>
+      </div>
+
+      <!-- =================================================================
+           MODAL 3: EXACT COMPETITOR SETTINGS MODAL (Video 01:06.0!)
+           ================================================================= -->
+      <div class="modal-backdrop" id="modal-pause">
+        <div class="comp-cream-modal settings-card">
+          <button class="comp-orange-close" id="btn-close-pause">✕</button>
+          <div class="comp-modal-header" id="pause-modal-heading">Settings</div>
+          <div id="pause-stats-line" style="display:none;"></div>
+
+          <div class="comp-cream-inner">
+            <div class="comp-setting-row">
+              <div class="csr-left">
+                <span class="csr-icon">🎵</span>
+                <span class="csr-label">Music</span>
+              </div>
+              <button type="button" class="comp-switch on" id="toggle-music">
+                <span class="csw-check">✓</span>
+                <span class="csw-knob"></span>
+              </button>
+            </div>
+
+            <div class="comp-setting-row">
+              <div class="csr-left">
+                <span class="csr-icon">🔊</span>
+                <span class="csr-label">Sound</span>
+              </div>
+              <button type="button" class="comp-switch on" id="toggle-sfx">
+                <span class="csw-check">✓</span>
+                <span class="csw-knob"></span>
+              </button>
+            </div>
+
+            <div class="comp-setting-row">
+              <div class="csr-left">
+                <span class="csr-icon">📳</span>
+                <span class="csr-label">Vibration</span>
+              </div>
+              <button type="button" class="comp-switch on" id="toggle-vibe">
+                <span class="csw-check">✓</span>
+                <span class="csw-knob"></span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Two Side-by-Side Buttons in Gameplay: "Home" (Yellow) & "Restart" (Green) -->
+          <div class="comp-settings-dual-btns" id="pause-gameplay-actions">
+            <button type="button" class="btn-comp-home" id="btn-pause-home">Home</button>
+            <button type="button" class="btn-comp-restart" id="btn-pause-restart">Restart</button>
+            <button type="button" id="btn-resume" style="display:none;">Continue</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- =================================================================
+           MODAL 4: EXACT GAS PUMP "Bus Supplies" DISPENSER (Video 00:39.9!)
+           ================================================================= -->
+      <div class="modal-backdrop" id="modal-supplies">
+        <div class="oos-top-coin-pill">
+          <span class="coin-gold-badge">
+            <span class="coin-dollar">$</span>
+          </span>
+          <span id="supplies-coin-count">215</span>
+        </div>
+
+        <div class="gas-pump-modal">
+          <!-- Left 3D Blue Fuel Nozzle & Hose -->
+          <div class="gp-nozzle-assembly" aria-hidden="true">
+            <div class="gp-spout"></div>
+            <div class="gp-gun-body">
+              <div class="gp-trigger-guard"></div>
+            </div>
+            <div class="gp-hose"></div>
+          </div>
+
+          <!-- Top Dome with Fuel Gauge Meter -->
+          <div class="gp-top-dome">
+            <svg class="gp-gauge-svg" viewBox="0 0 140 75" fill="none">
+              <path d="M20 65 A 50 50 0 0 1 52 20" stroke="#F97316" stroke-width="12" stroke-linecap="round"/>
+              <path d="M55 19 A 50 50 0 0 1 88 19" stroke="#FACC15" stroke-width="12" stroke-linecap="round"/>
+              <path d="M91 20 A 50 50 0 0 1 120 65" stroke="#4ADE80" stroke-width="12" stroke-linecap="round"/>
+              <line id="gp-gauge-needle" x1="70" y1="62" x2="96" y2="42" stroke="#EF4444" stroke-width="5" stroke-linecap="round"/>
+              <circle cx="70" cy="62" r="8" fill="#FDE047" stroke="#B45309" stroke-width="2.5"/>
+            </svg>
+          </div>
+
+          <button class="comp-orange-close gp-close" id="btn-close-supplies">✕</button>
+
+          <div class="gp-header-banner">Bus Supplies</div>
+
+          <!-- 5 Progressive Reward Tiers: x15 (Free ▶), x20 (Free ▶), x50, x70, x100 -->
+          <div class="gp-tiers-list" id="gp-tiers-list">
+            <div class="gp-tier-row active-tier" data-tier="0">
+              <div class="gp-tier-left">
+                <span class="gp-coins-ico"><span class="gp-coin-badge">$</span></span>
+                <span class="gp-tier-mult">x15</span>
+              </div>
+              <button type="button" class="btn-gp-claim" data-tier="0">
+                <span>Free</span>
+                <span class="ad-play-circle">▶</span>
+              </button>
+            </div>
+
+            <div class="gp-tier-row" data-tier="1">
+              <div class="gp-tier-left">
+                <span class="gp-coins-ico"><span class="gp-coin-badge">$</span></span>
+                <span class="gp-tier-mult">x20</span>
+              </div>
+              <button type="button" class="btn-gp-claim" data-tier="1">
+                <span>Free</span>
+                <span class="ad-play-circle">▶</span>
+              </button>
+            </div>
+
+            <div class="gp-tier-row" data-tier="2">
+              <div class="gp-tier-left">
+                <span class="gp-coins-ico"><span class="gp-coin-badge">$</span><span class="gp-coin-badge">$</span></span>
+                <span class="gp-tier-mult">x50</span>
+              </div>
+              <button type="button" class="btn-gp-claim locked-tier" data-tier="2">
+                <span>Free</span>
+                <span class="ad-play-circle">▶</span>
+                <span class="gp-tier-lock">🔒</span>
+              </button>
+            </div>
+
+            <div class="gp-tier-row" data-tier="3">
+              <div class="gp-tier-left">
+                <span class="gp-coins-ico">💰</span>
+                <span class="gp-tier-mult">x70</span>
+              </div>
+              <button type="button" class="btn-gp-claim locked-tier" data-tier="3">
+                <span>Free</span>
+                <span class="ad-play-circle">▶</span>
+                <span class="gp-tier-lock">🔒</span>
+              </button>
+            </div>
+
+            <div class="gp-tier-row" data-tier="4">
+              <div class="gp-tier-left">
+                <span class="gp-coins-ico">💰<span class="gp-coin-badge">$</span></span>
+                <span class="gp-tier-mult">x100</span>
+              </div>
+              <button type="button" class="btn-gp-claim locked-tier" data-tier="4">
+                <span>Free</span>
+                <span class="ad-play-circle">▶</span>
+                <span class="gp-tier-lock">🔒</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="gp-footer-txt">Grab Your <span>Free</span> supplies!</div>
+          <div class="gp-base-plate"></div>
+        </div>
+      </div>
+
+      <!-- =================================================================
+           MODAL 5: PLAYER HUB — PROFILE, REAL PHOTO UPLOAD, INVENTORY & RANKS
+           ================================================================= -->
+      <div class="modal-backdrop" id="modal-profile">
+        <div class="comp-cream-modal profile-card hub-modal-card">
+          <button class="comp-orange-close" id="btn-close-profile">✕</button>
+          <div class="comp-modal-header" id="profile-modal-title">Player Hub</div>
+
+          <!-- 3-Tab Switcher: Profile & Pics | Inventory | Ranks & Prizes -->
+          <div class="hub-tabs-row">
+            <button type="button" class="hub-tab-btn active" id="hub-tab-btn-profile" data-hubtab="profile">👤 Profile</button>
+            <button type="button" class="hub-tab-btn" id="hub-tab-btn-inventory" data-hubtab="inventory">🎒 Inventory</button>
+            <button type="button" class="hub-tab-btn" id="hub-tab-btn-ranks" data-hubtab="ranks">🏆 Ranks</button>
+          </div>
+
+          <div class="comp-cream-inner profile-inner hub-scroll-inner">
+            <!-- TAB PANE 1: PROFILE, REAL PHOTO UPLOAD & UNLOCKABLE AVATARS -->
+            <div class="hub-pane" id="hub-pane-profile">
+              <!-- Top Avatar + Editable Username + Live Rank Pill -->
+              <div class="prof-top-row">
+                <button type="button" class="prof-avatar-box img-3d-prof-avatar" id="btn-cycle-avatar" title="Tap to Change Avatar">
+                  <img src="home_avatar_3d.png?v=36" alt="Avatar" class="img-3d-fill" id="prof-avatar-art" />
+                  <div id="prof-avatar-custom-svg" class="prof-avatar-custom-svg" style="display:none;"></div>
+                  <span class="prof-edit-pen">✎</span>
+                </button>
+                <div class="prof-name-rank-col">
+                  <input
+                    type="text"
+                    id="profile-name-input"
+                    class="prof-username-input"
+                    maxlength="16"
+                    value="player_60913"
+                    title="Tap to edit name"
+                  />
+                  <div class="prof-current-rank-pill" id="prof-current-rank-pill">
+                    <span id="prof-rank-emoji">🥉</span>
+                    <span id="prof-rank-label">Bronze Rank</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Upload Real Photo Direct from Phone / Gallery / PC -->
+              <div class="prof-upload-photo-row">
+                <input type="file" id="profile-photo-input" accept="image/*" style="display:none;" />
+                <button type="button" class="btn-upload-real-photo" id="btn-upload-real-photo">
+                  <span>📷</span>
+                  <span>Apni Real Pic Lagayein (Phone / Gallery)</span>
+                </button>
+              </div>
+
+              <!-- Next Milestone Level Prize Progress Bar -->
+              <div class="prof-milestone-card">
+                <div class="pmc-top">
+                  <span class="pmc-title" id="pmc-next-gift-title">🎁 Next Milestone Prize: Level 5</span>
+                  <span class="pmc-reward-tag" id="pmc-next-gift-reward">+100 $ &amp; +1 Booster</span>
+                </div>
+                <div class="pmc-bar-track">
+                  <div class="pmc-bar-fill" id="pmc-bar-fill" style="width:40%;"></div>
+                </div>
+              </div>
+
+              <!-- Unlockable 100 Character Profile Pictures (Every 50 Levels: Lv.50 -> Lv.5000!) -->
+              <div class="prof-avatars-section">
+                <div class="pas-header">
+                  <span>🖼️ 100 Character Profile Pics (Every 50 Lv)</span>
+                  <span class="pas-count" id="pas-unlocked-count">2 / 102</span>
+                </div>
+                <div class="prof-avatars-grid" id="prof-avatars-grid"></div>
+              </div>
+
+              <!-- Compact 3 Stats Row: Level | Passengers | Days -->
+              <div class="prof-stats-mini-grid">
+                <div class="prof-stat-card mini">
+                  <div class="psc-title">Level</div>
+                  <div class="psc-pill"><span class="psc-ico">🏅</span><span class="psc-val" id="prof-stat-level">1</span></div>
+                </div>
+                <div class="prof-stat-card mini">
+                  <div class="psc-title">Passengers</div>
+                  <div class="psc-pill"><span class="psc-ico">🧍‍♂️</span><span class="psc-val" id="prof-stat-passengers">2.8K</span></div>
+                </div>
+                <div class="prof-stat-card mini">
+                  <div class="psc-title">Days</div>
+                  <div class="psc-pill"><span class="psc-ico">📅</span><span class="psc-val" id="prof-stat-days">6</span></div>
+                </div>
+              </div>
+
+              <button type="button" id="btn-save-profile" style="display:none;">Save</button>
+            </div>
+
+            <!-- TAB PANE 2: MY INVENTORY (Shows exact count of every item & prize!) -->
+            <div class="hub-pane" id="hub-pane-inventory" style="display:none;">
+              <div class="inv-summary-banner">
+                <span>🎒 My Game Inventory</span>
+                <small>Har cheez jo aap ke paas jama hai</small>
+              </div>
+              <div class="inv-items-grid" id="inv-items-grid"></div>
+            </div>
+
+            <!-- TAB PANE 3: 7 RANKS (BRONZE -> ACE LV.5000) & MILESTONE PRIZES -->
+            <div class="hub-pane" id="hub-pane-ranks" style="display:none;">
+              <div class="ranks-ace-jackpot-banner">
+                <div class="raj-crown">🔥👑🏆</div>
+                <div class="raj-text">
+                  <div class="raj-title">LEVEL 5000 — ACE LEGEND JACKPOT!</div>
+                  <div class="raj-desc">Win <strong>+50,000 Coins</strong> + <strong>50× All Boosters</strong> + <strong>Supreme Ace Avatar &amp; Trophy!</strong></div>
+                </div>
+              </div>
+              <div class="ranks-roadmap-list" id="ranks-roadmap-list"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- =================================================================
+           MODAL 6: FULL-SCREEN BUS COCKPIT LUCKY SPIN (Exact Video 00:42.5!)
+           ================================================================= -->
+      <div class="modal-backdrop cockpit-spin-backdrop" id="modal-spin">
+        <!-- Top-Left Coin Pill -->
+        <div class="oos-top-coin-pill">
+          <span class="coin-gold-badge">
+            <span class="coin-dollar">$</span>
+          </span>
+          <span id="spin-coin-count">215</span>
+        </div>
+
+        <!-- Top-Right Orange X Close Button -->
+        <button class="comp-orange-close spin-top-close" id="btn-close-spin">✕</button>
+
+        <!-- Top-Center Purple Rearview Mirror Header -->
+        <div class="cockpit-mirror-wrap">
+          <div class="mirror-mount"></div>
+          <div class="mirror-frame">
+            <span>Lucky Spin</span>
+          </div>
+        </div>
+
+        <!-- Center 6-Slice Purple & Gold Wheel -->
+        <div class="cockpit-wheel-stage">
+          <div class="cockpit-wheel-outer">
+            <div class="cockpit-wheel-pin"></div>
+            <canvas id="spin-wheel-canvas" width="300" height="300"></canvas>
+            <div class="cockpit-wheel-hub"></div>
+          </div>
+        </div>
+
+        <div class="spin-result-toast" id="spin-result-text"></div>
+
+        <!-- Bottom Purple Bus Dashboard & Spin Button -->
+        <div class="cockpit-dashboard">
+          <div class="spin-win10-title" id="spin-refill-info">Daily Free Spins (10/10) • Resets in 24h</div>
+          <div class="spin-prog-row">
+            <span class="spin-info-i">i</span>
+            <div class="spin-prog-track">
+              <div class="spin-prog-fill" id="spin-prog-fill" style="width:100%;"></div>
+              <span class="spin-prog-label" id="spin-prog-label">10/10</span>
+            </div>
+            <span class="spin-mini-wheel-ico">🎡</span>
+          </div>
+
+          <div class="dashboard-panel">
+            <div class="steering-wheel-wrap">
+              <button type="button" class="btn-steering-horn" id="btn-do-spin">
+                <div style="display:flex;align-items:center;gap:6px;">
+                  <span>Free</span>
+                  <span class="ad-play-circle">▶</span>
+                </div>
+                <small style="font-size:12px;font-weight:900;color:#fef08a;">10/10 Spins</small>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- =================================================================
+           MODAL 7: REWARDED VIDEO AD PLAYER OVERLAY (Monetization Engine!)
+           ================================================================= -->
+      <div class="modal-backdrop" id="modal-rewarded-ad">
+        <div class="rewarded-ad-box">
+          <div class="rad-top-bar">
+            <span class="rad-badge">📢 Sponsored Video Ad</span>
+            <span class="rad-timer-pill" id="rad-timer-pill">Reward in 5s</span>
+            <button type="button" class="rad-close-btn" id="btn-close-rad" style="display:none;">✕ Claim Reward</button>
+          </div>
+          <div class="rad-stage">
+            <div class="rad-anim-icon">🚌💨✨</div>
+            <div class="rad-title" id="rad-placement-title">Bus Fever Party — Special Reward!</div>
+            <div class="rad-sub">Watching short video to unlock your free reward...</div>
+            <div class="rad-progress-bar">
+              <div class="rad-progress-fill" id="rad-progress-fill"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- =================================================================
+           MODAL 8: 3D CELEBRATION REWARD & CHARACTER / RANK UNLOCK POPUP
+           ("jo jo milega popup mn ayega yeh mila ha")
+           ================================================================= -->
+      <div class="modal-backdrop" id="modal-reward-popup">
+        <div class="reward-popup-card">
+          <div class="rp-burst-rays" aria-hidden="true"></div>
+          <button type="button" class="comp-orange-close rp-close-btn" id="btn-close-reward-popup">✕</button>
+          <div class="rp-badge-tag" id="rp-badge-tag">🎉 NEW REWARD UNLOCKED!</div>
+          <div class="rp-main-title" id="rp-main-title">Level 50 Reached!</div>
+
+          <div class="rp-showcase-stage" id="rp-showcase-stage">
+            <div class="rp-hero-frame" id="rp-hero-frame">
+              <div class="rp-hero-visual" id="rp-hero-visual"></div>
+            </div>
+            <div class="rp-hero-name" id="rp-hero-name">Cool Striker</div>
+            <div class="rp-hero-sub" id="rp-hero-sub">Character Profile Picture • Lv. 50</div>
+          </div>
+
+          <div class="rp-extra-prizes-list" id="rp-extra-prizes-list"></div>
+
+          <div class="rp-actions-row">
+            <button type="button" class="btn-rp-equip" id="btn-rp-equip" style="display:none;">✨ Equip &amp; Claim!</button>
+            <button type="button" class="btn-rp-claim" id="btn-rp-claim">🎁 Awesome!</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- High-Priority "Ads are not available right now" Toast Popup -->
+      <div id="ads-unavailable-toast" class="ads-unavailable-toast">⚠️ Ads are not available right now</div>
+
+      <!-- Legacy hidden nodes for safe compatibility -->
+      <div id="modal-extratime" style="display:none;"></div>
+      <div id="level-transition-clouds" style="display:none;"></div>
+
+    </div>
+  </div>
+
+  <!-- Local Bundled Three.js -->
+  <script src="three.min.js"></script>
+  <!-- Main Bus Fever Party 3D Engine -->
+  <script src="game.js?v=70"></script>
+</body>
+</html>
