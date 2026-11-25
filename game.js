@@ -1692,19 +1692,36 @@
 
       for (let w = 0; w < exitSequence.length; w += waveSize) {
         const waveVehicles = exitSequence.slice(w, w + waveSize);
-        // Group rows into contiguous color chunks of 3..4 rows (with occasional 1-row accent) so loop has clean color blocks like the reference image!
-        const waveChunks = [];
-
+        // Aggregate rows by color within each wave first so small cars don't create 1-row rainbow stripes,
+        // then emit bold 4..7 row contiguous color blocks (with occasional 1-2 row accent) like the reference video!
+        const colorRowCounts = {};
+        const colorOrder = [];
         for (const v of waveVehicles) {
-          let remRows = Math.round(v.cap / ROW_PASSENGERS);
-          while (remRows > 0) {
-            const chunkLen = remRows >= 4 ? (rand() < 0.78 ? 4 : 3) : remRows;
+          const rows = Math.round(v.cap / ROW_PASSENGERS);
+          if (rows <= 0) continue;
+          if (!colorRowCounts[v.color]) {
+            colorRowCounts[v.color] = 0;
+            colorOrder.push(v.color);
+          }
+          colorRowCounts[v.color] += rows;
+        }
+
+        const waveChunks = [];
+        for (const col of colorOrder) {
+          let rem = colorRowCounts[col];
+          while (rem > 0) {
+            let chunkLen = rem;
+            if (rem >= 8) {
+              chunkLen = rand() < 0.75 ? 6 : 5;
+            } else if (rem >= 5) {
+              chunkLen = rem;
+            }
             const chunk = [];
             for (let r = 0; r < chunkLen; r++) {
-              chunk.push({ color: v.color, count: ROW_PASSENGERS });
+              chunk.push({ color: col, count: ROW_PASSENGERS });
             }
             waveChunks.push(chunk);
-            remRows -= chunkLen;
+            rem -= chunkLen;
           }
         }
 
@@ -1718,8 +1735,7 @@
         }
       }
 
-      // On Levels 1..3 (tutorial), ensure all unblocked colors are in the ring;
-      // On Hard Levels (Level 4..5000), only guarantee the FIRST key exit vehicle's color is in the ring!
+      // Ensure the #1 key exit vehicle's color block is present inside the initial 32-slot oval ring so every level is 100% solvable!
       const ringWindow = Math.min(RING_SLOT_COUNT, allRows.length);
       if (levelNum <= 3) {
         const initialUnblockedColors = new Set(
@@ -1732,54 +1748,30 @@
           if (!inRing) {
             const laterIdx = allRows.findIndex((r, idx) => idx >= ringWindow && r && r.color === col);
             if (laterIdx !== -1 && ringWindow > 4) {
-              for (let swapPos = ringWindow - 1; swapPos >= 4; swapPos--) {
-                const candCol = allRows[swapPos].color;
-                const countInRing = allRows.slice(0, ringWindow).filter((r) => r.color === candCol).length;
-                if (countInRing > 1) {
-                  const tmp = allRows[swapPos];
-                  allRows[swapPos] = allRows[laterIdx];
-                  allRows[laterIdx] = tmp;
-                  break;
-                }
-              }
+              const tmp = allRows[ringWindow - 1];
+              allRows[ringWindow - 1] = allRows[laterIdx];
+              allRows[laterIdx] = tmp;
             }
           }
         });
-      } else if (allRows.length > ringWindow + 8) {
-        // Swap 3-row contiguous color blocks between back half of initial ring and front feeder rows (keeps clean color blocks intact!)
-        const blockSwaps = Math.min(6, 2 + Math.floor((levelNum - 3) * 0.4));
-        const maxFeederIdx = Math.min(allRows.length - 3, ringWindow + 21);
-        for (let s = 0; s < blockSwaps; s++) {
-          const iA = 12 + Math.floor(rand() * Math.max(1, ringWindow - 15));
-          const iB = ringWindow + Math.floor(rand() * Math.max(1, maxFeederIdx - ringWindow));
-          for (let b = 0; b < 3; b++) {
-            if (allRows[iA + b] && allRows[iB + b]) {
-              const tmp = allRows[iA + b];
-              allRows[iA + b] = allRows[iB + b];
-              allRows[iB + b] = tmp;
-            }
-          }
-        }
-        // Always ensure at least 4 rows of the #1 key exit vehicle's color remain in the initial ring so the level is 100% solvable!
-        if (exitSequence.length > 0) {
-          const keyCol = exitSequence[0].color;
-          const keyRowsNeeded = Math.min(5, Math.round(exitSequence[0].cap / ROW_PASSENGERS));
-          let curKeyInRing = allRows.slice(0, ringWindow).filter((r) => r && r.color === keyCol).length;
-          for (let fIdx = ringWindow; fIdx < allRows.length && curKeyInRing < keyRowsNeeded; fIdx++) {
-            if (allRows[fIdx] && allRows[fIdx].color === keyCol) {
-              const rPos = Math.min(ringWindow - 1, 4 + curKeyInRing);
-              if (allRows[rPos].color !== keyCol) {
-                const tmp = allRows[rPos];
-                allRows[rPos] = allRows[fIdx];
-                allRows[fIdx] = tmp;
-                curKeyInRing++;
-              }
+      } else if (exitSequence.length > 0) {
+        const keyCol = exitSequence[0].color;
+        const keyRowsNeeded = Math.min(5, Math.round(exitSequence[0].cap / ROW_PASSENGERS));
+        let curKeyInRing = allRows.slice(0, ringWindow).filter((r) => r && r.color === keyCol).length;
+        for (let fIdx = ringWindow; fIdx < allRows.length && curKeyInRing < keyRowsNeeded; fIdx++) {
+          if (allRows[fIdx] && allRows[fIdx].color === keyCol) {
+            const rPos = Math.min(ringWindow - 1, 6 + curKeyInRing);
+            if (allRows[rPos].color !== keyCol) {
+              const tmp = allRows[rPos];
+              allRows[rPos] = allRows[fIdx];
+              allRows[fIdx] = tmp;
+              curKeyInRing++;
             }
           }
         }
       }
 
-      // First 28 rows populate the Central Revolving Oval Ring; remaining rows split into Left & Right Feeder Roads!
+      // First 32 rows populate the Central Revolving Oval Ring; remaining rows split into Left & Right Feeder Roads in contiguous color blocks!
       const ovalRingSlots = new Array(RING_SLOT_COUNT).fill(null);
       const initialRingCount = Math.min(RING_SLOT_COUNT, allRows.length);
       for (let i = 0; i < initialRingCount; i++) {
@@ -1788,9 +1780,21 @@
 
       const leftFeederRows = [];
       const rightFeederRows = [];
-      for (let i = initialRingCount; i < allRows.length; i++) {
-        if (i % 2 === 0) leftFeederRows.push(allRows[i]);
-        else rightFeederRows.push(allRows[i]);
+      let toLeft = true;
+      let idx = initialRingCount;
+      while (idx < allRows.length) {
+        const blockCol = allRows[idx].color;
+        let runEnd = idx + 1;
+        while (runEnd < allRows.length && allRows[runEnd].color === blockCol && (runEnd - idx) < 8) {
+          runEnd++;
+        }
+        const targetFeeder = toLeft ? leftFeederRows : rightFeederRows;
+        for (let k = idx; k < runEnd; k++) {
+          targetFeeder.push(allRows[k]);
+        }
+        // Balance left and right feeder lengths
+        toLeft = leftFeederRows.length <= rightFeederRows.length;
+        idx = runEnd;
       }
 
       // Timer strictly 90s (01:30 = 1 min 30 sec) for every level as requested!
@@ -4372,8 +4376,8 @@
         const tx = 2 * inv * (p1x - p0x) + 2 * u * (p2x - p1x);
         const tz = 2 * inv * (p1z - p0z) + 2 * u * (p2z - p1z);
         const len = Math.hypot(tx, tz) || 1;
-        // Normal across road width
-        return { x, z, nx: -tz / len, nz: tx / len };
+        // Normal across road width, plus forward unit tangent (-tx/len, -tz/len) pointing down road toward oval!
+        return { x, z, nx: -tz / len, nz: tx / len, fx: -tx / len, fz: -tz / len };
       } else {
         const extra = u - 1;
         const tx = 2 * (p2x - p1x);
@@ -4383,7 +4387,9 @@
           x: p2x + tx * extra,
           z: p2z + tz * extra,
           nx: -tz / len,
-          nz: tx / len
+          nz: tx / len,
+          fx: -tx / len,
+          fz: -tz / len
         };
       }
     }
@@ -4847,10 +4853,10 @@
         layer.appendChild(el);
       }
       el.className = `level-arch-3d-prop level-arch-idx-${archIdx}`;
-      el.style.width = '48px';
-      el.style.height = '48px';
-      // Centered dead-center inside the green kidney grass island (wx = 0, wy = 0, wz = -8.35)
-      const pt = this.projectToScreen(0.0, 0.0, -8.35);
+      el.style.width = '44px';
+      el.style.height = '44px';
+      // Positioned slightly higher inside the green kidney grass island (wx = 0, wy = 0, wz = -8.68) so it sits cleanly inside the grass and never overlaps the bottom white curb or passengers!
+      const pt = this.projectToScreen(0.0, 0.0, -8.68);
       el.style.left = `${pt.x}px`;
       el.style.top = `${pt.y}px`;
     }
@@ -5618,120 +5624,151 @@
     }
 
     // -----------------------------------------------------------------------
-    // 3D REVOLVING OVAL LOOP & DUAL FEEDER PASSENGER MESHES (CLAY AO PAWNS!)
+    // 3D REVOLVING OVAL LOOP & DUAL FEEDER PASSENGER MESHES (ARTICULATED 3D RUNNERS!)
     // -----------------------------------------------------------------------
     initSharedStickmanResources() {
       if (this._mergedStickmanGeo) return;
 
-      // Full 3D Little Human Character Mesh with Head, Neck, Shoulders, Left/Right Swinging Arms & Hands ("Hath"),
-      // and Separated Left/Right Stepping Legs & Shoes ("Pair") clearly visible from the 62° camera angle!
-      const parts = [];
-      const addPart = (geo, aoMin, aoMax) => {
-        const g = geo.toNonIndexed();
-        const p = g.attributes.position.array;
-        const n = g.attributes.normal.array;
-        let minY = Infinity, maxY = -Infinity;
-        for (let i = 1; i < p.length; i += 3) {
-          if (p[i] < minY) minY = p[i];
-          if (p[i] > maxY) maxY = p[i];
+      // Build a 24-frame 3D Articulated Running Character Table (this._stickmanRunFrames[0..23]) + Standing Pose (this._stickmanIdleGeo)
+      // - Head & Torso stay 100% steady (ZERO vertical/sideways jiggle!)
+      // - Left/Right Arms + Bent Forearms + Hands ("Hath") pump forward & backward around the shoulder joints
+      // - Left/Right Thighs + Bending Knees + Shins + Feet ("Pair") scissor forward & backward around the hip joints in a full running stride!
+      const buildPoseGeo = (swingPhase, isRunning) => {
+        const parts = [];
+        const addPart = (geo, aoMin, aoMax) => {
+          const g = geo.toNonIndexed();
+          const p = g.attributes.position.array;
+          const n = g.attributes.normal.array;
+          let minY = Infinity, maxY = -Infinity;
+          for (let i = 1; i < p.length; i += 3) {
+            if (p[i] < minY) minY = p[i];
+            if (p[i] > maxY) maxY = p[i];
+          }
+          const spanY = Math.max(0.01, maxY - minY);
+          const c = new Float32Array(p.length);
+          for (let i = 0; i < p.length; i += 3) {
+            const t = (p[i + 1] - minY) / spanY;
+            const ao = aoMin + t * (aoMax - aoMin);
+            c[i] = ao;
+            c[i + 1] = ao;
+            c[i + 2] = ao;
+          }
+          parts.push({ pos: p, norm: n, col: c });
+        };
+
+        // 1. Plump Glossy 3D Head (r = 0.218 so 4 heads across a row touch snugly shoulder-to-shoulder like the reference video!)
+        const headGeo = new THREE.SphereGeometry(0.218, 16, 12);
+        headGeo.translate(0, 0.67, 0.03);
+        addPart(headGeo, 0.74, 1.00);
+
+        // 2. Darkened Neck Collar Crease separating head from shoulders
+        const neckGeo = new THREE.CylinderGeometry(0.088, 0.112, 0.075, 10);
+        neckGeo.translate(0, 0.495, 0.01);
+        addPart(neckGeo, 0.42, 0.56);
+
+        // 3. Rounded Runner Torso (slightly leaned forward in running direction)
+        const torsoGeo = new THREE.CylinderGeometry(0.125, 0.112, 0.25, 12);
+        torsoGeo.scale(1.12, 1.0, 0.92);
+        torsoGeo.rotateX(0.10);
+        torsoGeo.translate(0, 0.375, 0.01);
+        addPart(torsoGeo, 0.55, 0.86);
+
+        // 4. Articulated Left & Right Arms + Bent Forearms + Hands ("Hath" pumping forward & back along running direction!)
+        for (const side of [-1, 1]) {
+          const s = isRunning ? (side === -1 ? 1 : -1) * Math.sin(swingPhase) : (side === -1 ? 0.32 : -0.32);
+          const shoulderTheta = -s * 0.98; // negative rotateX swings downward-hanging arm forward (+Z)
+
+          // Upper arm from shoulder (0,0,0) to elbow (side*0.015, -0.125, 0)
+          const uArm = new THREE.CylinderGeometry(0.046, 0.042, 0.135, 8);
+          uArm.translate(side * 0.01, -0.065, 0);
+          uArm.rotateX(shoulderTheta);
+          uArm.translate(side * 0.162, 0.465, 0.01);
+          addPart(uArm, 0.60, 0.86);
+
+          // Forearm bent forward at elbow + Round Hand
+          const fArm = new THREE.CylinderGeometry(0.042, 0.038, 0.135, 8);
+          fArm.rotateX(-0.62);
+          fArm.translate(side * 0.015, -0.175, 0.055);
+          fArm.rotateX(shoulderTheta);
+          fArm.translate(side * 0.162, 0.465, 0.01);
+          addPart(fArm, 0.64, 0.90);
+
+          const hand = new THREE.SphereGeometry(0.054, 8, 8);
+          hand.translate(side * 0.018, -0.225, 0.105);
+          hand.rotateX(shoulderTheta);
+          hand.translate(side * 0.162, 0.465, 0.01);
+          addPart(hand, 0.72, 0.96);
         }
-        const spanY = Math.max(0.01, maxY - minY);
-        const c = new Float32Array(p.length);
-        for (let i = 0; i < p.length; i += 3) {
-          const t = (p[i + 1] - minY) / spanY;
-          const ao = aoMin + t * (aoMax - aoMin);
-          c[i] = ao;
-          c[i + 1] = ao;
-          c[i + 2] = ao;
+
+        // 5. Articulated Left & Right Running Legs + Bending Knees + Shoes ("Pair" scissoring wide forward & back!)
+        for (const side of [-1, 1]) {
+          const s = isRunning ? (side === -1 ? -1 : 1) * Math.sin(swingPhase) : (side === -1 ? -0.36 : 0.36);
+          const hipTheta = -s * 0.96; // negative rotateX swings leg forward (+Z), positive swings leg backward (-Z)
+          const kneeBend = Math.max(0, hipTheta * 0.62) + (isRunning ? 0.18 : 0.08);
+
+          // Thigh from hip (0,0,0) to knee (0, -0.125, 0)
+          const thigh = new THREE.CylinderGeometry(0.056, 0.050, 0.135, 8);
+          thigh.translate(0, -0.065, 0);
+          thigh.rotateX(hipTheta);
+          thigh.translate(side * 0.084, 0.265, 0.0);
+          addPart(thigh, 0.46, 0.74);
+
+          // Lower leg (shin) pivoting at knee (0, -0.125, 0)
+          const shin = new THREE.CylinderGeometry(0.048, 0.043, 0.125, 8);
+          shin.translate(0, -0.06, 0);
+          shin.rotateX(kneeBend);
+          shin.translate(0, -0.125, 0);
+          shin.rotateX(hipTheta);
+          shin.translate(side * 0.084, 0.265, 0.0);
+          addPart(shin, 0.42, 0.68);
+
+          // Rounded 3D Running Shoe/Foot ("Pair") at ankle
+          const shoe = new THREE.SphereGeometry(0.060, 8, 8);
+          shoe.scale(0.95, 0.66, 1.42);
+          shoe.translate(0, -0.122, 0.036);
+          shoe.rotateX(kneeBend);
+          shoe.translate(0, -0.125, 0);
+          shoe.rotateX(hipTheta);
+          shoe.translate(side * 0.084, 0.265, 0.0);
+          addPart(shoe, 0.38, 0.64);
         }
-        parts.push({ pos: p, norm: n, col: c });
+
+        let totalLen = 0;
+        for (const pt of parts) totalLen += pt.pos.length;
+
+        const mergedPos = new Float32Array(totalLen);
+        const mergedNorm = new Float32Array(totalLen);
+        const mergedCol = new Float32Array(totalLen);
+
+        let offset = 0;
+        for (const pt of parts) {
+          mergedPos.set(pt.pos, offset);
+          mergedNorm.set(pt.norm, offset);
+          mergedCol.set(pt.col, offset);
+          offset += pt.pos.length;
+        }
+
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute('position', new THREE.BufferAttribute(mergedPos, 3));
+        geo.setAttribute('normal', new THREE.BufferAttribute(mergedNorm, 3));
+        geo.setAttribute('color', new THREE.BufferAttribute(mergedCol, 3));
+        return geo;
       };
 
-      // 1. Round Glossy 3D Head (compact enough that shoulders, arms & legs show clearly below it!)
-      const headGeo = new THREE.SphereGeometry(0.195, 16, 12);
-      headGeo.translate(0, 0.65, -0.04);
-      addPart(headGeo, 0.72, 0.98);
-
-      // 2. Neck Collar (darker AO crease separating head from torso so it NEVER looks like a single ball!)
-      const neckGeo = new THREE.CylinderGeometry(0.088, 0.115, 0.08, 12);
-      neckGeo.translate(0, 0.49, 0.0);
-      addPart(neckGeo, 0.45, 0.58);
-
-      // 3. Rounded Torso & Wide Shoulders
-      const torsoGeo = new THREE.CylinderGeometry(0.142, 0.128, 0.25, 14);
-      torsoGeo.scale(1.18, 1.0, 0.88);
-      torsoGeo.translate(0, 0.35, 0.04);
-      addPart(torsoGeo, 0.58, 0.90);
-
-      // 4. Left Arm & Left Round Hand ("Hath" sticking out on left side & swinging forward)
-      const lArmGeo = new THREE.CylinderGeometry(0.046, 0.042, 0.22, 10);
-      lArmGeo.rotateZ(0.34);
-      lArmGeo.rotateX(-0.28);
-      lArmGeo.translate(-0.205, 0.35, 0.08);
-      addPart(lArmGeo, 0.62, 0.88);
-
-      const lHandGeo = new THREE.SphereGeometry(0.052, 10, 8);
-      lHandGeo.translate(-0.242, 0.255, 0.115);
-      addPart(lHandGeo, 0.70, 0.92);
-
-      // 5. Right Arm & Right Round Hand ("Hath" sticking out on right side & swinging backward)
-      const rArmGeo = new THREE.CylinderGeometry(0.046, 0.042, 0.22, 10);
-      rArmGeo.rotateZ(-0.34);
-      rArmGeo.rotateX(0.24);
-      rArmGeo.translate(0.205, 0.35, 0.02);
-      addPart(rArmGeo, 0.62, 0.88);
-
-      const rHandGeo = new THREE.SphereGeometry(0.052, 10, 8);
-      rHandGeo.translate(0.242, 0.255, -0.01);
-      addPart(rHandGeo, 0.70, 0.92);
-
-      // 6. Left Stepping Leg & Left Shoe ("Pair" clearly separated on left side!)
-      const lLegGeo = new THREE.CylinderGeometry(0.058, 0.050, 0.21, 10);
-      lLegGeo.rotateX(0.24);
-      lLegGeo.translate(-0.085, 0.145, 0.05);
-      addPart(lLegGeo, 0.44, 0.72);
-
-      const lShoeGeo = new THREE.SphereGeometry(0.064, 10, 8);
-      lShoeGeo.scale(0.95, 0.65, 1.38);
-      lShoeGeo.translate(-0.085, 0.045, 0.095);
-      addPart(lShoeGeo, 0.38, 0.66);
-
-      // 7. Right Stepping Leg & Right Shoe ("Pair" stepping forward toward camera on right side!)
-      const rLegGeo = new THREE.CylinderGeometry(0.058, 0.050, 0.21, 10);
-      rLegGeo.rotateX(-0.28);
-      rLegGeo.translate(0.085, 0.145, 0.11);
-      addPart(rLegGeo, 0.48, 0.76);
-
-      const rShoeGeo = new THREE.SphereGeometry(0.064, 10, 8);
-      rShoeGeo.scale(0.95, 0.65, 1.38);
-      rShoeGeo.translate(0.085, 0.045, 0.165);
-      addPart(rShoeGeo, 0.42, 0.70);
-
-      let totalLen = 0;
-      for (const pt of parts) totalLen += pt.pos.length;
-
-      const mergedPos = new Float32Array(totalLen);
-      const mergedNorm = new Float32Array(totalLen);
-      const mergedCol = new Float32Array(totalLen);
-
-      let offset = 0;
-      for (const pt of parts) {
-        mergedPos.set(pt.pos, offset);
-        mergedNorm.set(pt.norm, offset);
-        mergedCol.set(pt.col, offset);
-        offset += pt.pos.length;
+      this._stickmanRunFrames = [];
+      const FRAME_COUNT = 24;
+      for (let f = 0; f < FRAME_COUNT; f++) {
+        const phase = (f / FRAME_COUNT) * Math.PI * 2;
+        this._stickmanRunFrames.push(buildPoseGeo(phase, true));
       }
-
-      this._mergedStickmanGeo = new THREE.BufferGeometry();
-      this._mergedStickmanGeo.setAttribute('position', new THREE.BufferAttribute(mergedPos, 3));
-      this._mergedStickmanGeo.setAttribute('normal', new THREE.BufferAttribute(mergedNorm, 3));
-      this._mergedStickmanGeo.setAttribute('color', new THREE.BufferAttribute(mergedCol, 3));
+      this._stickmanIdleGeo = buildPoseGeo(0, false);
+      this._mergedStickmanGeo = this._stickmanIdleGeo;
 
       this._stickColorMats = {};
       Object.keys(COLORS).forEach((k) => {
         this._stickColorMats[k] = new THREE.MeshStandardMaterial({
           color: COLORS[k].hex,
-          roughness: 0.36,
+          roughness: 0.34,
           metalness: 0.02,
           vertexColors: true
         });
@@ -5905,7 +5942,9 @@
       // Position all 32 radial rows (either snake-marching along feeder -> oval during intro, or revolving around oval!)
       const rx = 3.36;
       const rz = 2.02;
-      const centerZ = -8.55;
+      // +0.31 3D camera-height parallax offset so bottom-arc heads sit cleanly below the center island's bottom white curb
+      // and top-arc heads sit cleanly inside the top outer white curb (matching reference screenshot!)
+      const centerZ = -8.24;
 
       for (let k = 0; k < RING_SLOT_COUNT; k++) {
         const rowData = this.ovalRingSlots[k];
@@ -5916,6 +5955,8 @@
         let baseZ = 0;
         let nx = 0;
         let nz = 1;
+        let fwdX = 0;
+        let fwdZ = 1;
         let hideDuringIntro = false;
 
         if (isIntroMarching) {
@@ -5935,9 +5976,11 @@
             } else {
               const pt = this.getFeederCurvePoint(side, u);
               baseX = pt.x;
-              baseZ = pt.z;
+              baseZ = pt.z + 0.24;
               nx = pt.nx;
               nz = pt.nz;
+              fwdX = pt.fx;
+              fwdZ = pt.fz;
             }
           } else {
             // Has entered the Central Oval Ring and is marching clockwise along its half-arc!
@@ -5952,15 +5995,19 @@
             const nLen = Math.hypot(rawNx, rawNz) || 1;
             nx = rawNx / nLen;
             nz = rawNz / nLen;
+            fwdX = -Math.sin(targetTheta) * rx;
+            fwdZ = Math.cos(targetTheta) * rz;
 
             // Smooth 1-step corner blend right at the junction entrance (0 <= stepsPastJunction < 1)
             if (stepsPastJunction < 1.0) {
               const jb = stepsPastJunction;
               const mouthPt = this.getFeederCurvePoint(side, 0.225);
               baseX = mouthPt.x + (baseX - mouthPt.x) * jb;
-              baseZ = mouthPt.z + (baseZ - mouthPt.z) * jb;
+              baseZ = (mouthPt.z + 0.24) + (baseZ - (mouthPt.z + 0.24)) * jb;
               nx = mouthPt.nx + (nx - mouthPt.nx) * jb;
               nz = mouthPt.nz + (nz - mouthPt.nz) * jb;
+              fwdX = mouthPt.fx + (fwdX - mouthPt.fx) * jb;
+              fwdZ = mouthPt.fz + (fwdZ - mouthPt.fz) * jb;
             }
           }
         } else {
@@ -5975,6 +6022,8 @@
           const nLen = Math.hypot(rawNx, rawNz) || 1;
           nx = rawNx / nLen;
           nz = rawNz / nLen;
+          fwdX = -Math.sin(targetTheta) * rx;
+          fwdZ = Math.cos(targetTheta) * rz;
 
           // Smoothly walk newly pulled feeder rows from the feeder waiting mouth (u=0.225) onto the revolving oval loop!
           if (rowData && typeof rowData.joinBlend === 'number' && rowData.joinBlend < 1) {
@@ -5982,11 +6031,18 @@
             const jb = 1 - Math.pow(1 - rowData.joinBlend, 2);
             const mouthPt = this.getFeederCurvePoint(rowData.joinSide || -1, 0.225);
             baseX = mouthPt.x + (baseX - mouthPt.x) * jb;
-            baseZ = mouthPt.z + (baseZ - mouthPt.z) * jb;
+            baseZ = (mouthPt.z + 0.24) + (baseZ - (mouthPt.z + 0.24)) * jb;
             nx = mouthPt.nx + (nx - mouthPt.nx) * jb;
             nz = mouthPt.nz + (nz - mouthPt.nz) * jb;
+            fwdX = mouthPt.fx + (fwdX - mouthPt.fx) * jb;
+            fwdZ = mouthPt.fz + (fwdZ - mouthPt.fz) * jb;
           }
         }
+
+        const yaw = Math.atan2(fwdX, fwdZ);
+        const runRate = isIntroMarching ? 0.032 : (this._isHoldingFastSpin ? 0.038 : 0.022);
+        const frames = this._stickmanRunFrames;
+        const frameCount = frames ? frames.length : 0;
 
         for (let m = 0; m < ROW_PASSENGERS; m++) {
           const sm = members[m];
@@ -5998,22 +6054,25 @@
           sm.visible = true;
           this.setStickmanColor(sm, rowData.color);
 
-          // 0.425 radial spacing fills the full road width curb-to-curb with 4 plump shoulder-to-shoulder pawns!
-          const radialOffset = (m - 1.5) * 0.425;
+          // 0.415 radial spacing fills the road width curb-to-curb with 4 plump shoulder-to-shoulder runners!
+          const radialOffset = (m - 1.5) * 0.415;
           const px = baseX + nx * radialOffset;
           const pz = baseZ + nz * radialOffset;
-          const phase = now * (isIntroMarching ? 0.026 : (this._isHoldingFastSpin ? 0.028 : 0.017)) + k * 0.55 + m * 0.35;
-          const bobAmp = isIntroMarching ? 0.14 : (this._isHoldingFastSpin ? 0.13 : 0.095);
-          const bobY = Math.abs(Math.sin(phase)) * bobAmp;
+          const phase = now * runRate + k * 0.85 + m * 0.55;
 
-          sm.position.set(px, bobY, pz);
-          // Lively walking waddle so arms ("hath") and legs ("pair") visibly swing as they march!
-          sm.rotation.z = Math.sin(phase) * 0.11;
-          sm.rotation.y = Math.cos(phase) * 0.14;
+          if (frameCount > 0) {
+            const normPhase = (((phase % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2)) / (Math.PI * 2);
+            sm.geometry = frames[Math.floor(normPhase * frameCount) % frameCount];
+          }
+
+          // Steady y = 0 & rotation.z = 0 (ZERO head/body jiggle!), facing running direction while arms & legs actively pump!
+          sm.position.set(px, 0, pz);
+          sm.rotation.z = 0;
+          sm.rotation.y = yaw;
         }
       }
 
-      // 5. Position waiting rows smoothly marching forward along Left & Right Curved U-Feeder Roads
+      // 5. Position waiting rows along Left & Right Curved U-Feeder Roads (stationary when waiting, running when advancing!)
       this.positionFeederLane(this.leftFeederRows, this.leftFeederMeshes, -1, now, dt, isIntroMarching);
       this.positionFeederLane(this.rightFeederRows, this.rightFeederMeshes, 1, now, dt, isIntroMarching);
     }
@@ -6036,18 +6095,18 @@
         ? introBackSteps
         : (side < 0 ? (this._leftFeederSlideOffset || 0) : (this._rightFeederSlideOffset || 0));
 
-      const isMarchingForward = isIntroMarching || slideOff > 0.025 || this._isHoldingFastSpin;
-      const walkSpd = isMarchingForward ? 0.025 : 0.014;
-      const walkAmp = isMarchingForward ? 0.145 : 0.09;
-      const stepWave = Math.sin(now * 0.01) * 0.006;
+      const isMarchingForward = isIntroMarching || slideOff > 0.015 || this._isHoldingFastSpin;
+      const frames = this._stickmanRunFrames;
+      const frameCount = frames ? frames.length : 0;
 
       for (let r = 0; r < meshRows.length; r++) {
         const rowData = feederQueue[r];
         const members = meshRows[r];
-        // Tight 0.041 row-to-row spacing along feeder road so rows pack shoulder-to-shoulder & back-to-front like the video!
-        const u = 0.232 + (r + slideOff) * 0.041 + stepWave;
+        // Tight 0.041 row-to-row spacing along feeder road with ZERO stepWave vibration!
+        const u = 0.232 + (r + slideOff) * 0.041;
         const hideOffTop = u > 1.38;
         const pt = this.getFeederCurvePoint(side, Math.min(1.42, u));
+        const yaw = Math.atan2(pt.fx, pt.fz);
 
         for (let m = 0; m < ROW_PASSENGERS; m++) {
           const sm = members[m];
@@ -6058,15 +6117,21 @@
           sm.visible = true;
           this.setStickmanColor(sm, rowData.color);
 
-          const lateralOffset = (m - 1.5) * 0.42;
+          const lateralOffset = (m - 1.5) * 0.415;
           const targetX = pt.x + pt.nx * lateralOffset;
-          const targetZ = pt.z + pt.nz * lateralOffset;
-          const phase = now * walkSpd - r * 0.65 + m * 0.35;
-          const bobY = Math.abs(Math.sin(phase)) * walkAmp;
+          const targetZ = pt.z + 0.24 + pt.nz * lateralOffset;
 
-          sm.position.set(targetX, bobY, targetZ);
-          sm.rotation.z = Math.sin(phase) * 0.11;
-          sm.rotation.y = Math.cos(phase) * 0.14;
+          if (isMarchingForward && frameCount > 0) {
+            const phase = now * 0.030 - r * 0.85 + m * 0.55;
+            const normPhase = (((phase % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2)) / (Math.PI * 2);
+            sm.geometry = frames[Math.floor(normPhase * frameCount) % frameCount];
+          } else if (this._stickmanIdleGeo) {
+            sm.geometry = this._stickmanIdleGeo;
+          }
+
+          sm.position.set(targetX, 0, targetZ);
+          sm.rotation.z = 0;
+          sm.rotation.y = yaw;
         }
       }
     }
