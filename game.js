@@ -750,11 +750,11 @@
         { id: 'l2_9', x: 0.0, z: 4.75, dir: 'DOWN', type: 'car', color: 'cyan', cap: 4 },
         { id: 'l2_10', x: 3.1, z: 4.65, dir: 'RIGHT', type: 'bus', color: 'purple', cap: 8 },
 
-        { id: 'l2_11', x: -3.9, z: 6.75, dir: 'LEFT', type: 'car', color: 'green', cap: 4 },
+        { id: 'l2_11', x: -4.2, z: 6.75, dir: 'LEFT', type: 'car', color: 'green', cap: 4 },
         { id: 'l2_12', x: -1.8, z: 6.85, dir: 'DOWN', type: 'bus', color: 'cyan', cap: 16 },
         { id: 'l2_13', x: 0.0, z: 6.85, dir: 'UP', type: 'car', color: 'orange', cap: 4 },
         { id: 'l2_14', x: 1.8, z: 6.85, dir: 'DOWN', type: 'bus', color: 'purple', cap: 8 },
-        { id: 'l2_15', x: 3.9, z: 6.75, dir: 'RIGHT', type: 'car', color: 'green', cap: 4 },
+        { id: 'l2_15', x: 4.2, z: 6.75, dir: 'RIGHT', type: 'car', color: 'green', cap: 4 },
 
         { id: 'l2_16', x: -3.3, z: 9.05, dir: 'LEFT', type: 'car', color: 'cyan', cap: 4 },
         { id: 'l2_17', x: 0.0, z: 9.05, dir: 'LEFT', type: 'bus', color: 'orange', cap: 8 },
@@ -2022,6 +2022,7 @@
 
       this.enforceCleanVehicleSpacing(vehicles, 0.20);
       this.ensureNoCyclicDeadlock(vehicles);
+      this.enforceCleanVehicleSpacing(vehicles, 0.20);
       const simRemaining = vehicles.map((v) => ({ ...v }));
       const exitSequence = [];
       const rand = this.createSeededRandom(levelNum * 4999 + 71);
