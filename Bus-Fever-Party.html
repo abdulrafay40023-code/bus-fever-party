@@ -9537,7 +9537,7 @@ body, #app-wrapper, #game-container {
       const wave2Vehicles = [];
       for (const v of exitSequence) {
         const rCnt = Math.max(1, Math.round(v.cap / ROW_PASSENGERS));
-        if (curRowSum + rCnt <= RING_SLOT_COUNT && !withheldColors.includes(v.color)) {
+        if (curRowSum < RING_SLOT_COUNT && !withheldColors.includes(v.color) && !decoyIds.has(v.id)) {
           wave1Vehicles.push(v);
           curRowSum += rCnt;
         } else {
@@ -9545,7 +9545,7 @@ body, #app-wrapper, #game-container {
         }
       }
       // If wave1Vehicles has fewer than 32 rows, top up wave1 rows by recoloring the earliest non-decoy wave2 vehicles to activeCircleColors
-      // so all 32 slots of ovalRingSlots are 100% filled with activeCircleColors (0 rows of withheldColors in the circle!)
+      // until curRowSum >= 32 so all 32 slots of ovalRingSlots are 100% filled with activeCircleColors (0 rows of withheldColors in the circle!)
       while (curRowSum < RING_SLOT_COUNT && wave2Vehicles.length > decoyIds.size) {
         let promoteIdx = wave2Vehicles.findIndex((v) => !decoyIds.has(v.id));
         if (promoteIdx === -1) break;
@@ -9556,6 +9556,14 @@ body, #app-wrapper, #game-container {
         wave1Vehicles.push(promV);
         curRowSum += Math.max(1, Math.round(promV.cap / ROW_PASSENGERS));
       }
+      // Ensure every vehicle remaining in wave2Vehicles uses withheldColors so all withheldColors exist in the parking lot & feeder queues!
+      if (withheldColors.length > 0) {
+        wave2Vehicles.forEach((wv, wIdx) => {
+          const wCol = withheldColors[wIdx % withheldColors.length];
+          wv.color = wCol;
+          if (vehById[wv.id]) vehById[wv.id].color = wCol;
+        });
+      }
 
       const orderedSeq = [...wave1Vehicles, ...wave2Vehicles];
       exitSequence.length = 0;
@@ -9564,52 +9572,57 @@ body, #app-wrapper, #game-container {
       const waveSize = 3;
       const maxChunkRows = 2;
 
-      for (let w = 0; w < exitSequence.length; w += waveSize) {
-        const waveVehicles = exitSequence.slice(w, w + waveSize);
-        const colorRowCounts = {};
-        const colorOrder = [];
-        for (const v of waveVehicles) {
-          const rows = Math.max(1, Math.round(v.cap / ROW_PASSENGERS));
-          if (!colorRowCounts[v.color]) {
-            colorRowCounts[v.color] = 0;
-            colorOrder.push(v.color);
-          }
-          colorRowCounts[v.color] += rows;
-        }
-
-        const waveChunks = [];
-        for (const col of colorOrder) {
-          let rem = colorRowCounts[col];
-          while (rem > 0) {
-            const chunkLen = Math.min(rem, maxChunkRows);
-            const chunk = [];
-            for (let r = 0; r < chunkLen; r++) {
-              chunk.push({ color: col, count: ROW_PASSENGERS });
+      const appendRowsForGroup = (vehGroup, isFirstGroup) => {
+        for (let w = 0; w < vehGroup.length; w += waveSize) {
+          const waveVehicles = vehGroup.slice(w, w + waveSize);
+          const colorRowCounts = {};
+          const colorOrder = [];
+          for (const v of waveVehicles) {
+            const rows = Math.max(1, Math.round(v.cap / ROW_PASSENGERS));
+            if (!colorRowCounts[v.color]) {
+              colorRowCounts[v.color] = 0;
+              colorOrder.push(v.color);
             }
-            waveChunks.push(chunk);
-            rem -= chunkLen;
+            colorRowCounts[v.color] += rows;
+          }
+
+          const waveChunks = [];
+          for (const col of colorOrder) {
+            let rem = colorRowCounts[col];
+            while (rem > 0) {
+              const chunkLen = Math.min(rem, maxChunkRows);
+              const chunk = [];
+              for (let r = 0; r < chunkLen; r++) {
+                chunk.push({ color: col, count: ROW_PASSENGERS });
+              }
+              waveChunks.push(chunk);
+              rem -= chunkLen;
+            }
+          }
+
+          if ((!isFirstGroup || w > 0) && waveChunks.length > 1) {
+            for (let i = waveChunks.length - 1; i > 0; i--) {
+              const j = Math.floor(rand() * (i + 1));
+              [waveChunks[i], waveChunks[j]] = [waveChunks[j], waveChunks[i]];
+            }
+          }
+
+          for (const ch of waveChunks) {
+            allRows.push(...ch);
           }
         }
+      };
 
-        // Keep wave 0 in exact solvable exit order; gently interleave chunks within each 3-vehicle wave
-        if (w > 0 && waveChunks.length > 1) {
-          for (let i = waveChunks.length - 1; i > 0; i--) {
-            const j = Math.floor(rand() * (i + 1));
-            [waveChunks[i], waveChunks[j]] = [waveChunks[j], waveChunks[i]];
-          }
-        }
+      appendRowsForGroup(wave1Vehicles, true);
+      appendRowsForGroup(wave2Vehicles, false);
 
-        for (const ch of waveChunks) {
-          allRows.push(...ch);
-        }
-      }
-
-      // Guarantee that ALL initial unblocked vehicles have their full required passenger rows inside the 32-slot oval ring!
+      // Guarantee that the first 3 solvable Wave 1 vehicles have their full required passenger rows inside the 32-slot circle!
       const ringWindow = Math.min(RING_SLOT_COUNT, allRows.length);
-      if (exitSequence.length > 0) {
-        for (let eIdx = 0; eIdx < Math.min(3, exitSequence.length); eIdx++) {
-          const keyVeh = exitSequence[eIdx];
+      if (wave1Vehicles.length > 0) {
+        for (let eIdx = 0; eIdx < Math.min(3, wave1Vehicles.length); eIdx++) {
+          const keyVeh = wave1Vehicles[eIdx];
           const keyCol = keyVeh.color;
+          if (withheldColors.includes(keyCol)) continue;
           const keyRowsNeeded = Math.max(1, Math.round(keyVeh.cap / ROW_PASSENGERS));
           let curKeyInRing = allRows.slice(0, ringWindow).filter((r) => r && r.color === keyCol).length;
           for (let fIdx = ringWindow; fIdx < allRows.length && curKeyInRing < keyRowsNeeded; fIdx++) {
