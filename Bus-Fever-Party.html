@@ -9465,7 +9465,8 @@ body, #app-wrapper, #game-container {
       if (withheldColors.length > 0 && initialFreeVehicles.length >= 2) {
         const countBlockedBy = (cand) => vehicles.filter((other) => other.id !== cand.id && this.findBlockingVehicle(other, vehicles)?.id === cand.id).length;
         const sortedFree = [...initialFreeVehicles].sort((a, b) => countBlockedBy(b) - countBlockedBy(a));
-        const numWinners = Math.max(1, Math.min(2, Math.ceil(sortedFree.length * 0.45)));
+        const numDecoys = Math.min(3, Math.max(1, Math.floor(sortedFree.length * 0.4)));
+        const numWinners = sortedFree.length - numDecoys;
         for (let i = 0; i < sortedFree.length; i++) {
           if (i < numWinners) {
             sortedFree[i].color = activeCircleColors[i % activeCircleColors.length];
@@ -9543,10 +9544,10 @@ body, #app-wrapper, #game-container {
           wave2Vehicles.push(v);
         }
       }
-      // If wave1Vehicles has fewer than 32 rows, top up wave1 rows by recoloring the earliest wave2 vehicles to activeCircleColors
-      // while keeping all decoyIds and remaining wave2 vehicles strictly in withheldColors!
-      while (curRowSum < RING_SLOT_COUNT && wave2Vehicles.length > Math.max(3, decoyIds.size)) {
-        const promoteIdx = wave2Vehicles.findIndex((v) => !decoyIds.has(v.id));
+      // If wave1Vehicles has fewer than 32 rows, top up wave1 rows by recoloring the earliest non-decoy wave2 vehicles to activeCircleColors
+      // so all 32 slots of ovalRingSlots are 100% filled with activeCircleColors (0 rows of withheldColors in the circle!)
+      while (curRowSum < RING_SLOT_COUNT && wave2Vehicles.length > decoyIds.size) {
+        let promoteIdx = wave2Vehicles.findIndex((v) => !decoyIds.has(v.id));
         if (promoteIdx === -1) break;
         const promV = wave2Vehicles.splice(promoteIdx, 1)[0];
         const newCol = activeCircleColors[wave1Vehicles.length % activeCircleColors.length];
