@@ -813,7 +813,9 @@
       const rand = this.createSeededRandom(levelNum * 12983 + 409);
       const colorPool = this.getColorsForLevel(levelNum, rand);
 
-      const archetype = (levelNum - 4) % 20;
+      // Order the 20 distinct map archetypes so the most visually iconic screenshot formations appear right from Level 4+ and change every single level!
+      const archetypeOrder = [12, 13, 6, 14, 15, 16, 17, 18, 19, 9, 10, 11, 2, 5, 8, 4, 0, 1, 3, 7];
+      const archetype = archetypeOrder[(levelNum - 4) % archetypeOrder.length];
       const slots = this.buildDistinctFormationArchetype(archetype, levelNum, rand);
 
       // Apply multi-axis geometric variation per 20-level cycle so all 5000 levels NEVER feel like repetitive copies!
@@ -864,103 +866,35 @@
         });
       }
 
-      // Ensure base formation has crisp, open spacing before adding progressive expansion vehicles
-      this.enforceCleanVehicleSpacing(slots, 0.25);
+      // Ensure base formation has crisp, open spacing while preserving its exact visual silhouette
+      this.enforceCleanVehicleSpacing(slots, 0.24);
 
-      // Progressively grow total vehicle count as level increases (Lv.4 = 26 -> Lv.10 = 32 -> Lv.18 = 40 -> Lv.25+ = 44-46 vehicles!)
-      const targetVehicleCount = Math.min(45, 26 + Math.floor((levelNum - 4) * 0.95));
-      if (slots.length < targetVehicleCount) {
-        const candidateFlankers = [
-          // Inner & Mid-Ring Reinforcement Locks
-          { x: -1.55, z: 0.52, dir: 'DOWN', type: 'car', subType: 'van', tilt: 0.24 },
-          { x: 1.55, z: 0.52, dir: 'DOWN', type: 'car', subType: 'van', tilt: -0.24 },
-          { x: -3.25, z: 1.55, dir: 'DOWN', type: 'car', tilt: 0.22 },
-          { x: 3.25, z: 1.55, dir: 'DOWN', type: 'car', tilt: -0.22 },
-          { x: -1.35, z: 3.65, dir: 'DOWN', type: 'car', subType: 'van', tilt: 0.20 },
-          { x: 1.35, z: 3.65, dir: 'DOWN', type: 'car', subType: 'van', tilt: -0.20 },
-          { x: -2.85, z: 5.75, dir: 'RIGHT', type: 'car', tilt: 0.18 },
-          { x: 2.85, z: 5.75, dir: 'LEFT', type: 'car', tilt: -0.18 },
-          { x: -1.45, z: 7.75, dir: 'UP', type: 'car', subType: 'van', tilt: -0.20 },
-          { x: 1.45, z: 7.75, dir: 'UP', type: 'car', subType: 'van', tilt: 0.20 },
-          { x: -1.75, z: 9.25, dir: 'UP', type: 'car', tilt: 0.22 },
-          { x: 1.75, z: 9.25, dir: 'UP', type: 'car', tilt: -0.22 },
-
-          // Outer Wing & Perimeter Columns (x = ±4.95..5.55)
-          { x: -5.15, z: 0.95, dir: 'DOWN', type: 'bus', tilt: -0.22 },
-          { x: 5.15, z: 0.95, dir: 'DOWN', type: 'bus', tilt: 0.22 },
-          { x: -5.32, z: 2.85, dir: 'RIGHT', type: 'car', subType: 'van', tilt: 0.25 },
-          { x: 5.32, z: 2.85, dir: 'LEFT', type: 'car', subType: 'van', tilt: -0.25 },
-          { x: -5.38, z: 4.65, dir: 'RIGHT', type: 'bus', tilt: 0.18 },
-          { x: 5.38, z: 4.65, dir: 'LEFT', type: 'bus', tilt: -0.18 },
-          { x: -5.38, z: 6.55, dir: 'RIGHT', type: 'car', tilt: 0.22 },
-          { x: 5.38, z: 6.55, dir: 'LEFT', type: 'car', tilt: -0.22 },
-          { x: -5.32, z: 8.35, dir: 'RIGHT', type: 'car', subType: 'van', tilt: -0.24 },
-          { x: 5.32, z: 8.35, dir: 'LEFT', type: 'car', subType: 'van', tilt: 0.24 },
-          { x: -5.12, z: 10.25, dir: 'UP', type: 'bus', tilt: 0.26 },
-          { x: 5.12, z: 10.25, dir: 'UP', type: 'bus', tilt: -0.26 },
-
-          // Deep Bottom Apron Row (z = 11.35..11.65)
-          { x: -3.75, z: 11.45, dir: 'UP', type: 'bus', tilt: 0.14 },
-          { x: -1.35, z: 11.55, dir: 'UP', type: 'car', subType: 'van' },
-          { x: 1.35, z: 11.55, dir: 'UP', type: 'car', subType: 'van' },
-          { x: 3.75, z: 11.45, dir: 'UP', type: 'bus', tilt: -0.14 },
-          { x: 0.0, z: 11.60, dir: 'UP', type: 'car' },
-          { x: -5.18, z: 11.55, dir: 'RIGHT', type: 'car', tilt: -0.20 },
-          { x: 5.18, z: 11.55, dir: 'LEFT', type: 'car', tilt: 0.20 }
+      // Only add outer perimeter wing escorts on higher levels (NEVER fill the interior negative space so the Spiral, Circle, Butterfly, Heart, Robot Face & Star silhouettes stay 100% distinct!)
+      const extraEscortsWanted = Math.min(10, Math.max(0, Math.floor((levelNum - 5) * 0.45)));
+      if (extraEscortsWanted > 0) {
+        const outerPerimeterEscorts = [
+          { x: -5.25, z: 1.15, dir: 'DOWN', type: 'bus', tilt: -0.22 },
+          { x: 5.25, z: 1.15, dir: 'DOWN', type: 'bus', tilt: 0.22 },
+          { x: -5.35, z: 3.35, dir: 'RIGHT', type: 'car', subType: 'van', tilt: 0.25 },
+          { x: 5.35, z: 3.35, dir: 'LEFT', type: 'car', subType: 'van', tilt: -0.25 },
+          { x: -5.35, z: 5.65, dir: 'RIGHT', type: 'bus', tilt: 0.18 },
+          { x: 5.35, z: 5.65, dir: 'LEFT', type: 'bus', tilt: -0.18 },
+          { x: -5.35, z: 7.95, dir: 'RIGHT', type: 'car', subType: 'van', tilt: -0.24 },
+          { x: 5.35, z: 7.95, dir: 'LEFT', type: 'car', subType: 'van', tilt: 0.24 },
+          { x: -5.18, z: 10.25, dir: 'UP', type: 'bus', tilt: 0.26 },
+          { x: 5.18, z: 10.25, dir: 'UP', type: 'bus', tilt: -0.26 }
         ];
-        for (const cand of candidateFlankers) {
-          if (slots.length >= targetVehicleCount) break;
-          if (!this.hasAnyOBBOverlap(cand, slots, 0.23)) {
+        let added = 0;
+        for (const cand of outerPerimeterEscorts) {
+          if (added >= extraEscortsWanted) break;
+          if (!this.hasAnyOBBOverlap(cand, slots, 0.26)) {
             slots.push({ ...cand });
+            added++;
           } else if (cand.type === 'bus') {
             const carCand = { ...cand, type: 'car', subType: 'van' };
-            if (!this.hasAnyOBBOverlap(carCand, slots, 0.22)) {
+            if (!this.hasAnyOBBOverlap(carCand, slots, 0.25)) {
               slots.push(carCand);
-            }
-          }
-        }
-
-        // Symmetric Open-Pocket Formation Filler: guarantees every level monotonically reaches targetVehicleCount!
-        if (slots.length < targetVehicleCount) {
-          const zRows = [];
-          for (let gz = 0.38; gz <= 11.92; gz += 0.54) zRows.push(Number(gz.toFixed(2)));
-          const xAbsCols = [];
-          for (let ax = 0.0; ax <= 6.22; ax += 0.54) xAbsCols.push(Number(ax.toFixed(2)));
-
-          for (const gz of zRows) {
-            if (slots.length >= targetVehicleCount) break;
-            for (const ax of xAbsCols) {
-              if (slots.length >= targetVehicleCount) break;
-              const sides = ax === 0 ? [0] : [-ax, ax];
-              for (const gx of sides) {
-                if (slots.length >= targetVehicleCount) break;
-                const dirOpts = gz < 3.0
-                  ? ['DOWN', 'LEFT', 'RIGHT', 'UP']
-                  : gz > 9.0
-                    ? ['UP', 'LEFT', 'RIGHT', 'DOWN']
-                    : gx < 0
-                      ? ['RIGHT', 'DOWN', 'UP', 'LEFT']
-                      : ['LEFT', 'DOWN', 'UP', 'RIGHT'];
-                const tilts = [0, gx < 0 ? 0.18 : -0.18];
-                let placed = false;
-                for (const tilt of tilts) {
-                  if (placed) break;
-                  for (const d of dirOpts) {
-                    const busTry = { x: gx, z: gz, dir: d, type: 'bus', tilt };
-                    if (!this.hasAnyOBBOverlap(busTry, slots, 0.22)) {
-                      slots.push(busTry);
-                      placed = true;
-                      break;
-                    }
-                    const carTry = { x: gx, z: gz, dir: d, type: 'car', subType: 'van', tilt };
-                    if (!this.hasAnyOBBOverlap(carTry, slots, 0.20)) {
-                      slots.push(carTry);
-                      placed = true;
-                      break;
-                    }
-                  }
-                }
-              }
+              added++;
             }
           }
         }
@@ -2023,28 +1957,93 @@
       this.enforceCleanVehicleSpacing(vehicles, 0.20);
       this.ensureNoCyclicDeadlock(vehicles);
       this.enforceCleanVehicleSpacing(vehicles, 0.20);
-      const simRemaining = vehicles.map((v) => ({ ...v }));
-      const exitSequence = [];
-      const rand = this.createSeededRandom(levelNum * 4999 + 71);
 
-      while (simRemaining.length > 0) {
-        const unblocked = simRemaining.filter((v) => !this.findBlockingVehicle(v, simRemaining));
-        if (unblocked.length === 0) {
-          exitSequence.push(simRemaining.shift());
-        } else {
-          const pick = unblocked[Math.floor(rand() * unblocked.length)];
-          exitSequence.push(pick);
-          const idx = simRemaining.findIndex((v) => v.id === pick.id);
-          simRemaining.splice(idx, 1);
+      // USER RULE: "circle mn mix color rkho achi baat ha mgr sarey colors na hon 1 2 kum krdo phir hard kesey hoga ?
+      // or aisey rkhna jo bus nikal kr aaskey ok"
+      // - Keep 1-2 colors OUT of the initial 32-slot revolving circle (withheld in the Left & Right Feeder Roads!)
+      // - Guarantee that the first solvable unblocked vehicles in exitSequence ONLY use the active circle colors so they can always board & exit!
+      const levelColors = [];
+      for (const v of vehicles) {
+        if (!levelColors.includes(v.color)) levelColors.push(v.color);
+      }
+      const withholdCount = levelColors.length >= 5 ? 2 : (levelColors.length >= 3 ? 1 : 0);
+      const activeCircleColors = levelColors.slice(0, Math.max(2, levelColors.length - withholdCount));
+      const withheldColors = levelColors.slice(Math.max(2, levelColors.length - withholdCount));
+
+      const vehById = {};
+      for (const v of vehicles) vehById[v.id] = v;
+
+      // Ensure at least 1 initially unblocked vehicle has a withheld color (a strategic decoy trap if the player taps without checking the circle!)
+      // while the other initially unblocked vehicles have activeCircleColors so they can immediately board and clear!
+      const initialFreeVehicles = vehicles.filter((v) => !this.findBlockingVehicle(v, vehicles));
+      let decoyId = null;
+      if (withheldColors.length > 0 && initialFreeVehicles.length >= 2) {
+        const decoyVeh = initialFreeVehicles[initialFreeVehicles.length - 1];
+        decoyVeh.color = withheldColors[0];
+        decoyId = decoyVeh.id;
+        for (let i = 0; i < initialFreeVehicles.length - 1; i++) {
+          if (withheldColors.includes(initialFreeVehicles[i].color)) {
+            initialFreeVehicles[i].color = activeCircleColors[i % activeCircleColors.length];
+          }
         }
       }
 
+      const simRemaining = vehicles.map((v) => ({ ...v }));
+      const exitSequence = [];
+      const rand = this.createSeededRandom(levelNum * 4999 + 71);
+      let accumRows = 0;
+      let withheldAssignIdx = 0;
+
+      while (simRemaining.length > 0) {
+        let unblocked = simRemaining.filter((v) => !this.findBlockingVehicle(v, simRemaining));
+        if (unblocked.length === 0) {
+          unblocked = [simRemaining[0]];
+        }
+
+        // During the first 32 passenger rows (the initial revolving circle!), prefer non-decoy unblocked vehicles
+        // and guarantee their color is strictly in activeCircleColors (so 0 rows of withheldColors enter the initial circle!)
+        let candidates = unblocked;
+        if (accumRows < RING_SLOT_COUNT && unblocked.length > 1) {
+          const nonDecoy = unblocked.filter((v) => v.id !== decoyId && !withheldColors.includes(v.color));
+          if (nonDecoy.length > 0) {
+            candidates = nonDecoy;
+          } else {
+            const notDecoyId = unblocked.filter((v) => v.id !== decoyId);
+            if (notDecoyId.length > 0) candidates = notDecoyId;
+          }
+        }
+
+        const pick = candidates[Math.floor(rand() * candidates.length)];
+        const vRows = Math.max(1, Math.round(pick.cap / ROW_PASSENGERS));
+
+        if (accumRows < RING_SLOT_COUNT) {
+          // Vehicle has rows inside the initial 32-row circle -> must strictly use an activeCircleColor!
+          if (withheldColors.includes(pick.color)) {
+            const newCol = activeCircleColors[exitSequence.length % activeCircleColors.length];
+            pick.color = newCol;
+            if (vehById[pick.id]) vehById[pick.id].color = newCol;
+          }
+        } else if (withheldColors.length > 0 && accumRows < RING_SLOT_COUNT + 32) {
+          // Vehicle belongs to the feeder road waves -> ensure withheldColors appear prominently in the feeder queues!
+          if (withheldAssignIdx < withheldColors.length * 3 && (exitSequence.length % 2 === 0 || pick.id === decoyId)) {
+            const wCol = withheldColors[withheldAssignIdx % withheldColors.length];
+            pick.color = wCol;
+            if (vehById[pick.id]) vehById[pick.id].color = wCol;
+            withheldAssignIdx++;
+          }
+        }
+
+        accumRows += vRows;
+        exitSequence.push(pick);
+        const idx = simRemaining.findIndex((v) => v.id === pick.id);
+        simRemaining.splice(idx, 1);
+      }
+
       // Convert exitSequence capacities into rows of 4 passengers (ROW_PASSENGERS = 4).
-      // Use tight 3-vehicle waves (~5-8 rows per wave) so the 32-row spinning loop ALWAYS contains 100% of required rows
-      // for the next 3-4 solvable unblocked vehicles in strict FIFO order, while interleaving color bands on harder levels!
+      // Mix colors in 1-2 row chunks within each 3-vehicle wave so the circle has mixed colors (while strictly excluding withheldColors!)
       const allRows = [];
       const waveSize = 3;
-      const maxChunkRows = levelNum >= 14 ? 2 : levelNum >= 6 ? 3 : 4;
+      const maxChunkRows = 2;
 
       for (let w = 0; w < exitSequence.length; w += waveSize) {
         const waveVehicles = exitSequence.slice(w, w + waveSize);
@@ -4614,79 +4613,79 @@
 
     getTrackShapeForLevel(levelNum = 1) {
       const lvl = Math.max(1, levelNum || 1);
-      if (lvl <= 3) return 'oval';
       const shapes = ['oval', 'diamond', 'heart', 'star', 'infinity', 'hexagon', 'clover', 'octagon'];
-      return shapes[(lvl - 3) % shapes.length];
+      return shapes[(lvl - 1) % shapes.length];
     }
 
     getTrackLoopRawXY(shape, rawTheta, centerZ = -8.55) {
       if (shape === 'diamond') {
-        // Rounded Diamond / Rhombus Track (Screenshot 1 Level 13/18 & Screenshot 3 Level 20!)
+        // Bold 4-Sided Rounded Diamond / Rhombus Track (Screenshot 1 Level 13/18 & Screenshot 3 Level 20!)
         const c = Math.cos(rawTheta);
         const s = Math.sin(rawTheta);
-        const p = 1.32;
+        const p = 1.36;
         const norm = Math.pow(Math.pow(Math.abs(c), p) + Math.pow(Math.abs(s), p), 1 / p) || 1;
-        return { x: (c / norm) * 3.62, z: centerZ + (s / norm) * 2.32 };
+        return { x: (c / norm) * 3.68, z: centerZ + (s / norm) * 2.38 };
       }
       if (shape === 'star') {
-        // 5-Pointed Golden Star Track (Screenshot 1 & 2 Level 28!)
-        const wave = 1.0 + 0.145 * Math.cos(5 * (rawTheta - Math.PI * 0.5));
+        // 5-Pointed Royal Star Track (Screenshot 1 & 2 Level 28!)
+        const wave = 1.0 + 0.135 * Math.cos(5 * (rawTheta - Math.PI * 0.5));
         return {
-          x: Math.cos(rawTheta) * 3.52 * wave,
-          z: centerZ + Math.sin(rawTheta) * 2.20 * wave
+          x: Math.cos(rawTheta) * 3.58 * wave,
+          z: centerZ + Math.sin(rawTheta) * 2.28 * wave
         };
       }
       if (shape === 'heart') {
-        // Sculpted Heart / Dual-Lobe Top Loop (Screenshot 2 Level 15!)
-        const tTheta = rawTheta + 0.16 * Math.sin(2 * rawTheta);
+        // Deep Sculpted Heart / U-Kidney Track (Screenshot 2 Level 15!)
+        const tTheta = rawTheta + 0.14 * Math.sin(2 * rawTheta);
         const s = Math.sin(tTheta);
         const c = Math.cos(tTheta);
-        const topDip = s < 0 ? 0.46 * Math.pow(s, 4) : 0;
-        const sideSwell = 1.0 + 0.08 * Math.sin(tTheta);
+        const topDip = s < 0 ? 0.58 * Math.pow(s, 2) : -0.14 * Math.pow(s, 2);
+        const sideSwell = 1.0 - 0.06 * s;
         return {
-          x: c * 3.54 * sideSwell,
-          z: centerZ + s * 2.16 + topDip
+          x: c * 3.56 * sideSwell,
+          z: centerZ + s * 2.24 + topDip
         };
       }
       if (shape === 'infinity') {
         // Pinched-Waist Peanut / Infinity Hourglass Track (Screenshot 3 Bottom-Middle!)
-        const tTheta = rawTheta + 0.18 * Math.sin(2 * rawTheta);
+        const tTheta = rawTheta + 0.16 * Math.sin(2 * rawTheta);
         const s = Math.sin(tTheta);
-        const pinch = 1.0 - 0.22 * (1 - Math.abs(Math.cos(tTheta)));
+        const c = Math.cos(tTheta);
+        const pinch = 1.0 - 0.22 * Math.pow(Math.sin(tTheta), 2);
         return {
-          x: Math.cos(tTheta) * 3.58,
-          z: centerZ + s * 2.28 * pinch
+          x: c * 3.62,
+          z: centerZ + s * 2.34 * pinch
         };
       }
       if (shape === 'hexagon') {
         // 6-Sided Royal Hexagon Jewel Track
-        const hexMod = 1.0 + 0.078 * Math.cos(6 * rawTheta);
+        const hexMod = 1.0 + 0.075 * Math.cos(6 * rawTheta);
         return {
-          x: Math.cos(rawTheta) * 3.52 * hexMod,
-          z: centerZ + Math.sin(rawTheta) * 2.18 * hexMod
+          x: Math.cos(rawTheta) * 3.56 * hexMod,
+          z: centerZ + Math.sin(rawTheta) * 2.24 * hexMod
         };
       }
       if (shape === 'clover') {
         // 4-Leaf Clover / Floral Petal Track
-        const petal = 1.0 + 0.115 * Math.cos(4 * (rawTheta + Math.PI * 0.25));
+        const petal = 1.0 + 0.11 * Math.cos(4 * (rawTheta + Math.PI * 0.25));
         return {
-          x: Math.cos(rawTheta) * 3.50 * petal,
-          z: centerZ + Math.sin(rawTheta) * 2.18 * petal
+          x: Math.cos(rawTheta) * 3.56 * petal,
+          z: centerZ + Math.sin(rawTheta) * 2.24 * petal
         };
       }
       if (shape === 'octagon') {
-        // Chamfered Octagon / Rounded Square Arena Track
+        // Chamfered Octagon / Grand Stadium Arena Track
         const c = Math.cos(rawTheta);
         const s = Math.sin(rawTheta);
-        const p = 2.65;
+        const p = 2.75;
         const norm = Math.pow(Math.pow(Math.abs(c), p) + Math.pow(Math.abs(s), p), 1 / p) || 1;
-        return { x: (c / norm) * 3.46, z: centerZ + (s / norm) * 2.12 };
+        return { x: (c / norm) * 3.46, z: centerZ + (s / norm) * 2.16 };
       }
       // Default: Classic Stadium Oval ('oval')
-      const targetTheta = rawTheta + 0.21 * Math.sin(2 * rawTheta);
+      const targetTheta = rawTheta + 0.20 * Math.sin(2 * rawTheta);
       return {
-        x: Math.cos(targetTheta) * 3.46,
-        z: centerZ + Math.sin(targetTheta) * 2.10
+        x: Math.cos(targetTheta) * 3.48,
+        z: centerZ + Math.sin(targetTheta) * 2.14
       };
     }
 
@@ -4704,7 +4703,46 @@
       // Outward unit normal perpendicular to clockwise tangent (fx, fz)
       const nx = fz;
       const nz = -fx;
-      return { x: pt.x, z: pt.z, nx, nz, fx, fz };
+      return { x: pt.x, z: pt.z, nx, nz, fx, fz, rawTheta };
+    }
+
+    /**
+     * Equal-Arc-Length Track Parameterization: spaces all 32 passenger rows at 100% equal physical distance
+     * around any track shape (Oval, Diamond, Star, Heart, Infinity, Hexagon, Clover, Octagon) so rows NEVER bunch up!
+     */
+    getTrackLoopPointByArc(levelNum, rawTheta, centerZ = -8.55) {
+      const shape = this.getTrackShapeForLevel(levelNum);
+      if (!this._trackArcCache) this._trackArcCache = {};
+      let table = this._trackArcCache[shape];
+      const N = 256;
+      if (!table) {
+        const thetas = new Float32Array(N + 1);
+        const cumLen = new Float32Array(N + 1);
+        let prev = this.getTrackLoopRawXY(shape, 0, 0);
+        thetas[0] = 0;
+        cumLen[0] = 0;
+        for (let i = 1; i <= N; i++) {
+          const th = (i / N) * Math.PI * 2;
+          const cur = this.getTrackLoopRawXY(shape, th, 0);
+          thetas[i] = th;
+          cumLen[i] = cumLen[i - 1] + Math.hypot(cur.x - prev.x, cur.z - prev.z);
+          prev = cur;
+        }
+        table = { thetas, cumLen, totalLen: cumLen[N] || 1 };
+        this._trackArcCache[shape] = table;
+      }
+      const normFrac = (((rawTheta / (Math.PI * 2)) % 1.0) + 1.0) % 1.0;
+      const targetS = normFrac * table.totalLen;
+      let lo = 0, hi = N;
+      while (lo + 1 < hi) {
+        const mid = (lo + hi) >> 1;
+        if (table.cumLen[mid] <= targetS) lo = mid;
+        else hi = mid;
+      }
+      const segLen = Math.max(1e-5, table.cumLen[hi] - table.cumLen[lo]);
+      const t = (targetS - table.cumLen[lo]) / segLen;
+      const eqTheta = table.thetas[lo] + t * (table.thetas[hi] - table.thetas[lo]);
+      return this.getTrackLoopPoint(levelNum, eqTheta, centerZ);
     }
 
     buildEnvironment3D(levelNum = 1) {
@@ -5047,8 +5085,10 @@
           ctx.stroke();
 
           // Dynamic Revolving Track Shape (Oval, Diamond, 5-Pointed Star, Heart, Infinity, Hexagon, Clover, Octagon!)
+          // Drawn with CONSTANT-WIDTH STROKE ONLY (no ctx.fill()!) so both the outer curb and inner center-island curb
+          // are 100% parallel with constant road width, and the center grass island automatically matches the track shape!
+          ctx.lineWidth = (2.06 + expandWorld * 2) * S;
           traceDynamicLoopPath(yOff);
-          ctx.fill();
           ctx.stroke();
 
           // Bottom Gate Neck connecting Loop into Boarding Bay
@@ -5056,9 +5096,9 @@
           ctx.beginPath();
           ctx.roundRect(
             px(0) - neckHalfW,
-            py(-6.65) + yOff,
+            py(-6.48) + yOff,
             neckHalfW * 2,
-            (1.65 + expandWorld) * S,
+            (1.48 + expandWorld) * S,
             6
           );
           ctx.fill();
@@ -5069,12 +5109,12 @@
           ctx.restore();
         };
 
-        // Pass 1: Soft outer ambient shadow on the lawn (zero CPU shadowBlur!)
+        // Pass 1: Soft outer & inner ambient shadow on the lawn (zero CPU shadowBlur!)
         paintUnifiedRoadLayer(0.27, 'rgba(18, 34, 10, 0.25)', 3.5);
-        // Pass 2: 3D concrete curb side bevel
+        // Pass 2: 3D concrete curb side bevel (outer & inner center-island curb!)
         paintUnifiedRoadLayer(0.23, theme.curbSide, 2.5);
-        // Pass 3: Crisp raised white concrete curb top
-        paintUnifiedRoadLayer(0.22, theme.curbTop, 0);
+        // Pass 3: Crisp raised white concrete curb top (outer & inner center-island curb!)
+        paintUnifiedRoadLayer(0.21, theme.curbTop, 0);
         // Pass 4: Subtle dark inner curb shadow lip on asphalt
         paintUnifiedRoadLayer(0.02, '#2d323e', 1.5);
         // Pass 5: Deep Dark Slate-Charcoal Asphalt fill across entire connected network!
@@ -5083,68 +5123,6 @@
         roadGrad.addColorStop(0.55, theme.roadStops[1]);
         roadGrad.addColorStop(1, theme.roadStops[2]);
         paintUnifiedRoadLayer(0.0, roadGrad, 0);
-
-        // 4. Sculpted Center Grass Island inside Loop (Matches exact Track Shape: Diamond, Star, Heart, Infinity, etc.!)
-        const traceCenterIsland = (expandWorld = 0, yOff = 0) => {
-          if (trackShape === 'oval') {
-            const rx = (2.16 + expandWorld) * S;
-            const rz = (0.88 + expandWorld) * S;
-            const cx0 = px(0);
-            const cy0 = py(-8.52) + yOff;
-            ctx.beginPath();
-            ctx.moveTo(cx0 - rx, cy0 + rz * 0.05);
-            ctx.bezierCurveTo(
-              cx0 - rx, cy0 - rz * 1.05,
-              cx0 - rx * 0.35, cy0 - rz * 0.72,
-              cx0, cy0 - rz * 0.68
-            );
-            ctx.bezierCurveTo(
-              cx0 + rx * 0.35, cy0 - rz * 0.72,
-              cx0 + rx, cy0 - rz * 1.05,
-              cx0 + rx, cy0 + rz * 0.05
-            );
-            ctx.bezierCurveTo(
-              cx0 + rx, cy0 + rz * 1.08,
-              cx0 - rx, cy0 + rz * 1.08,
-              cx0 - rx, cy0 + rz * 0.05
-            );
-            ctx.closePath();
-          } else {
-            const scaleX = (1.92 + expandWorld) / 3.40;
-            const scaleZ = (0.98 + expandWorld) / 2.12;
-            const steps = 80;
-            ctx.beginPath();
-            for (let i = 0; i <= steps; i++) {
-              const theta = (i / steps) * Math.PI * 2;
-              const pt = this.getTrackLoopRawXY(trackShape, theta, 0);
-              const ix = px(pt.x * scaleX);
-              const iy = py(-8.52 + pt.z * scaleZ) + yOff;
-              if (i === 0) ctx.moveTo(ix, iy);
-              else ctx.lineTo(ix, iy);
-            }
-            ctx.closePath();
-          }
-        };
-
-        // Island asphalt drop shadow + 3D curb bevel + white curb + lush grass fill (zero CPU shadowBlur!)
-        ctx.fillStyle = 'rgba(20, 24, 34, 0.32)';
-        traceCenterIsland(0.24, 3.5);
-        ctx.fill();
-
-        ctx.fillStyle = '#aeb7ca';
-        traceCenterIsland(0.20, 2.2);
-        ctx.fill();
-
-        ctx.fillStyle = '#f4f7fd';
-        traceCenterIsland(0.20, 0);
-        ctx.fill();
-
-        const islGrass = ctx.createLinearGradient(0, py(-9.4), 0, py(-7.6));
-        islGrass.addColorStop(0, theme.islStops[0]);
-        islGrass.addColorStop(1, theme.islStops[1]);
-        ctx.fillStyle = islGrass;
-        traceCenterIsland(0.0, 0);
-        ctx.fill();
 
         // 5. Crisp Horizontal 3D Concrete Curb Ledge at z = -0.72
         const ledgeTopY = py(-0.84);
@@ -5187,7 +5165,7 @@
     }
 
     buildThemeArchitecture3D(archType = 'fountain') {
-
+      const lvl = Math.max(1, this.levelNum || 1);
       const archIndexMap = {
         fountain: 0,
         palm_oasis: 1,
@@ -5196,45 +5174,168 @@
         cyber_neon: 4,
         alpine_crystal: 5
       };
-      const archIdx = archIndexMap[archType] !== undefined ? archIndexMap[archType] : 0;
+      // Cycle centerpiece & roadside 3D architecture every level so each level has a fresh visual landmark!
+      const baseIdx = archIndexMap[archType] !== undefined ? archIndexMap[archType] : 0;
+      const archIdx = (baseIdx + lvl - 1) % 6;
       this._currentArchIdx = archIdx;
 
-      // 1. Place lush, organic rounded 3D Pixar Flowering Bushes & Rounded Trees cleanly on the outer park lawn
-      // (Never place trees on the feeder roads at x = ±6.35, z = -12.6!)
-      if (archType === 'fountain') {
-        this.addBushWithFlowers(-5.25, -6.18);
-        this.addBushWithFlowers(5.25, -6.18);
-        this.addTree(-7.25, -8.40);
-        this.addTree(7.25, -8.40);
-      } else if (archType === 'palm_oasis') {
-        this.addBushWithFlowers(-5.25, -6.18);
-        this.addBushWithFlowers(5.25, -6.18);
-        this.addTree(-7.25, -8.40);
-        this.addTree(7.25, -8.40);
-      } else if (archType === 'sakura_torii') {
-        this.addBushWithFlowers(-5.25, -6.18);
-        this.addBushWithFlowers(5.25, -6.18);
-        this.addSakuraTree3D(-7.25, -8.45, 1.0);
-        this.addSakuraTree3D(7.25, -8.45, 1.0);
-      } else if (archType === 'castle_kingdom') {
-        this.addBushWithFlowers(-5.25, -6.18);
-        this.addBushWithFlowers(5.25, -6.18);
-        this.addMapleTree3D(-7.25, -8.40);
-        this.addMapleTree3D(7.25, -8.40);
-      } else if (archType === 'cyber_neon') {
-        this.addBushWithFlowers(-5.25, -6.18);
-        this.addBushWithFlowers(5.25, -6.18);
-        this.addSakuraTree3D(-7.25, -8.40, 0.96);
-        this.addSakuraTree3D(7.25, -8.40, 0.96);
+      // 1. Roadside 3D Glass Bus Stop Shelters & Park Benches on Left & Right Aprons (x = ±5.55, z = -5.85, matching reference screenshots!)
+      this.addBusStopShelter3D(-5.58, -5.82, -1, lvl);
+      this.addBusStopShelter3D(5.58, -5.82, 1, lvl);
+
+      // 2. Upper Park Lawn 3D Architectural Landmarks (x = ±2.45, z = -12.35 — safely between Left & Right Feeder Roads!)
+      const archStyle = (lvl - 1) % 8;
+      if (archStyle === 0) {
+        // Royal Marble Fountain & Twin Cypress Trees
+        this.addMarbleFountain3D(-2.45, -12.35);
+        this.addMarbleFountain3D(2.45, -12.35);
+        this.addTree(-7.15, -8.35);
+        this.addTree(7.15, -8.35);
+      } else if (archStyle === 1) {
+        // Tropical Palm Oasis & Beach Resort
+        this.addPalmTree3D(-2.45, -12.35, -1);
+        this.addPalmTree3D(2.45, -12.35, 1);
+        this.addPalmTree3D(-7.10, -8.35, 1);
+        this.addPalmTree3D(7.10, -8.35, -1);
+      } else if (archStyle === 2) {
+        // Sakura Torii Shrine Gates & Blossom Trees
+        this.addToriiGate3D(-2.45, -12.35);
+        this.addToriiGate3D(2.45, -12.35);
+        this.addSakuraTree3D(-7.15, -8.40, 0.88);
+        this.addSakuraTree3D(7.15, -8.40, 0.88);
+      } else if (archStyle === 3) {
+        // Royal Medieval Castle Turrets & Maple Trees
+        this.addCastleTurret3D(-2.45, -12.35, 0.92);
+        this.addCastleTurret3D(2.45, -12.35, 0.92);
+        this.addMapleTree3D(-7.15, -8.35);
+        this.addMapleTree3D(7.15, -8.35);
+      } else if (archStyle === 4) {
+        // Dutch Windmill Gardens & Flowering Shrubs
+        this.addWindmill3D(-2.45, -12.35);
+        this.addWindmill3D(2.45, -12.35);
+        this.addTree(-7.15, -8.35);
+        this.addTree(7.15, -8.35);
+      } else if (archStyle === 5) {
+        // Cyber Neon Crystal Obelisks
+        this.addCyberPylon3D(-2.45, -12.35, 0x38bdf8);
+        this.addCyberPylon3D(2.45, -12.35, 0xf472b6);
+        this.addPineTree3D(-7.15, -8.35, 0.92);
+        this.addPineTree3D(7.15, -8.35, 0.92);
+      } else if (archStyle === 6) {
+        // Alpine Snow-Tipped Pine Forest & Crystal Towers
+        this.addPineTree3D(-2.45, -12.35, 1.05);
+        this.addPineTree3D(2.45, -12.35, 1.05);
+        this.addCastleTurret3D(-7.15, -8.35, 0.85);
+        this.addCastleTurret3D(7.15, -8.35, 0.85);
       } else {
-        this.addBushWithFlowers(-5.25, -6.18);
-        this.addBushWithFlowers(5.25, -6.18);
-        this.addTree(-7.25, -8.40);
-        this.addTree(7.25, -8.40);
+        // Grand Mixed Botanical Resort (Fountain + Torii Shrine + Palms)
+        this.addMarbleFountain3D(-2.45, -12.35);
+        this.addToriiGate3D(2.45, -12.35);
+        this.addPalmTree3D(-7.10, -8.35, 1);
+        this.addPalmTree3D(7.10, -8.35, -1);
       }
 
-      // 2. Mount the Pixar 3D Architectural Landmark Sprite DEAD-CENTER inside the Center Kidney Grass Island!
+      // 3. Mount the Pixar 3D Architectural Landmark Sprite DEAD-CENTER inside the Center Grass Island!
       this.syncLevelArchitecturePropsOverlay();
+    }
+
+    addBusStopShelter3D(x, z, side = 1, lvl = 1) {
+      const group = new THREE.Group();
+      const frameColors = [0x2563eb, 0x059669, 0xd97706, 0x7c3aed, 0xe11d48, 0x0284c7];
+      const roofCol = frameColors[(lvl - 1) % frameColors.length];
+      const postMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.4, metalness: 0.5 });
+      const roofMat = new THREE.MeshStandardMaterial({ color: roofCol, roughness: 0.3, metalness: 0.2 });
+      const benchMat = new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.6 });
+      const padMat = new THREE.MeshBasicMaterial({ color: 0xcbd5e1 });
+
+      const pad = new THREE.Mesh(new THREE.BoxGeometry(1.35, 0.06, 0.88), padMat);
+      pad.position.y = 0.03;
+      group.add(pad);
+
+      for (const px of [-0.52, 0.52]) {
+        const post = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.055, 0.78, 8), postMat);
+        post.position.set(px, 0.42, -0.22);
+        group.add(post);
+      }
+      const roof = new THREE.Mesh(new THREE.BoxGeometry(1.28, 0.10, 0.72), roofMat);
+      roof.position.set(0, 0.82, -0.05);
+      roof.rotation.x = 0.14;
+      group.add(roof);
+
+      const bench = new THREE.Mesh(new THREE.BoxGeometry(0.76, 0.14, 0.26), benchMat);
+      bench.position.set(0, 0.18, -0.10);
+      group.add(bench);
+
+      group.rotation.y = side * -0.32;
+      group.position.set(x, 0.02, z);
+      this.envGroup.add(group);
+    }
+
+    addMarbleFountain3D(x, z) {
+      const group = new THREE.Group();
+      const stoneMat = new THREE.MeshStandardMaterial({ color: 0xf1f5f9, roughness: 0.4 });
+      const waterMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
+      const goldMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.3, metalness: 0.5 });
+
+      const basin = new THREE.Mesh(new THREE.CylinderGeometry(0.72, 0.78, 0.24, 16), stoneMat);
+      basin.position.y = 0.12;
+      const water = new THREE.Mesh(new THREE.CylinderGeometry(0.62, 0.62, 0.26, 16), waterMat);
+      water.position.y = 0.13;
+      const pillar = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.22, 0.62, 12), stoneMat);
+      pillar.position.y = 0.42;
+      const topBowl = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.18, 0.16, 14), stoneMat);
+      topBowl.position.y = 0.72;
+      const crown = new THREE.Mesh(new THREE.SphereGeometry(0.14, 10, 10), goldMat);
+      crown.position.y = 0.92;
+      group.add(basin, water, pillar, topBowl, crown);
+      group.position.set(x, 0.02, z);
+      this.envGroup.add(group);
+    }
+
+    addToriiGate3D(x, z) {
+      const group = new THREE.Group();
+      const redMat = new THREE.MeshStandardMaterial({ color: 0xdc2626, roughness: 0.45 });
+      const darkMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.6 });
+
+      for (const px of [-0.46, 0.46]) {
+        const col = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.095, 0.95, 10), redMat);
+        col.position.set(px, 0.48, 0);
+        const base = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.13, 0.16, 10), darkMat);
+        base.position.set(px, 0.08, 0);
+        group.add(col, base);
+      }
+      const lowerBar = new THREE.Mesh(new THREE.BoxGeometry(1.18, 0.10, 0.12), redMat);
+      lowerBar.position.set(0, 0.74, 0);
+      const topBar = new THREE.Mesh(new THREE.BoxGeometry(1.36, 0.12, 0.18), redMat);
+      topBar.position.set(0, 0.96, 0);
+      const roofCap = new THREE.Mesh(new THREE.BoxGeometry(1.42, 0.07, 0.22), darkMat);
+      roofCap.position.set(0, 1.04, 0);
+      group.add(lowerBar, topBar, roofCap);
+      group.position.set(x, 0.02, z);
+      this.envGroup.add(group);
+    }
+
+    addWindmill3D(x, z) {
+      const group = new THREE.Group();
+      const bodyMat = new THREE.MeshStandardMaterial({ color: 0xb45309, roughness: 0.65 });
+      const roofMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.5 });
+      const sailMat = new THREE.MeshBasicMaterial({ color: 0xfef3c7 });
+
+      const tower = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.48, 0.88, 10), bodyMat);
+      tower.position.y = 0.44;
+      const cap = new THREE.Mesh(new THREE.ConeGeometry(0.36, 0.35, 10), roofMat);
+      cap.position.y = 1.04;
+      group.add(tower, cap);
+
+      for (let i = 0; i < 4; i++) {
+        const blade = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.62, 0.04), sailMat);
+        const ang = (i * Math.PI) / 2 + 0.38;
+        blade.position.set(Math.cos(ang) * 0.28, 0.78 + Math.sin(ang) * 0.28, 0.34);
+        blade.rotation.z = ang - Math.PI / 2;
+        group.add(blade);
+      }
+      group.position.set(x, 0.02, z);
+      this.envGroup.add(group);
     }
 
     syncLevelArchitecturePropsOverlay() {
@@ -6421,12 +6522,11 @@
         }
       }
 
-      // Position all 32 radial rows (either snake-marching along feeder -> oval during intro, or revolving around oval!)
-      const rx = 3.36;
-      const rz = 2.02;
-      // +0.31 3D camera-height parallax offset so bottom-arc heads sit cleanly below the center island's bottom white curb
-      // and top-arc heads sit cleanly inside the top outer white curb (matching reference screenshot!)
-      const centerZ = -8.24;
+      // Position all 32 radial rows using Equal-Arc-Length parameterization around the dynamic track shape!
+      // centerZ = -8.35 aligns 1:1 with the constant-width stroked asphalt road (zero curb overlap!)
+      const centerZ = -8.35;
+      const FEEDER_STOP_U = 0.435;
+      const FEEDER_ROW_STEP_U = 0.052;
 
       for (let k = 0; k < RING_SLOT_COUNT; k++) {
         const rowData = this.ovalRingSlots[k];
@@ -6442,8 +6542,8 @@
         let hideDuringIntro = false;
 
         if (isIntroMarching) {
-          // k = 0..15 enter from Right Feeder (side = +1) into Bottom Half of Oval (baseSlot = 0, i = 15 - k)
-          // k = 16..31 enter from Left Feeder (side = -1) into Top Half of Oval (baseSlot = 16, i = 31 - k)
+          // k = 0..15 enter from Right Feeder (side = +1) into Bottom Half of Loop (baseSlot = 0, i = 15 - k)
+          // k = 16..31 enter from Left Feeder (side = -1) into Top Half of Loop (baseSlot = 16, i = 31 - k)
           const isLeftStream = k >= 16;
           const side = isLeftStream ? -1 : 1;
           const orderInStream = isLeftStream ? (31 - k) : (15 - k); // 0 is leading row, 15 is 16th row
@@ -6451,8 +6551,8 @@
           const stepsPastJunction = this.introMarchSteps - 23.0 - orderInStream;
 
           if (stepsPastJunction < 0) {
-            // Still marching down the Curved U-Feeder Road toward the oval junction!
-            const u = 0.225 + (-stepsPastJunction) * 0.041;
+            // Still marching down the Curved U-Feeder Road toward the loop stop line (u = FEEDER_STOP_U)!
+            const u = FEEDER_STOP_U + (-stepsPastJunction) * FEEDER_ROW_STEP_U;
             if (u > 1.38) {
               hideDuringIntro = true;
             } else {
@@ -6465,10 +6565,10 @@
               fwdZ = pt.fz;
             }
           } else {
-            // Has entered the Revolving Track Loop and is marching clockwise along the level's dynamic track shape!
+            // Has entered the Revolving Track Loop and is marching clockwise at equal arc-length intervals!
             const slotPos = baseSlot + stepsPastJunction; // 0..15 or 16..31
             const rawTheta = ((slotPos / RING_SLOT_COUNT) * Math.PI * 2) % (Math.PI * 2);
-            const loopPt = this.getTrackLoopPoint(this.levelNum, rawTheta, centerZ);
+            const loopPt = this.getTrackLoopPointByArc(this.levelNum, rawTheta, centerZ);
             baseX = loopPt.x;
             baseZ = loopPt.z;
             nx = loopPt.nx;
@@ -6479,7 +6579,7 @@
             // Smooth 1-step corner blend right at the junction entrance (0 <= stepsPastJunction < 1)
             if (stepsPastJunction < 1.0) {
               const jb = stepsPastJunction;
-              const mouthPt = this.getFeederCurvePoint(side, 0.225);
+              const mouthPt = this.getFeederCurvePoint(side, FEEDER_STOP_U);
               baseX = mouthPt.x + (baseX - mouthPt.x) * jb;
               baseZ = (mouthPt.z + 0.24) + (baseZ - (mouthPt.z + 0.24)) * jb;
               nx = mouthPt.nx + (nx - mouthPt.nx) * jb;
@@ -6490,7 +6590,7 @@
           }
         } else {
           const rawTheta = (this.ringRotationAngle + (k / RING_SLOT_COUNT) * Math.PI * 2) % (Math.PI * 2);
-          const loopPt = this.getTrackLoopPoint(this.levelNum, rawTheta, centerZ);
+          const loopPt = this.getTrackLoopPointByArc(this.levelNum, rawTheta, centerZ);
 
           baseX = loopPt.x;
           baseZ = loopPt.z;
@@ -6499,11 +6599,11 @@
           fwdX = loopPt.fx;
           fwdZ = loopPt.fz;
 
-          // Smoothly walk newly pulled feeder rows from the feeder waiting mouth (u=0.225) onto the revolving track loop!
+          // Smoothly walk newly pulled feeder rows from the feeder stop line (u = FEEDER_STOP_U) onto the revolving track loop!
           if (rowData && typeof rowData.joinBlend === 'number' && rowData.joinBlend < 1) {
-            rowData.joinBlend = Math.min(1, rowData.joinBlend + dt * (this._isHoldingFastSpin ? 14.0 : 6.2));
+            rowData.joinBlend = Math.min(1, rowData.joinBlend + dt * (this._isHoldingFastSpin ? 10.0 : 5.5));
             const jb = 1 - Math.pow(1 - rowData.joinBlend, 2);
-            const mouthPt = this.getFeederCurvePoint(rowData.joinSide || -1, 0.225);
+            const mouthPt = this.getFeederCurvePoint(rowData.joinSide || -1, FEEDER_STOP_U);
             baseX = mouthPt.x + (baseX - mouthPt.x) * jb;
             baseZ = (mouthPt.z + 0.24) + (baseZ - (mouthPt.z + 0.24)) * jb;
             nx = mouthPt.nx + (nx - mouthPt.nx) * jb;
@@ -6528,8 +6628,8 @@
           sm.visible = true;
           this.setStickmanColor(sm, rowData.color);
 
-          // 0.415 radial spacing fills the road width curb-to-curb with 4 plump shoulder-to-shoulder runners!
-          const radialOffset = (m - 1.5) * 0.415;
+          // 0.355 radial spacing keeps all 4 passengers centered inside the asphalt road (never stepping on inner/outer curbs!)
+          const radialOffset = (m - 1.5) * 0.355;
           const px = baseX + nx * radialOffset;
           const pz = baseZ + nz * radialOffset;
           const phase = now * runRate + k * 0.85 + m * 0.55;
@@ -6550,13 +6650,13 @@
         }
       }
 
-      // 5. Position waiting rows along Left & Right Curved U-Feeder Roads (stationary when waiting, running when advancing!)
+      // 5. Position waiting rows along Left & Right Curved U-Feeder Roads (stopped cleanly behind u = 0.435 so they NEVER overlap the circle!)
       this.positionFeederLane(this.leftFeederRows, this.leftFeederMeshes, -1, now, dt, isIntroMarching);
       this.positionFeederLane(this.rightFeederRows, this.rightFeederMeshes, 1, now, dt, isIntroMarching);
     }
 
     positionFeederLane(feederQueue, meshRows, side, now, dt = 0.016, isIntroMarching = false) {
-      const decayRate = this._isHoldingFastSpin ? 14.5 : 6.2;
+      const decayRate = this._isHoldingFastSpin ? 12.0 : 5.8;
       if (!isIntroMarching) {
         if (side < 0) {
           this._leftFeederSlideOffset = (this._leftFeederSlideOffset || 0) * Math.exp(-dt * decayRate);
@@ -6580,8 +6680,8 @@
       for (let r = 0; r < meshRows.length; r++) {
         const rowData = feederQueue[r];
         const members = meshRows[r];
-        // Tight 0.041 row-to-row spacing along feeder road with ZERO stepWave vibration!
-        const u = 0.232 + (r + slideOff) * 0.041;
+        // Start at u = 0.435 (outside the revolving loop's outer curb!) with 0.052 row-to-row spacing so feeder rows NEVER overlap circle rows!
+        const u = 0.435 + (r + slideOff) * 0.052;
         const hideOffTop = u > 1.38;
         const pt = this.getFeederCurvePoint(side, Math.min(1.42, u));
         const yaw = Math.atan2(pt.fx, pt.fz);
@@ -6595,7 +6695,7 @@
           sm.visible = true;
           this.setStickmanColor(sm, rowData.color);
 
-          const lateralOffset = (m - 1.5) * 0.415;
+          const lateralOffset = (m - 1.5) * 0.365;
           const targetX = pt.x + pt.nx * lateralOffset;
           const targetZ = pt.z + 0.24 + pt.nz * lateralOffset;
 
