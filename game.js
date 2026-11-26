@@ -646,7 +646,7 @@
       const titles = [
         'Warmup Cross',
         'Neon Diamond Jam',
-        'Bus Fever Classic',
+        'Bus Rush Classic',
         '4-Color Pinwheel Lock',
         '🔥 Fortress Gate',
         'Chevron Convoy',
@@ -710,97 +710,103 @@
     }
 
     static buildLevel1() {
-      // Level 1: 18 Vehicles (Grand Cross & Wing Pattern), 3 Colors (Yellow, Blue, Red) — 46 passenger rows (full 32-row circle + 14 feeder rows!)
+      // Level 1: 20 Vehicles (Grand Cross & Wing Pattern), 3 Colors (Yellow, Blue, Red) — Small Bus = 16, Large Bus = 24 or 40!
       const vehicles = [
-        { id: 'l1_1', x: -2.2, z: 0.65, dir: 'LEFT', type: 'bus', color: 'yellow', cap: 16 },
-        { id: 'l1_2', x: 2.2, z: 0.65, dir: 'RIGHT', type: 'bus', color: 'blue', cap: 16 },
-        { id: 'l1_3', x: -3.7, z: 2.65, dir: 'UP', type: 'bus', color: 'red', cap: 16 },
-        { id: 'l1_4', x: -1.8, z: 2.65, dir: 'UP', type: 'car', color: 'yellow', cap: 4 },
-        { id: 'l1_5', x: 0.0, z: 2.65, dir: 'DOWN', type: 'bus', color: 'yellow', cap: 16 },
-        { id: 'l1_6', x: 1.8, z: 2.65, dir: 'UP', type: 'car', color: 'blue', cap: 4 },
-        { id: 'l1_7', x: 3.7, z: 2.65, dir: 'UP', type: 'bus', color: 'red', cap: 16 },
-        { id: 'l1_8', x: -3.2, z: 4.95, dir: 'LEFT', type: 'bus', color: 'blue', cap: 16 },
-        { id: 'l1_9', x: 0.0, z: 5.05, dir: 'DOWN', type: 'car', color: 'red', cap: 4 },
-        { id: 'l1_10', x: 3.2, z: 4.95, dir: 'RIGHT', type: 'bus', color: 'red', cap: 16 },
-        { id: 'l1_11', x: -3.4, z: 7.15, dir: 'LEFT', type: 'car', color: 'yellow', cap: 4 },
-        { id: 'l1_12', x: 0.0, z: 7.25, dir: 'DOWN', type: 'bus', color: 'blue', cap: 8 },
-        { id: 'l1_13', x: 3.4, z: 7.15, dir: 'RIGHT', type: 'car', color: 'yellow', cap: 4 },
-        { id: 'l1_14', x: -2.3, z: 9.35, dir: 'LEFT', type: 'bus', color: 'red', cap: 16 },
-        { id: 'l1_15', x: 0.0, z: 9.45, dir: 'DOWN', type: 'car', color: 'blue', cap: 4 },
-        { id: 'l1_16', x: 2.3, z: 9.35, dir: 'RIGHT', type: 'bus', color: 'yellow', cap: 8 },
-        { id: 'l1_17', x: -2.2, z: 11.15, dir: 'LEFT', type: 'car', color: 'red', cap: 4 },
-        { id: 'l1_18', x: 2.2, z: 11.15, dir: 'RIGHT', type: 'car', color: 'blue', cap: 4 }
+        { id: 'l1_1', x: -2.2, z: 0.65, dir: 'LEFT', type: 'bus', color: 'yellow', cap: 24 },
+        { id: 'l1_2', x: 2.2, z: 0.65, dir: 'RIGHT', type: 'bus', color: 'blue', cap: 24 },
+        { id: 'l1_3', x: -3.7, z: 2.65, dir: 'UP', type: 'bus', color: 'red', cap: 40 },
+        { id: 'l1_4', x: -1.8, z: 2.65, dir: 'UP', type: 'car', color: 'yellow', cap: 16 },
+        { id: 'l1_5', x: 0.0, z: 2.65, dir: 'DOWN', type: 'bus', color: 'yellow', cap: 40 },
+        { id: 'l1_6', x: 1.8, z: 2.65, dir: 'UP', type: 'car', color: 'blue', cap: 16 },
+        { id: 'l1_7', x: 3.7, z: 2.65, dir: 'UP', type: 'bus', color: 'red', cap: 24 },
+        { id: 'l1_8', x: -3.2, z: 4.95, dir: 'LEFT', type: 'bus', color: 'blue', cap: 40 },
+        { id: 'l1_9', x: 0.0, z: 5.05, dir: 'DOWN', type: 'car', color: 'red', cap: 16 },
+        { id: 'l1_10', x: 3.2, z: 4.95, dir: 'RIGHT', type: 'bus', color: 'red', cap: 24 },
+        { id: 'l1_11', x: -3.4, z: 7.15, dir: 'LEFT', type: 'car', color: 'yellow', cap: 16 },
+        { id: 'l1_12', x: 0.0, z: 7.25, dir: 'DOWN', type: 'bus', color: 'blue', cap: 24 },
+        { id: 'l1_13', x: 3.4, z: 7.15, dir: 'RIGHT', type: 'car', color: 'yellow', cap: 16 },
+        { id: 'l1_14', x: -2.3, z: 9.35, dir: 'LEFT', type: 'bus', color: 'red', cap: 40 },
+        { id: 'l1_15', x: 0.0, z: 9.45, dir: 'DOWN', type: 'car', color: 'blue', cap: 16 },
+        { id: 'l1_16', x: 2.3, z: 9.35, dir: 'RIGHT', type: 'bus', color: 'yellow', cap: 24 },
+        { id: 'l1_17', x: -2.2, z: 11.15, dir: 'LEFT', type: 'car', color: 'red', cap: 16 },
+        { id: 'l1_18', x: 2.2, z: 11.15, dir: 'RIGHT', type: 'car', color: 'blue', cap: 16 },
+        { id: 'l1_19', x: -5.2, z: 5.05, dir: 'UP', type: 'bus', color: 'yellow', cap: 24 },
+        { id: 'l1_20', x: 5.2, z: 5.05, dir: 'UP', type: 'bus', color: 'blue', cap: 24 }
       ];
       return this.finalizeWithRevolvingFeederQueues(1, vehicles);
     }
 
     static buildLevel2() {
-      // Level 2: 20 Vehicles (Expanded Interlocking Diamond), 4 Colors (Green, Purple, Orange, Cyan!) — Small Car = 4, Big Bus = 8 or 16!
+      // Level 2: 22 Vehicles (Expanded Interlocking Diamond), 4 Colors — Small Bus = 16, Large Bus = 24 or 40!
       const vehicles = [
-        { id: 'l2_1', x: -2.3, z: 0.6, dir: 'RIGHT', type: 'bus', color: 'green', cap: 16, tilt: -0.1 },
-        { id: 'l2_2', x: 2.3, z: 0.6, dir: 'LEFT', type: 'bus', color: 'purple', cap: 16, tilt: 0.1 },
+        { id: 'l2_1', x: -2.3, z: 0.6, dir: 'RIGHT', type: 'bus', color: 'green', cap: 24, tilt: -0.1 },
+        { id: 'l2_2', x: 2.3, z: 0.6, dir: 'LEFT', type: 'bus', color: 'purple', cap: 40, tilt: 0.1 },
 
-        { id: 'l2_3', x: -3.9, z: 2.55, dir: 'UP', type: 'bus', color: 'orange', cap: 16 },
-        { id: 'l2_4', x: -2.3, z: 2.55, dir: 'DOWN', type: 'car', color: 'purple', cap: 4 },
-        { id: 'l2_5', x: 0.0, z: 2.55, dir: 'UP', type: 'bus', color: 'cyan', cap: 16 },
-        { id: 'l2_6', x: 2.3, z: 2.55, dir: 'DOWN', type: 'car', color: 'green', cap: 4 },
-        { id: 'l2_7', x: 3.9, z: 2.55, dir: 'UP', type: 'bus', color: 'orange', cap: 16 },
+        { id: 'l2_3', x: -3.9, z: 2.55, dir: 'UP', type: 'bus', color: 'orange', cap: 40 },
+        { id: 'l2_4', x: -2.3, z: 2.55, dir: 'DOWN', type: 'car', color: 'purple', cap: 16 },
+        { id: 'l2_5', x: 0.0, z: 2.55, dir: 'UP', type: 'bus', color: 'cyan', cap: 24 },
+        { id: 'l2_6', x: 2.3, z: 2.55, dir: 'DOWN', type: 'car', color: 'green', cap: 16 },
+        { id: 'l2_7', x: 3.9, z: 2.55, dir: 'UP', type: 'bus', color: 'orange', cap: 24 },
 
-        { id: 'l2_8', x: -3.1, z: 4.65, dir: 'LEFT', type: 'bus', color: 'orange', cap: 16 },
-        { id: 'l2_9', x: 0.0, z: 4.75, dir: 'DOWN', type: 'car', color: 'cyan', cap: 4 },
-        { id: 'l2_10', x: 3.1, z: 4.65, dir: 'RIGHT', type: 'bus', color: 'purple', cap: 8 },
+        { id: 'l2_8', x: -3.1, z: 4.65, dir: 'LEFT', type: 'bus', color: 'orange', cap: 40 },
+        { id: 'l2_9', x: 0.0, z: 4.75, dir: 'DOWN', type: 'car', color: 'cyan', cap: 16 },
+        { id: 'l2_10', x: 3.1, z: 4.65, dir: 'RIGHT', type: 'bus', color: 'purple', cap: 24 },
 
-        { id: 'l2_11', x: -4.2, z: 6.75, dir: 'LEFT', type: 'car', color: 'green', cap: 4 },
-        { id: 'l2_12', x: -1.8, z: 6.85, dir: 'DOWN', type: 'bus', color: 'cyan', cap: 16 },
-        { id: 'l2_13', x: 0.0, z: 6.85, dir: 'UP', type: 'car', color: 'orange', cap: 4 },
-        { id: 'l2_14', x: 1.8, z: 6.85, dir: 'DOWN', type: 'bus', color: 'purple', cap: 8 },
-        { id: 'l2_15', x: 4.2, z: 6.75, dir: 'RIGHT', type: 'car', color: 'green', cap: 4 },
+        { id: 'l2_11', x: -4.2, z: 6.75, dir: 'LEFT', type: 'car', color: 'green', cap: 16 },
+        { id: 'l2_12', x: -1.8, z: 6.85, dir: 'DOWN', type: 'bus', color: 'cyan', cap: 40 },
+        { id: 'l2_13', x: 0.0, z: 6.85, dir: 'UP', type: 'car', color: 'orange', cap: 16 },
+        { id: 'l2_14', x: 1.8, z: 6.85, dir: 'DOWN', type: 'bus', color: 'purple', cap: 24 },
+        { id: 'l2_15', x: 4.2, z: 6.75, dir: 'RIGHT', type: 'car', color: 'green', cap: 16 },
 
-        { id: 'l2_16', x: -3.3, z: 9.05, dir: 'LEFT', type: 'car', color: 'cyan', cap: 4 },
-        { id: 'l2_17', x: 0.0, z: 9.05, dir: 'LEFT', type: 'bus', color: 'orange', cap: 8 },
-        { id: 'l2_18', x: 3.3, z: 9.05, dir: 'RIGHT', type: 'car', color: 'purple', cap: 4 },
+        { id: 'l2_16', x: -3.3, z: 9.05, dir: 'LEFT', type: 'car', color: 'cyan', cap: 16 },
+        { id: 'l2_17', x: 0.0, z: 9.05, dir: 'LEFT', type: 'bus', color: 'orange', cap: 24 },
+        { id: 'l2_18', x: 3.3, z: 9.05, dir: 'RIGHT', type: 'car', color: 'purple', cap: 16 },
 
-        { id: 'l2_19', x: -2.35, z: 10.85, dir: 'LEFT', type: 'bus', color: 'purple', cap: 16 },
-        { id: 'l2_20', x: 2.35, z: 10.85, dir: 'RIGHT', type: 'bus', color: 'green', cap: 16 }
+        { id: 'l2_19', x: -2.35, z: 10.85, dir: 'LEFT', type: 'bus', color: 'purple', cap: 40 },
+        { id: 'l2_20', x: 2.35, z: 10.85, dir: 'RIGHT', type: 'bus', color: 'green', cap: 24 },
+        { id: 'l2_21', x: -5.3, z: 4.65, dir: 'UP', type: 'bus', color: 'green', cap: 24 },
+        { id: 'l2_22', x: 5.3, z: 4.65, dir: 'UP', type: 'bus', color: 'cyan', cap: 24 }
       ];
       return this.finalizeWithRevolvingFeederQueues(2, vehicles);
     }
 
     /**
-     * Expanded 24-Vehicle Level 3 Citadel — Small Car = 4, Big Bus = 8 or 16!
+     * Expanded 26-Vehicle Level 3 Citadel — Small Bus = 16, Large Bus = 24 or 40!
      */
     static buildExactVideoLevel3() {
       const vehicles = [
-        { id: 'v3_top_l', x: -2.25, z: 0.55, dir: 'RIGHT', type: 'bus', color: 'blue', cap: 16, tilt: -0.12 },
-        { id: 'v3_top_r', x: 2.25, z: 0.55, dir: 'LEFT', type: 'bus', color: 'yellow', cap: 16, tilt: 0.12 },
+        { id: 'v3_top_l', x: -2.25, z: 0.55, dir: 'RIGHT', type: 'bus', color: 'blue', cap: 40, tilt: -0.12 },
+        { id: 'v3_top_r', x: 2.25, z: 0.55, dir: 'LEFT', type: 'bus', color: 'yellow', cap: 24, tilt: 0.12 },
 
-        { id: 'v3_r1_1', x: -3.8, z: 2.65, dir: 'UP', type: 'bus', color: 'yellow', cap: 16 },
-        { id: 'v3_r1_2', x: -2.0, z: 2.65, dir: 'DOWN', type: 'bus', color: 'red', cap: 16 },
-        { id: 'v3_r1_3', x: 0.0, z: 2.65, dir: 'DOWN', type: 'bus', color: 'blue', cap: 16 },
-        { id: 'v3_r1_4', x: 2.0, z: 2.65, dir: 'DOWN', type: 'bus', color: 'green', cap: 16 },
-        { id: 'v3_r1_5', x: 3.8, z: 2.65, dir: 'UP', type: 'bus', color: 'yellow', cap: 16 },
+        { id: 'v3_r1_1', x: -3.8, z: 2.65, dir: 'UP', type: 'bus', color: 'yellow', cap: 40 },
+        { id: 'v3_r1_2', x: -2.0, z: 2.65, dir: 'DOWN', type: 'bus', color: 'red', cap: 24 },
+        { id: 'v3_r1_3', x: 0.0, z: 2.65, dir: 'DOWN', type: 'bus', color: 'blue', cap: 40 },
+        { id: 'v3_r1_4', x: 2.0, z: 2.65, dir: 'DOWN', type: 'bus', color: 'green', cap: 24 },
+        { id: 'v3_r1_5', x: 3.8, z: 2.65, dir: 'UP', type: 'bus', color: 'yellow', cap: 24 },
 
-        { id: 'v3_r2_1', x: -3.35, z: 4.75, dir: 'LEFT', type: 'bus', color: 'red', cap: 8 },
-        { id: 'v3_r2_2', x: 0.0, z: 4.75, dir: 'LEFT', type: 'bus', color: 'red', cap: 16 },
-        { id: 'v3_r2_3', x: 3.35, z: 4.75, dir: 'RIGHT', type: 'bus', color: 'green', cap: 8 },
+        { id: 'v3_r2_1', x: -3.35, z: 4.75, dir: 'LEFT', type: 'bus', color: 'red', cap: 24 },
+        { id: 'v3_r2_2', x: 0.0, z: 4.75, dir: 'LEFT', type: 'bus', color: 'red', cap: 40 },
+        { id: 'v3_r2_3', x: 3.35, z: 4.75, dir: 'RIGHT', type: 'bus', color: 'green', cap: 24 },
 
-        { id: 'v3_mid_1', x: 0.0, z: 6.7, dir: 'DOWN', type: 'car', color: 'red', cap: 4 },
-        { id: 'v3_mid_2', x: 0.0, z: 8.8, dir: 'DOWN', type: 'car', color: 'yellow', cap: 4 },
+        { id: 'v3_mid_1', x: 0.0, z: 6.7, dir: 'DOWN', type: 'car', color: 'red', cap: 16 },
+        { id: 'v3_mid_2', x: 0.0, z: 8.8, dir: 'DOWN', type: 'car', color: 'yellow', cap: 16 },
 
-        { id: 'v3_l_1', x: -4.2, z: 6.65, dir: 'LEFT', type: 'car', color: 'yellow', cap: 4 },
-        { id: 'v3_l_2', x: -2.0, z: 6.65, dir: 'LEFT', type: 'car', color: 'blue', cap: 4 },
-        { id: 'v3_l_3', x: -4.2, z: 8.15, dir: 'LEFT', type: 'car', color: 'green', cap: 4 },
-        { id: 'v3_l_4', x: -2.0, z: 8.15, dir: 'LEFT', type: 'car', color: 'blue', cap: 4 },
+        { id: 'v3_l_1', x: -4.2, z: 6.65, dir: 'LEFT', type: 'car', color: 'yellow', cap: 16 },
+        { id: 'v3_l_2', x: -2.0, z: 6.65, dir: 'LEFT', type: 'car', color: 'blue', cap: 16 },
+        { id: 'v3_l_3', x: -4.2, z: 8.15, dir: 'LEFT', type: 'car', color: 'green', cap: 16 },
+        { id: 'v3_l_4', x: -2.0, z: 8.15, dir: 'LEFT', type: 'car', color: 'blue', cap: 16 },
 
-        { id: 'v3_rt_1', x: 2.0, z: 6.65, dir: 'RIGHT', type: 'car', color: 'blue', cap: 4 },
-        { id: 'v3_rt_2', x: 4.2, z: 6.65, dir: 'RIGHT', type: 'car', color: 'yellow', cap: 4 },
-        { id: 'v3_rt_3', x: 2.0, z: 8.15, dir: 'RIGHT', type: 'car', color: 'green', cap: 4 },
-        { id: 'v3_rt_4', x: 4.2, z: 8.15, dir: 'RIGHT', type: 'car', color: 'blue', cap: 4 },
+        { id: 'v3_rt_1', x: 2.0, z: 6.65, dir: 'RIGHT', type: 'car', color: 'blue', cap: 16 },
+        { id: 'v3_rt_2', x: 4.2, z: 6.65, dir: 'RIGHT', type: 'car', color: 'yellow', cap: 16 },
+        { id: 'v3_rt_3', x: 2.0, z: 8.15, dir: 'RIGHT', type: 'car', color: 'green', cap: 16 },
+        { id: 'v3_rt_4', x: 4.2, z: 8.15, dir: 'RIGHT', type: 'car', color: 'blue', cap: 16 },
 
-        { id: 'v3_b_1', x: -4.1, z: 9.75, dir: 'DOWN', type: 'car', color: 'red', cap: 4 },
-        { id: 'v3_b_2', x: 4.1, z: 9.75, dir: 'DOWN', type: 'car', color: 'green', cap: 4 },
-        { id: 'v3_bot_l', x: -2.15, z: 10.65, dir: 'LEFT', type: 'bus', color: 'yellow', cap: 16 },
-        { id: 'v3_bot_r', x: 2.15, z: 10.65, dir: 'RIGHT', type: 'bus', color: 'blue', cap: 16 }
+        { id: 'v3_b_1', x: -4.1, z: 9.75, dir: 'DOWN', type: 'car', color: 'red', cap: 16 },
+        { id: 'v3_b_2', x: 4.1, z: 9.75, dir: 'DOWN', type: 'car', color: 'green', cap: 16 },
+        { id: 'v3_bot_l', x: -2.15, z: 10.65, dir: 'LEFT', type: 'bus', color: 'yellow', cap: 40 },
+        { id: 'v3_bot_r', x: 2.15, z: 10.65, dir: 'RIGHT', type: 'bus', color: 'blue', cap: 24 },
+        { id: 'v3_wing_l', x: -5.35, z: 4.75, dir: 'UP', type: 'bus', color: 'green', cap: 24 },
+        { id: 'v3_wing_r', x: 5.35, z: 4.75, dir: 'UP', type: 'bus', color: 'red', cap: 24 }
       ];
 
       return this.finalizeWithRevolvingFeederQueues(3, vehicles);
@@ -869,30 +875,32 @@
       // Ensure base formation has crisp, open spacing while preserving its exact visual silhouette
       this.enforceCleanVehicleSpacing(slots, 0.24);
 
-      // Only add outer perimeter wing escorts on higher levels (NEVER fill the interior negative space so the Spiral, Circle, Butterfly, Heart, Robot Face & Star silhouettes stay 100% distinct!)
-      const extraEscortsWanted = Math.min(10, Math.max(0, Math.floor((levelNum - 5) * 0.45)));
+      // Add outer perimeter wing escorts on all levels (starting from Level 4+) so there are more buses & passengers per level while keeping the interior silhouette 100% distinct!
+      const extraEscortsWanted = Math.min(12, Math.max(3, 3 + Math.floor((levelNum - 4) * 0.55)));
       if (extraEscortsWanted > 0) {
         const outerPerimeterEscorts = [
           { x: -5.25, z: 1.15, dir: 'DOWN', type: 'bus', tilt: -0.22 },
           { x: 5.25, z: 1.15, dir: 'DOWN', type: 'bus', tilt: 0.22 },
-          { x: -5.35, z: 3.35, dir: 'RIGHT', type: 'car', subType: 'van', tilt: 0.25 },
-          { x: 5.35, z: 3.35, dir: 'LEFT', type: 'car', subType: 'van', tilt: -0.25 },
+          { x: -5.35, z: 3.35, dir: 'RIGHT', type: 'bus', tilt: 0.20 },
+          { x: 5.35, z: 3.35, dir: 'LEFT', type: 'bus', tilt: -0.20 },
           { x: -5.35, z: 5.65, dir: 'RIGHT', type: 'bus', tilt: 0.18 },
           { x: 5.35, z: 5.65, dir: 'LEFT', type: 'bus', tilt: -0.18 },
           { x: -5.35, z: 7.95, dir: 'RIGHT', type: 'car', subType: 'van', tilt: -0.24 },
           { x: 5.35, z: 7.95, dir: 'LEFT', type: 'car', subType: 'van', tilt: 0.24 },
           { x: -5.18, z: 10.25, dir: 'UP', type: 'bus', tilt: 0.26 },
-          { x: 5.18, z: 10.25, dir: 'UP', type: 'bus', tilt: -0.26 }
+          { x: 5.18, z: 10.25, dir: 'UP', type: 'bus', tilt: -0.26 },
+          { x: -3.65, z: 11.45, dir: 'LEFT', type: 'car', subType: 'van', tilt: 0 },
+          { x: 3.65, z: 11.45, dir: 'RIGHT', type: 'car', subType: 'van', tilt: 0 }
         ];
         let added = 0;
         for (const cand of outerPerimeterEscorts) {
           if (added >= extraEscortsWanted) break;
-          if (!this.hasAnyOBBOverlap(cand, slots, 0.26)) {
+          if (!this.hasAnyOBBOverlap(cand, slots, 0.24)) {
             slots.push({ ...cand });
             added++;
           } else if (cand.type === 'bus') {
             const carCand = { ...cand, type: 'car', subType: 'van' };
-            if (!this.hasAnyOBBOverlap(carCand, slots, 0.25)) {
+            if (!this.hasAnyOBBOverlap(carCand, slots, 0.23)) {
               slots.push(carCand);
               added++;
             }
@@ -900,15 +908,15 @@
         }
       }
 
-      // As level increases, progressively upgrade more cars with open clearance into 8/16-seat buses for bigger passenger waves!
-      const targetBusRatio = Math.min(0.55, 0.38 + (levelNum - 4) * 0.009);
+      // Upgrade more vehicles with open clearance into 24/40-seat large buses for bigger passenger waves!
+      const targetBusRatio = Math.min(0.68, 0.48 + (levelNum - 4) * 0.011);
       let currentBuses = slots.filter((s) => s.type === 'bus').length;
       const desiredBuses = Math.round(slots.length * targetBusRatio);
       for (let i = 0; i < slots.length && currentBuses < desiredBuses; i++) {
         const s = slots[i];
         if (s.type !== 'bus') {
           s.type = 'bus';
-          if (this.hasAnyOBBOverlap(s, slots, 0.20)) {
+          if (this.hasAnyOBBOverlap(s, slots, 0.19)) {
             s.type = 'car';
           } else {
             currentBuses++;
@@ -917,8 +925,8 @@
       }
 
       // Strict Vehicle Capacities requested by User:
-      // - Small Car / Van (type !== 'bus'): strictly 4 passengers (1 full row of 4)
-      // - Large Bus (type === 'bus'): strictly 8 or 16 passengers (2 rows or 4 rows of 4, with more 16-seat buses as level increases!)
+      // - Small Bus / Van (type !== 'bus'): strictly 16 passengers (4 full rows of 4)
+      // - Large Bus (type === 'bus'): strictly 24 or 40 passengers (6 rows or 10 rows of 4)
       const colorBag = [];
       while (colorBag.length < slots.length + colorPool.length) {
         const copy = [...colorPool];
@@ -931,7 +939,7 @@
 
       let prevCol = null;
       let busIdx = 0;
-      const megaBusMod = levelNum >= 18 ? 3 : 2; // On higher levels, 2 out of 3 buses are 16-seat Mega Buses!
+      const megaBusMod = levelNum >= 16 ? 3 : 2; // Mix of 24-seat and 40-seat large buses on every level!
       const vehicles = slots.map((s, idx) => {
         let color = colorBag[idx];
         if (color === prevCol && colorPool.length > 1) {
@@ -939,10 +947,10 @@
         }
         prevCol = color;
         const isVan = s.type !== 'bus' && (s.subType === 'van' || idx % 3 === 1);
-        let cap = 4;
+        let cap = 16;
         if (s.type === 'bus') {
           busIdx++;
-          cap = (busIdx % megaBusMod !== 0) ? 16 : 8;
+          cap = (busIdx % megaBusMod !== 0) ? 40 : 24;
         }
         return {
           id: `lvl${levelNum}_v${idx}`,
@@ -1940,17 +1948,17 @@
      */
     static finalizeWithRevolvingFeederQueues(levelNum, vehicles) {
       // Strictly enforce User's requested vehicle capacities across all 5000 levels:
-      // - Small Car / Van (type !== 'bus'): strictly 4 passengers (1 row of 4)
-      // - Large Bus (type === 'bus'): strictly 8 or 16 passengers (2 rows or 4 rows of 4)
+      // - Small Bus / Car / Van (type !== 'bus'): strictly 16 passengers (4 rows of 4)
+      // - Large Bus (type === 'bus'): strictly 24 or 40 passengers (6 rows or 10 rows of 4)
       let busToggle = 0;
       vehicles.forEach((v) => {
         if (v.type === 'bus') {
-          if (v.cap !== 8 && v.cap !== 16) {
+          if (v.cap !== 24 && v.cap !== 40) {
             busToggle++;
-            v.cap = (busToggle % 2 === 1) ? 16 : 8;
+            v.cap = (busToggle % 2 === 1) ? 40 : 24;
           }
         } else {
-          v.cap = 4;
+          v.cap = 16;
         }
       });
 
@@ -1960,10 +1968,8 @@
 
       // USER RULE: "passengers jo move kr rey hotey hian usi mn srey colors ni dldia kro 1 2 colors ni dala kro
       // takey hard tu ho thora k bheii user dekhey k yr yeh color ha yeh ni ha jo ha vo dalun"
-      // - Strictly cap the moving circle (plus front 8 feeder rows) to only 2-4 active colors at a time!
-      // - Keep the remaining 1-4 vehicle colors completely OUT of the moving circle (held back deeper in the feeder queues).
-      // - Color half of the initially unblocked outer vehicles with withheldColors (decoy traps whose colors are NOT in the circle!)
-      //   and the other half with activeCircleColors (winning vehicles whose full passengers ARE in the circle!).
+      // - Strictly cap the initial 32-slot moving circle to only 2-4 active colors at a time!
+      // - Keep the remaining 1-5 vehicle colors completely OUT of the initial moving circle (held back deeper in the feeder queues).
       const levelColors = [];
       for (const v of vehicles) {
         if (!levelColors.includes(v.color)) levelColors.push(v.color);
@@ -1975,15 +1981,15 @@
       const vehById = {};
       for (const v of vehicles) vehById[v.id] = v;
 
-      // Split initially unblocked outer vehicles by how many inner vehicles they block:
-      // - Vehicles that block inner vehicles get activeCircleColors (winning entry keys whose passengers ARE in the circle!)
-      // - Leaf unblocked vehicles (that don't block inner progression) get withheldColors (decoy traps whose colors are 100% MISSING from the circle!)
+      // Identify initially unblocked outer vehicles:
+      // - Vehicles that block inner vehicles become Wave 1 winning keys (using activeCircleColors)
+      // - Leaf unblocked vehicles become Wave 2 decoy traps (using withheldColors that are 100% MISSING from the initial circle!)
       const initialFreeVehicles = vehicles.filter((v) => !this.findBlockingVehicle(v, vehicles));
       const decoyIds = new Set();
       if (withheldColors.length > 0 && initialFreeVehicles.length >= 2) {
         const countBlockedBy = (cand) => vehicles.filter((other) => other.id !== cand.id && this.findBlockingVehicle(other, vehicles)?.id === cand.id).length;
         const sortedFree = [...initialFreeVehicles].sort((a, b) => countBlockedBy(b) - countBlockedBy(a));
-        const numDecoys = Math.min(3, Math.max(1, Math.floor(sortedFree.length * 0.4)));
+        const numDecoys = Math.min(2, Math.max(1, Math.floor(sortedFree.length * 0.38)));
         const numWinners = sortedFree.length - numDecoys;
         for (let i = 0; i < sortedFree.length; i++) {
           if (i < numWinners) {
@@ -1995,14 +2001,11 @@
         }
       }
 
+      // Build the true physical peeling order (exitSequence) while holding decoyIds out of the Wave 1 prefix!
       const simRemaining = vehicles.map((v) => ({ ...v }));
       const exitSequence = [];
       const rand = this.createSeededRandom(levelNum * 4999 + 71);
       let accumRows = 0;
-      let withheldAssignIdx = 0;
-      const totalLevelRows = vehicles.reduce((sum, v) => sum + Math.max(1, Math.round(v.cap / ROW_PASSENGERS)), 0);
-      // Reserve at least 12-16 rows at the end for withheldColors so withheldColors are ALWAYS present on vehicles and absent from the initial circle!
-      const WAVE1_ROW_CUTOFF = Math.min(RING_SLOT_COUNT, Math.max(16, totalLevelRows - 14));
 
       while (simRemaining.length > 0) {
         let unblocked = simRemaining.filter((v) => !this.findBlockingVehicle(v, simRemaining));
@@ -2010,87 +2013,68 @@
           unblocked = [simRemaining[0]];
         }
 
-        // During Wave 1 (the initial revolving circle rows), strictly hold decoyIds back in the lot
-        // and peel non-decoy unblocked vehicles using activeCircleColors!
+        // During the Wave 1 prefix (while filling the 32-slot circle), peel non-decoy unblocked vehicles first!
         let candidates = unblocked;
-        if (accumRows < WAVE1_ROW_CUTOFF && unblocked.length > 1) {
+        if (accumRows < RING_SLOT_COUNT && unblocked.length > 1) {
           const nonDecoy = unblocked.filter((v) => !decoyIds.has(v.id));
           if (nonDecoy.length > 0) {
-            const nonWithheld = nonDecoy.filter((v) => !withheldColors.includes(v.color));
-            candidates = nonWithheld.length > 0 ? nonWithheld : nonDecoy;
+            candidates = nonDecoy;
           }
         }
 
         const pick = candidates[Math.floor(rand() * candidates.length)];
         const vRows = Math.max(1, Math.round(pick.cap / ROW_PASSENGERS));
-
-        if (accumRows + vRows <= WAVE1_ROW_CUTOFF && !decoyIds.has(pick.id)) {
-          // Vehicle's rows sit inside the initial circle -> must strictly use an activeCircleColor!
-          if (withheldColors.includes(pick.color)) {
-            const newCol = activeCircleColors[exitSequence.length % activeCircleColors.length];
-            pick.color = newCol;
-            if (vehById[pick.id]) vehById[pick.id].color = newCol;
-          }
-        } else if (withheldColors.length > 0) {
-          // Vehicle belongs to Wave 2 (feeder road waves + decoy vehicles) -> assign withheldColors so they are in the lot & feeder road, NOT in the circle!
-          if (decoyIds.has(pick.id) || withheldAssignIdx < withheldColors.length * 4 || accumRows >= RING_SLOT_COUNT) {
-            const wCol = withheldColors[withheldAssignIdx % withheldColors.length];
-            pick.color = wCol;
-            if (vehById[pick.id]) vehById[pick.id].color = wCol;
-            withheldAssignIdx++;
-          }
-        }
-
         accumRows += vRows;
         exitSequence.push(pick);
         const idx = simRemaining.findIndex((v) => v.id === pick.id);
         simRemaining.splice(idx, 1);
       }
 
-      // Convert exitSequence capacities into rows of 4 passengers (ROW_PASSENGERS = 4).
-      // Strictly keep Wave 1 (first WAVE1_ROW_CUTOFF rows) and Wave 2 separate so withheldColors NEVER leak into the initial 32-slot circle!
-      const allRows = [];
-      let curRowSum = 0;
+      // Split exitSequence strictly into a contiguous Wave 1 prefix (at least 32 rows for the initial circle)
+      // and a contiguous Wave 2 suffix (preserved in exact physical unblocking order so NO vehicle is ever blocked by a later vehicle!).
       const wave1Vehicles = [];
       const wave2Vehicles = [];
-      for (const v of exitSequence) {
+      let wave1RowSum = 0;
+      for (let i = 0; i < exitSequence.length; i++) {
+        const v = exitSequence[i];
         const rCnt = Math.max(1, Math.round(v.cap / ROW_PASSENGERS));
-        if (curRowSum < RING_SLOT_COUNT && !withheldColors.includes(v.color) && !decoyIds.has(v.id)) {
+        if (wave1RowSum < RING_SLOT_COUNT && (exitSequence.length - i) > Math.max(2, withheldColors.length)) {
+          // Every vehicle in Wave 1 prefix MUST use an activeCircleColor so 0 rows of withheldColors enter the initial 32-slot circle!
+          if (withheldColors.includes(v.color) || decoyIds.has(v.id)) {
+            const newCol = activeCircleColors[wave1Vehicles.length % activeCircleColors.length];
+            v.color = newCol;
+            if (vehById[v.id]) vehById[v.id].color = newCol;
+          }
           wave1Vehicles.push(v);
-          curRowSum += rCnt;
+          wave1RowSum += rCnt;
         } else {
           wave2Vehicles.push(v);
         }
       }
-      // If wave1Vehicles has fewer than 32 rows, top up wave1 rows by recoloring the earliest non-decoy wave2 vehicles to activeCircleColors
-      // until curRowSum >= 32 so all 32 slots of ovalRingSlots are 100% filled with activeCircleColors (0 rows of withheldColors in the circle!)
-      while (curRowSum < RING_SLOT_COUNT && wave2Vehicles.length > decoyIds.size) {
-        let promoteIdx = wave2Vehicles.findIndex((v) => !decoyIds.has(v.id));
-        if (promoteIdx === -1) break;
-        const promV = wave2Vehicles.splice(promoteIdx, 1)[0];
-        const newCol = activeCircleColors[wave1Vehicles.length % activeCircleColors.length];
-        promV.color = newCol;
-        if (vehById[promV.id]) vehById[promV.id].color = newCol;
-        wave1Vehicles.push(promV);
-        curRowSum += Math.max(1, Math.round(promV.cap / ROW_PASSENGERS));
-      }
-      // Ensure every vehicle remaining in wave2Vehicles uses withheldColors so all withheldColors exist in the parking lot & feeder queues!
-      if (withheldColors.length > 0) {
-        wave2Vehicles.forEach((wv, wIdx) => {
-          const wCol = withheldColors[wIdx % withheldColors.length];
-          wv.color = wCol;
-          if (vehById[wv.id]) vehById[wv.id].color = wCol;
+
+      // Ensure all withheldColors are prominently represented in Wave 2 (especially on decoyIds and the front Wave 2 vehicles),
+      // while keeping a natural mix of colors across deeper Wave 2 vehicles!
+      if (withheldColors.length > 0 && wave2Vehicles.length > 0) {
+        let wAssign = 0;
+        wave2Vehicles.forEach((wv, idx) => {
+          if (decoyIds.has(wv.id) || idx < withheldColors.length * 2 || !withheldColors.includes(wv.color) && (idx % 2 === 0)) {
+            const wCol = withheldColors[wAssign % withheldColors.length];
+            wv.color = wCol;
+            if (vehById[wv.id]) vehById[wv.id].color = wCol;
+            wAssign++;
+          }
         });
       }
 
-      const orderedSeq = [...wave1Vehicles, ...wave2Vehicles];
-      exitSequence.length = 0;
-      exitSequence.push(...orderedSeq);
-
-      const waveSize = 3;
+      // Convert Wave 1 and Wave 2 into 4-passenger rows.
+      // Because capacities are 16 (4 rows), 24 (6 rows), and 40 (10 rows), using waveSize = 2 interleaves pairs of
+      // simultaneously-unblocked vehicles in 2-row chunks while keeping every single vehicle's rows within <= 20 slots (< 32 circle slots)!
+      const allRows = [];
+      const waveSize = 2;
       const maxChunkRows = 2;
 
-      const appendRowsForGroup = (vehGroup, isFirstGroup) => {
+      const appendRowsForGroup = (vehGroup) => {
+        let currentGroupRows = 0;
         for (let w = 0; w < vehGroup.length; w += waveSize) {
           const waveVehicles = vehGroup.slice(w, w + waveSize);
           const colorRowCounts = {};
@@ -2104,46 +2088,38 @@
             colorRowCounts[v.color] += rows;
           }
 
-          const waveChunks = [];
-          for (const col of colorOrder) {
-            let rem = colorRowCounts[col];
-            while (rem > 0) {
-              const chunkLen = Math.min(rem, maxChunkRows);
-              const chunk = [];
-              for (let r = 0; r < chunkLen; r++) {
-                chunk.push({ color: col, count: ROW_PASSENGERS });
+          // Round-robin interleave 2-row chunks between the 1-2 vehicles in this wave so the circle has mixed color bands
+          // while preserving exact wave progression!
+          let hasMore = true;
+          while (hasMore) {
+            hasMore = false;
+            for (const col of colorOrder) {
+              const rem = colorRowCounts[col] || 0;
+              if (rem > 0) {
+                hasMore = true;
+                const chunkLen = Math.min(rem, maxChunkRows);
+                for (let r = 0; r < chunkLen; r++) {
+                  allRows.push({ color: col, count: ROW_PASSENGERS });
+                  currentGroupRows++;
+                }
+                colorRowCounts[col] -= chunkLen;
               }
-              waveChunks.push(chunk);
-              rem -= chunkLen;
             }
-          }
-
-          if ((!isFirstGroup || w > 0) && waveChunks.length > 1) {
-            for (let i = waveChunks.length - 1; i > 0; i--) {
-              const j = Math.floor(rand() * (i + 1));
-              [waveChunks[i], waveChunks[j]] = [waveChunks[j], waveChunks[i]];
-            }
-          }
-
-          for (const ch of waveChunks) {
-            allRows.push(...ch);
           }
         }
+        return currentGroupRows;
       };
 
-      appendRowsForGroup(wave1Vehicles, true);
-      appendRowsForGroup(wave2Vehicles, false);
-
-      // Guarantee that the first 3 solvable Wave 1 vehicles have their full required passenger rows inside the 32-slot circle!
+      const totalWave1Rows = appendRowsForGroup(wave1Vehicles);
+      // If totalWave1Rows > 32, make sure the first 32 rows (initial circle) contain 100% of the first 2 Wave 1 vehicles' rows!
       const ringWindow = Math.min(RING_SLOT_COUNT, allRows.length);
-      if (wave1Vehicles.length > 0) {
-        for (let eIdx = 0; eIdx < Math.min(3, wave1Vehicles.length); eIdx++) {
+      if (wave1Vehicles.length > 0 && totalWave1Rows > RING_SLOT_COUNT) {
+        for (let eIdx = 0; eIdx < Math.min(2, wave1Vehicles.length); eIdx++) {
           const keyVeh = wave1Vehicles[eIdx];
           const keyCol = keyVeh.color;
-          if (withheldColors.includes(keyCol)) continue;
           const keyRowsNeeded = Math.max(1, Math.round(keyVeh.cap / ROW_PASSENGERS));
           let curKeyInRing = allRows.slice(0, ringWindow).filter((r) => r && r.color === keyCol).length;
-          for (let fIdx = ringWindow; fIdx < allRows.length && curKeyInRing < keyRowsNeeded; fIdx++) {
+          for (let fIdx = ringWindow; fIdx < totalWave1Rows && curKeyInRing < keyRowsNeeded; fIdx++) {
             if (allRows[fIdx] && allRows[fIdx].color === keyCol) {
               for (let rPos = ringWindow - 1; rPos >= 4; rPos--) {
                 if (allRows[rPos].color !== keyCol) {
@@ -2158,6 +2134,7 @@
           }
         }
       }
+      appendRowsForGroup(wave2Vehicles);
 
       // First 32 rows populate the Central Revolving Track; remaining rows split evenly in 1-2 row alternating blocks
       // between Left & Right Feeder Roads so both junctions feed into the revolving track in exact chronological wave order!
@@ -2185,8 +2162,8 @@
         idx = runEnd;
       }
 
-      // Scale timer cleanly with vehicle count (90s for standard levels up to 135s for 45-vehicle mega formations!)
-      const timeLimitSeconds = Math.max(90, Math.min(135, 70 + Math.round(vehicles.length * 1.45)));
+      // Generous level timer scaled for 16/24/40 passenger buses (180s to 360s)
+      const timeLimitSeconds = Math.max(180, Math.min(360, 110 + Math.round(vehicles.length * 6.5)));
 
       return {
         levelNum,
@@ -2273,6 +2250,15 @@
       // Keep 3D WebGL loop paused while Opening Splash, Loading Screen, or Home Lobby is active!
       this._inHomeLobby = true;
 
+      try {
+        document.title = 'Bus Rush Party';
+        const portalTitle = document.querySelector('.portal-game-title');
+        if (portalTitle) portalTitle.textContent = 'Bus Rush Party';
+        const loadingSplash = document.getElementById('splash-loading');
+        if (loadingSplash) {
+          loadingSplash.style.backgroundImage = "url('loading_bg.jpg?v=83')";
+        }
+      } catch (e) {}
       this.loadSaveData();
       this.initThreeScene();
       this.bindUIEvents();
@@ -2887,7 +2873,7 @@
       }, 2200);
     }
 
-    playRewardedAd(onReward, placementTitle = 'Bus Fever Party — Free Reward!') {
+    playRewardedAd(onReward, placementTitle = 'Bus Rush Party — Free Reward!') {
       // Hook into native Android / AdMob / Unity / WebView ad bridge ONLY if a real ad SDK is active
       if (window.AndroidAds && typeof window.AndroidAds.showRewardedAd === 'function') {
         try {
@@ -6420,11 +6406,17 @@
           group.add(rail);
         }
 
-        // Visually distinguish 16-Seat Grand Mega Buses from 8-Seat Shuttle Buses with twin chrome AC pods!
-        if (vehicleData.cap === 16 && g.roofPodGeo) {
-          for (const pz of [-0.64, 0.64]) {
+        // Visually distinguish 40-Seat Grand Mega Buses (twin chrome AC pods) from 24-Seat Coach Buses (single central AC pod)!
+        if (g.roofPodGeo) {
+          if (vehicleData.cap >= 40) {
+            for (const pz of [-0.64, 0.64]) {
+              const pod = new THREE.Mesh(g.roofPodGeo, this._vehCreamTrimMat);
+              pod.position.set(0, 0.915, pz);
+              group.add(pod);
+            }
+          } else if (vehicleData.cap >= 24) {
             const pod = new THREE.Mesh(g.roofPodGeo, this._vehCreamTrimMat);
-            pod.position.set(0, 0.915, pz);
+            pod.position.set(0, 0.915, 0);
             group.add(pod);
           }
         }
@@ -6833,13 +6825,15 @@
           }
         }
 
-        // Pure FIFO feeder queue pull during normal gameplay (so players must genuinely match colors in the circle!).
-        // Only if >= 3 slots are occupied AND zero parked vehicles have any matching row in the ring, prioritize finishing
-        // a partially-boarded vehicle from the front 4 rows of the feeder road to prevent an unavoidable soft-lock.
+        // FIFO feeder queue pull during normal gameplay, with automatic completion priority for partially-boarded 16/24/40-seat buses
+        // (vehicles that already matched the circle and boarded their first rows, so a 24 or 40-seat bus NEVER gets stranded mid-boarding!).
+        const hasAnyPartiallyBoarded = Object.keys(partiallyBoardedNeedByColor).some(
+          (col) => (partiallyBoardedNeedByColor[col] || 0) > (ringCountByColor[col] || 0)
+        );
         const pullFromFeederQueue = (queue) => {
           if (!queue || queue.length === 0) return null;
-          if (occupiedSlotsCount >= 3 && !anyParkedHasMatchInRing) {
-            const scanLim = Math.min(queue.length, 4);
+          if (hasAnyPartiallyBoarded) {
+            const scanLim = Math.min(queue.length, 18);
             for (let i = 0; i < scanLim; i++) {
               const col = queue[i].color;
               const partNeed = partiallyBoardedNeedByColor[col] || 0;
@@ -6854,6 +6848,24 @@
           const pulled = queue.shift();
           ringCountByColor[pulled.color] = (ringCountByColor[pulled.color] || 0) + pulled.count;
           return pulled;
+        };
+
+        const swapNeededFromFeederQueue = (queue, existingRow) => {
+          if (!queue || queue.length === 0 || !existingRow) return null;
+          const scanLim = Math.min(queue.length, 18);
+          for (let i = 0; i < scanLim; i++) {
+            const col = queue[i].color;
+            const partNeed = partiallyBoardedNeedByColor[col] || 0;
+            const inRing = ringCountByColor[col] || 0;
+            if (partNeed > inRing) {
+              const pulled = queue.splice(i, 1)[0];
+              queue.unshift({ color: existingRow.color, count: existingRow.count });
+              ringCountByColor[existingRow.color] = Math.max(0, (ringCountByColor[existingRow.color] || 0) - existingRow.count);
+              ringCountByColor[col] = (ringCountByColor[col] || 0) + pulled.count;
+              return pulled;
+            }
+          }
+          return null;
         };
 
         for (let k = 0; k < RING_SLOT_COUNT; k++) {
@@ -6877,6 +6889,22 @@
               pulled.joinSide = 1;
               this.ovalRingSlots[k] = pulled;
               this._rightFeederSlideOffset = Math.min(6.0, (this._rightFeederSlideOffset || 0) + 1.0);
+            }
+          } else if (hasAnyPartiallyBoarded && !anyParkedHasMatchInRing && !parkedColorsSet.has(rowData.color)) {
+            if (this.leftFeederRows.length > 0 && distLeft < juncTol) {
+              const swapped = swapNeededFromFeederQueue(this.leftFeederRows, rowData);
+              if (swapped) {
+                swapped.joinBlend = 0.0;
+                swapped.joinSide = -1;
+                this.ovalRingSlots[k] = swapped;
+              }
+            } else if (this.rightFeederRows.length > 0 && distRight < juncTol) {
+              const swapped = swapNeededFromFeederQueue(this.rightFeederRows, rowData);
+              if (swapped) {
+                swapped.joinBlend = 0.0;
+                swapped.joinSide = 1;
+                this.ovalRingSlots[k] = swapped;
+              }
             }
           }
         }

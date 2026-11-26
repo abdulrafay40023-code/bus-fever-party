@@ -1,4 +1,4 @@
-﻿const CACHE_NAME = 'bus-fever-portal-v30';
+﻿const CACHE_NAME = 'bus-rush-party-v83';
 const ASSETS = [
   '/',
   '/?play=1',
@@ -52,8 +52,15 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // game.js and styles.css: ALWAYS Network-First so updates are instant
-  if (url.pathname === '/game.js' || url.pathname === '/styles.css' || url.pathname === '/index.html') {
+  // game.js, styles.css, index.html, manifest.json, and logo/loading art: ALWAYS Network-First so updates are instant
+  if (
+    url.pathname === '/game.js' ||
+    url.pathname === '/styles.css' ||
+    url.pathname === '/index.html' ||
+    url.pathname === '/manifest.json' ||
+    url.pathname === '/loading_bg.jpg' ||
+    url.pathname === '/loading_logo_3d.png'
+  ) {
     event.respondWith(
       fetch(event.request)
         .then((res) => {

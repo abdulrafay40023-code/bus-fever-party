@@ -1,8 +1,8 @@
 {
   "id": "/?play=1",
-  "name": "Bus Fever Party",
-  "short_name": "Bus Fever Party",
-  "description": "3D Traffic Jam & Revolving Passenger Loop Puzzle Game",
+  "name": "Bus Rush Party",
+  "short_name": "Bus Rush Party",
+  "description": "3D Bus Rush Party & Revolving Passenger Loop Puzzle Game",
   "start_url": "/?play=1",
   "scope": "/",
   "display": "fullscreen",
