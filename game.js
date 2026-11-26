@@ -796,11 +796,11 @@
       const rand = this.createSeededRandom(levelNum * 12983 + 409);
       const colorPool = this.getColorsForLevel(levelNum, rand);
 
-      const archetype = levelNum % 12;
+      const archetype = (levelNum - 4) % 20;
       const slots = this.buildDistinctFormationArchetype(archetype, levelNum, rand);
 
-      // Apply multi-axis geometric variation per 12-level cycle so levels NEVER feel like repetitive copies!
-      const cycle = Math.floor(levelNum / 12);
+      // Apply multi-axis geometric variation per 20-level cycle so all 5000 levels NEVER feel like repetitive copies!
+      const cycle = Math.floor((levelNum - 4) / 20);
       if (cycle > 0 && archetype !== 6) {
         const mirrorX = (cycle % 2 === 1);
         const mirrorZ = (cycle % 3 === 1);
@@ -1356,7 +1356,7 @@
             tilt: cx * 0.08
           });
         });
-      } else {
+      } else if (archetype === 11) {
         // Archetype 11: COLOSSEUM AMPHITHEATER RING (20 spacious concentric arena vehicles — zero core pileup!)
         const ringCount = 12;
         for (let i = 0; i < ringCount; i++) {
@@ -1393,6 +1393,223 @@
 
         // Spacious Gladiator Center (1 center bus with wide open clearance all around!)
         list.push({ x: 0.0, z: 5.65, dir: 'UP', type: 'bus' });
+      } else if (archetype === 12) {
+        // Archetype 12: SQUARE SPIRAL MAZE COIL ([ @ ] — Screenshot 1 Level 4 Rectangular Spiral!)
+        // Outer Top Bar (pointing LEFT)
+        [-2.4, 0.0, 2.4].forEach((cx, i) => {
+          list.push({ x: cx, z: 0.65, dir: 'LEFT', type: i === 1 ? 'bus' : 'car' });
+        });
+        // Outer Left Wall (pointing DOWN)
+        [2.4, 4.8, 7.2, 9.5].forEach((cz, i) => {
+          list.push({ x: -4.2, z: cz, dir: 'DOWN', type: i % 2 === 0 ? 'bus' : 'car' });
+        });
+        // Outer Bottom Bar (pointing RIGHT)
+        [-2.1, 0.3, 2.6].forEach((cx, i) => {
+          list.push({ x: cx, z: 10.55, dir: 'RIGHT', type: i === 1 ? 'bus' : 'car' });
+        });
+        // Outer Right Wall (pointing UP)
+        [8.8, 6.4, 4.0, 1.8].forEach((cz, i) => {
+          list.push({ x: 4.2, z: cz, dir: 'UP', type: i % 2 === 1 ? 'bus' : 'car' });
+        });
+        // Inner Spiral Ring
+        list.push({ x: -1.1, z: 2.55, dir: 'LEFT', type: 'bus' });
+        list.push({ x: 1.5, z: 2.55, dir: 'LEFT', type: 'car' });
+        list.push({ x: -2.4, z: 4.65, dir: 'DOWN', type: 'car' });
+        list.push({ x: -2.4, z: 7.05, dir: 'DOWN', type: 'bus' });
+        list.push({ x: -0.6, z: 8.65, dir: 'RIGHT', type: 'bus' });
+        list.push({ x: 1.8, z: 8.65, dir: 'RIGHT', type: 'car' });
+        list.push({ x: 2.35, z: 6.55, dir: 'UP', type: 'bus' });
+        list.push({ x: 2.35, z: 4.35, dir: 'UP', type: 'car' });
+        // Spiral Core
+        list.push({ x: 0.0, z: 4.85, dir: 'DOWN', type: 'car' });
+        list.push({ x: 0.0, z: 6.75, dir: 'UP', type: 'car' });
+      } else if (archetype === 13) {
+        // Archetype 13: CONCENTRIC CIRCULAR WHIRLPOOL RINGS (( O ) — Screenshot 1 Level 18!)
+        const outerN = 13;
+        for (let i = 0; i < outerN; i++) {
+          const ang = (i / outerN) * Math.PI * 2;
+          const x = Math.cos(ang) * 4.25;
+          const z = 5.65 + Math.sin(ang) * 4.45;
+          // Tangent direction (clockwise around circle)
+          const tx = -Math.sin(ang);
+          const tz = Math.cos(ang);
+          const dir = Math.abs(tx) > Math.abs(tz) ? (tx > 0 ? 'RIGHT' : 'LEFT') : (tz > 0 ? 'DOWN' : 'UP');
+          list.push({
+            x: Number(x.toFixed(2)),
+            z: Number(z.toFixed(2)),
+            dir,
+            type: i % 3 === 0 ? 'bus' : 'car',
+            tilt: Math.sin(ang * 2) * 0.32
+          });
+        }
+        const innerN = 8;
+        for (let i = 0; i < innerN; i++) {
+          const ang = (i / innerN) * Math.PI * 2 + 0.35;
+          const x = Math.cos(ang) * 2.25;
+          const z = 5.65 + Math.sin(ang) * 2.35;
+          const tx = Math.sin(ang);
+          const tz = -Math.cos(ang);
+          const dir = Math.abs(tx) > Math.abs(tz) ? (tx > 0 ? 'RIGHT' : 'LEFT') : (tz > 0 ? 'DOWN' : 'UP');
+          list.push({
+            x: Number(x.toFixed(2)),
+            z: Number(z.toFixed(2)),
+            dir,
+            type: i % 2 === 0 ? 'bus' : 'car',
+            tilt: -Math.sin(ang * 2) * 0.28
+          });
+        }
+      } else if (archetype === 14) {
+        // Archetype 14: 45-DEGREE DIAGONAL PARALLEL RIBBONS (/// \\\ — Screenshot 1 Level 13!)
+        for (let row = 0; row < 5; row++) {
+          const count = row === 0 || row === 4 ? 4 : 5;
+          for (let col = 0; col < count; col++) {
+            const bx = -3.4 + col * 1.7 + (row % 2 === 0 ? -0.25 : 0.25);
+            const bz = 1.15 + row * 2.15;
+            const isCross = (row + col) % 3 === 0;
+            list.push({
+              x: Number(bx.toFixed(2)),
+              z: Number(bz.toFixed(2)),
+              dir: (row + col) % 2 === 0 ? 'UP' : 'DOWN',
+              type: (row + col) % 3 === 1 ? 'bus' : 'car',
+              tilt: isCross ? -0.68 : 0.68
+            });
+          }
+        }
+      } else if (archetype === 15) {
+        // Archetype 15: GIANT MONARCH BUTTERFLY WINGS (Screenshot 2 Level 28 Butterfly!)
+        // Central Butterfly Body Spine
+        [1.3, 3.4, 5.5, 7.6, 9.7].forEach((cz, idx) => {
+          list.push({
+            x: 0.0,
+            z: cz,
+            dir: idx < 3 ? 'UP' : 'DOWN',
+            type: idx === 1 || idx === 3 ? 'bus' : 'car'
+          });
+        });
+        // Upper Swept Forewings (Left & Right)
+        for (const side of [-1, 1]) {
+          list.push({ x: side * 1.85, z: 1.55, dir: 'UP', type: 'bus', tilt: side * -0.45 });
+          list.push({ x: side * 3.65, z: 1.15, dir: side < 0 ? 'LEFT' : 'RIGHT', type: 'bus', tilt: side * 0.35 });
+          list.push({ x: side * 2.15, z: 3.45, dir: side < 0 ? 'LEFT' : 'RIGHT', type: 'car', tilt: side * 0.42 });
+          list.push({ x: side * 4.05, z: 3.15, dir: 'UP', type: 'bus', tilt: side * -0.48 });
+          list.push({ x: side * 3.15, z: 5.15, dir: side < 0 ? 'RIGHT' : 'LEFT', type: 'car', tilt: side * 0.25 });
+          // Lower Rounded Hindwings
+          list.push({ x: side * 1.95, z: 6.95, dir: 'DOWN', type: 'bus', tilt: side * 0.42 });
+          list.push({ x: side * 3.85, z: 7.25, dir: side < 0 ? 'LEFT' : 'RIGHT', type: 'car', tilt: side * -0.38 });
+          list.push({ x: side * 2.25, z: 9.05, dir: 'DOWN', type: 'car', tilt: side * 0.45 });
+          list.push({ x: side * 3.95, z: 9.45, dir: 'DOWN', type: 'bus', tilt: side * -0.42 });
+        }
+      } else if (archetype === 16) {
+        // Archetype 16: 45-DEGREE WOVEN DIAMOND LATTICE (Screenshot 3 Level 20!)
+        const diamondRows = [
+          { z: 0.9, xs: [-1.4, 1.4] },
+          { z: 2.6, xs: [-2.8, 0.0, 2.8] },
+          { z: 4.3, xs: [-4.1, -1.4, 1.4, 4.1] },
+          { z: 6.0, xs: [-4.1, -1.4, 1.4, 4.1] },
+          { z: 7.7, xs: [-2.8, 0.0, 2.8] },
+          { z: 9.4, xs: [-1.4, 1.4] },
+          { z: 10.7, xs: [0.0] }
+        ];
+        diamondRows.forEach((r, rIdx) => {
+          r.xs.forEach((cx, cIdx) => {
+            const checker = (rIdx + cIdx) % 2 === 0;
+            list.push({
+              x: cx,
+              z: r.z,
+              dir: rIdx < 3 ? (checker ? 'UP' : 'LEFT') : (checker ? 'DOWN' : 'RIGHT'),
+              type: (rIdx + cIdx) % 3 === 0 ? 'bus' : 'car',
+              tilt: checker ? 0.66 : -0.66
+            });
+          });
+        });
+      } else if (archetype === 17) {
+        // Archetype 17: CYBER ROBOT MASK / SMILING FACE (Screenshot 3 Bottom-Middle!)
+        // Left & Right Curved Eyebrow Arches
+        [-3.6, -1.8, 1.8, 3.6].forEach((cx, i) => {
+          list.push({
+            x: cx,
+            z: Math.abs(cx) > 2.5 ? 1.45 : 0.85,
+            dir: cx < 0 ? 'LEFT' : 'RIGHT',
+            type: 'bus',
+            tilt: cx * -0.11
+          });
+        });
+        // Twin Vertical Eye Pillars & Nose Bridge
+        for (const side of [-1, 1]) {
+          list.push({ x: side * 1.95, z: 3.35, dir: 'UP', type: 'bus' });
+          list.push({ x: side * 1.95, z: 5.45, dir: 'DOWN', type: 'car' });
+          list.push({ x: side * 4.05, z: 4.45, dir: side < 0 ? 'LEFT' : 'RIGHT', type: 'car', tilt: side * 0.25 });
+        }
+        list.push({ x: 0.0, z: 4.35, dir: 'UP', type: 'car' });
+        // Wide U-Shaped Smiling Mouth Arc
+        [-3.8, -2.4, -0.9, 0.9, 2.4, 3.8].forEach((cx, i) => {
+          const mz = 7.45 + (1 - Math.abs(cx) / 4.2) * 1.65;
+          list.push({
+            x: cx,
+            z: Number(mz.toFixed(2)),
+            dir: i % 2 === 0 ? 'DOWN' : 'UP',
+            type: i === 1 || i === 4 ? 'bus' : 'car',
+            tilt: cx * 0.14
+          });
+        });
+        // Chin Guard
+        [-2.1, 0.0, 2.1].forEach((cx, i) => {
+          list.push({ x: cx, z: 10.55, dir: i === 1 ? 'DOWN' : (cx < 0 ? 'LEFT' : 'RIGHT'), type: i === 1 ? 'car' : 'bus' });
+        });
+      } else if (archetype === 18) {
+        // Archetype 18: ASYMMETRIC HIGHWAY CONVOY + DIAGONAL SWIRL FAN (Screenshot 1 Level 8 & Screenshot 2 Level 15!)
+        // Right-side 2-Column Vertical Highway Convoy
+        [2.25, 3.95].forEach((cx, cIdx) => {
+          [1.2, 3.2, 5.2, 7.2, 9.2].forEach((cz, rIdx) => {
+            list.push({
+              x: cx,
+              z: cz,
+              dir: (cIdx + rIdx) % 2 === 0 ? 'UP' : 'DOWN',
+              type: (cIdx + rIdx) % 3 === 0 ? 'bus' : 'car'
+            });
+          });
+        });
+        // Left-side Swirling Diagonal Fan
+        [-3.8, -1.9, -0.2].forEach((cx, i) => {
+          list.push({ x: cx, z: 1.05 + i * 0.35, dir: 'LEFT', type: i === 1 ? 'bus' : 'car', tilt: 0.28 });
+          list.push({ x: cx - 0.15, z: 3.35 + i * 0.35, dir: 'UP', type: i === 0 ? 'bus' : 'car', tilt: 0.55 });
+          list.push({ x: cx, z: 5.75 + i * 0.35, dir: 'DOWN', type: i === 2 ? 'bus' : 'car', tilt: -0.52 });
+          list.push({ x: cx - 0.1, z: 8.15 + i * 0.35, dir: 'LEFT', type: i === 1 ? 'bus' : 'car', tilt: 0.45 });
+        });
+        list.push({ x: -2.4, z: 10.55, dir: 'LEFT', type: 'bus' });
+        list.push({ x: 0.4, z: 10.55, dir: 'RIGHT', type: 'car' });
+      } else {
+        // Archetype 19: 5-POINTED ROYAL STARBURST ARENA
+        for (let arm = 0; arm < 5; arm++) {
+          const ang = (arm / 5) * Math.PI * 2 - Math.PI * 0.5;
+          for (let step = 1; step <= 3; step++) {
+            const rad = 1.45 + step * 1.05;
+            const x = Math.cos(ang) * rad;
+            const z = 5.65 + Math.sin(ang) * rad;
+            const dir = Math.abs(Math.cos(ang)) > Math.abs(Math.sin(ang))
+              ? (Math.cos(ang) > 0 ? 'RIGHT' : 'LEFT')
+              : (Math.sin(ang) > 0 ? 'DOWN' : 'UP');
+            list.push({
+              x: Number(x.toFixed(2)),
+              z: Number(z.toFixed(2)),
+              dir,
+              type: step === 2 ? 'bus' : 'car',
+              tilt: Math.sin(ang * 2) * 0.45
+            });
+          }
+          // Inter-arm jewel lock vehicles
+          const midAng = ang + Math.PI / 5;
+          const mx = Math.cos(midAng) * 3.25;
+          const mz = 5.65 + Math.sin(midAng) * 3.45;
+          list.push({
+            x: Number(mx.toFixed(2)),
+            z: Number(mz.toFixed(2)),
+            dir: midAng > 0 ? 'DOWN' : 'UP',
+            type: arm % 2 === 0 ? 'bus' : 'car',
+            tilt: -Math.cos(midAng) * 0.42
+          });
+        }
+        list.push({ x: 0.0, z: 5.65, dir: 'UP', type: 'car' });
       }
 
       if (shouldFlip && archetype !== 6) {
@@ -2276,23 +2493,13 @@
           this._loadCustomPhotoCanvasImg(this.profile.customPhotoDataUrl);
         }
 
-        // Restore real earned coin balance if inflated by earlier Shop demo click or mid-level Fever streak
-        if (!this.profile._shopTestResetV59) {
-          this.profile._shopTestResetV59 = true;
-          if ((this.profile.currentLevel || 1) < 25 && (this.profile.coins || 0) > 2000) {
-            this.profile.coins = 300;
-            this.profile.noAds = false;
-            this.profile.boosters = { vip: 1, shuffle: 2, magnet: 2 };
-          }
-          try {
-            localStorage.setItem(SAVE_KEY, JSON.stringify(this.profile));
-          } catch (e) {}
-        }
-        if (!this.profile._feverCoinsFixV64) {
-          this.profile._feverCoinsFixV64 = true;
-          const expectedMax = 250 + Math.max(1, (this.profile.currentLevel || 1) - 1) * 50;
-          if ((this.profile.currentLevel || 1) < 25 && (this.profile.coins || 0) > expectedMax) {
-            this.profile.coins = 350;
+        // Ensure coin balance is never below earned progression and never capped over milestone/rank prizes
+        if (!this.profile._coinsAccuracyAuditV76) {
+          this.profile._coinsAccuracyAuditV76 = true;
+          const completedCount = Math.max(0, (this.profile.currentLevel || 1) - 1);
+          const minBaselineCoins = 250 + completedCount * 50;
+          if ((this.profile.coins || 0) < minBaselineCoins && completedCount <= 30) {
+            this.profile.coins = minBaselineCoins;
           }
           try {
             localStorage.setItem(SAVE_KEY, JSON.stringify(this.profile));
@@ -4148,12 +4355,26 @@
       const layer = document.getElementById('flying-coins-layer');
       const targetPill = document.getElementById('flying-coin-hud-pill');
       const targetVal = document.getElementById('flying-coin-hud-val');
-      const startCoins = this.profile.coins;
-      const strictReward = coinsAmount === 100 ? 100 : 50;
-      const endCoins = this._winCoinsClaimed ? startCoins : (startCoins + strictReward);
-      this._winCoinsClaimed = true;
-      this.profile.coins = endCoins;
-      this.saveGameProgress(false);
+
+      // Base +50 win coins + any milestone/rank prizes were already credited & saved in _triggerWin().
+      // If the player clicked 2x Ad Claim (coinsAmount === 100), credit the extra +50 bonus coins now!
+      const extraAdBonus = (coinsAmount === 100 && !this._winAdBonusClaimed) ? 50 : 0;
+      if (extraAdBonus > 0) {
+        this._winAdBonusClaimed = true;
+        this.profile.coins = (this.profile.coins || 0) + extraAdBonus;
+        this.saveGameProgress(false);
+      } else if (!this._winCoinsClaimed) {
+        this._winCoinsClaimed = true;
+        this.profile.coins = (this.profile.coins || 0) + (coinsAmount === 100 ? 100 : 50);
+        this.saveGameProgress(false);
+      }
+
+      const endCoins = this.profile.coins || 0;
+      const totalAddedThisWin = (this._lastWinTotalAdded || 50) + extraAdBonus;
+      const startCoins = typeof this._coinsAnimStart === 'number'
+        ? this._coinsAnimStart
+        : Math.max(0, endCoins - totalAddedThisWin);
+      this.updateHUD();
 
       if (!layer || !targetPill) {
         this.playSkyPlaneTransition(() => {
@@ -4189,7 +4410,7 @@
 
         setTimeout(() => {
           sound.playPassengerBoard();
-          const curShown = Math.round(startCoins + ((i + 1) / coinCount) * coinsAmount);
+          const curShown = Math.round(startCoins + ((i + 1) / coinCount) * (endCoins - startCoins));
           if (targetVal) targetVal.textContent = `${curShown}`;
           coin.remove();
         }, 620 + i * 55);
@@ -4391,12 +4612,107 @@
       }
     }
 
+    getTrackShapeForLevel(levelNum = 1) {
+      const lvl = Math.max(1, levelNum || 1);
+      if (lvl <= 3) return 'oval';
+      const shapes = ['oval', 'diamond', 'heart', 'star', 'infinity', 'hexagon', 'clover', 'octagon'];
+      return shapes[(lvl - 3) % shapes.length];
+    }
+
+    getTrackLoopRawXY(shape, rawTheta, centerZ = -8.55) {
+      if (shape === 'diamond') {
+        // Rounded Diamond / Rhombus Track (Screenshot 1 Level 13/18 & Screenshot 3 Level 20!)
+        const c = Math.cos(rawTheta);
+        const s = Math.sin(rawTheta);
+        const p = 1.28;
+        const norm = Math.pow(Math.pow(Math.abs(c), p) + Math.pow(Math.abs(s), p), 1 / p) || 1;
+        return { x: (c / norm) * 3.56, z: centerZ + (s / norm) * 2.28 };
+      }
+      if (shape === 'star') {
+        // 5-Pointed Golden Star Track (Screenshot 1 & 2 Level 28!)
+        const wave = 1.0 + 0.165 * Math.cos(5 * (rawTheta - Math.PI * 0.5));
+        return {
+          x: Math.cos(rawTheta) * 3.36 * wave,
+          z: centerZ + Math.sin(rawTheta) * 2.12 * wave
+        };
+      }
+      if (shape === 'heart') {
+        // Sculpted Heart / Dual-Lobe Top Loop (Screenshot 2 Level 15!)
+        const tTheta = rawTheta + 0.16 * Math.sin(2 * rawTheta);
+        const s = Math.sin(tTheta);
+        const c = Math.cos(tTheta);
+        const topDip = s < 0 ? 0.52 * Math.pow(s, 4) : 0;
+        const sideSwell = 1.0 + 0.08 * Math.sin(tTheta);
+        return {
+          x: c * 3.42 * sideSwell,
+          z: centerZ + s * 2.08 + topDip
+        };
+      }
+      if (shape === 'infinity') {
+        // Pinched-Waist Peanut / Infinity Hourglass Track (Screenshot 3 Bottom-Middle!)
+        const tTheta = rawTheta + 0.18 * Math.sin(2 * rawTheta);
+        const s = Math.sin(tTheta);
+        const pinch = 1.0 - 0.27 * (1 - Math.abs(Math.cos(tTheta)));
+        return {
+          x: Math.cos(tTheta) * 3.48,
+          z: centerZ + s * 2.24 * pinch
+        };
+      }
+      if (shape === 'hexagon') {
+        // 6-Sided Royal Hexagon Jewel Track
+        const hexMod = 1.0 + 0.082 * Math.cos(6 * rawTheta);
+        return {
+          x: Math.cos(rawTheta) * 3.40 * hexMod,
+          z: centerZ + Math.sin(rawTheta) * 2.10 * hexMod
+        };
+      }
+      if (shape === 'clover') {
+        // 4-Leaf Clover / Floral Petal Track
+        const petal = 1.0 + 0.125 * Math.cos(4 * (rawTheta + Math.PI * 0.25));
+        return {
+          x: Math.cos(rawTheta) * 3.38 * petal,
+          z: centerZ + Math.sin(rawTheta) * 2.10 * petal
+        };
+      }
+      if (shape === 'octagon') {
+        // Chamfered Octagon / Rounded Square Arena Track
+        const c = Math.cos(rawTheta);
+        const s = Math.sin(rawTheta);
+        const p = 2.65;
+        const norm = Math.pow(Math.pow(Math.abs(c), p) + Math.pow(Math.abs(s), p), 1 / p) || 1;
+        return { x: (c / norm) * 3.32, z: centerZ + (s / norm) * 2.02 };
+      }
+      // Default: Classic Stadium Oval ('oval')
+      const targetTheta = rawTheta + 0.21 * Math.sin(2 * rawTheta);
+      return {
+        x: Math.cos(targetTheta) * 3.36,
+        z: centerZ + Math.sin(targetTheta) * 2.02
+      };
+    }
+
+    getTrackLoopPoint(levelNum, rawTheta, centerZ = -8.55) {
+      const shape = this.getTrackShapeForLevel(levelNum);
+      const pt = this.getTrackLoopRawXY(shape, rawTheta, centerZ);
+      const eps = 0.025;
+      const pPrev = this.getTrackLoopRawXY(shape, rawTheta - eps, centerZ);
+      const pNext = this.getTrackLoopRawXY(shape, rawTheta + eps, centerZ);
+      const rawFx = pNext.x - pPrev.x;
+      const rawFz = pNext.z - pPrev.z;
+      const fLen = Math.hypot(rawFx, rawFz) || 1;
+      const fx = rawFx / fLen;
+      const fz = rawFz / fLen;
+      // Outward unit normal perpendicular to clockwise tangent (fx, fz)
+      const nx = fz;
+      const nz = -fx;
+      return { x: pt.x, z: pt.z, nx, nz, fx, fz };
+    }
+
     buildEnvironment3D(levelNum = 1) {
       while (this.envGroup.children.length > 0) {
         this.envGroup.remove(this.envGroup.children[0]);
       }
 
-      // 6 Distinct Architectural & Park Themes that evolve as you Level Up!
+      // 12 Distinct, Vibrant Pixar 3D Architectural & Park Color Themes that evolve across all 5000 Levels!
       const ENV_THEMES = [
         {
           name: 'Emerald Fountain Plaza',
@@ -4475,11 +4791,91 @@
           curbSide: '#94a5b8',
           dappleRgba: 'rgba(134, 239, 172, 0.22)',
           archType: 'alpine_crystal'
+        },
+        {
+          name: 'Tropical Aqua Lagoon',
+          farGrassHex: 0x328a5c,
+          farLotHex: 0xa6bcc7,
+          grassStops: ['#42a472', '#348d5f', '#28774e'],
+          islStops: ['#3d9c6b', '#2b7a51'],
+          lotStops: ['#b9ced9', '#a8bfcb', '#97b0bd'],
+          roadStops: ['#404d5c', '#374350', '#2f3a46'],
+          curbTop: '#ecfeff',
+          curbSide: '#8eaab8',
+          dappleRgba: 'rgba(56, 189, 248, 0.22)',
+          archType: 'palm_oasis'
+        },
+        {
+          name: 'Autumn Amber Maple Park',
+          farGrassHex: 0x6e7828,
+          farLotHex: 0xbcb0a2,
+          grassStops: ['#869136', '#727c2b', '#5e6721'],
+          islStops: ['#7d8831', '#616b23'],
+          lotStops: ['#ccc0b2', '#bdb0a1', '#ad9f90'],
+          roadStops: ['#4c4852', '#423e48', '#38353d'],
+          curbTop: '#fffbeb',
+          curbSide: '#b0a292',
+          dappleRgba: 'rgba(251, 191, 36, 0.24)',
+          archType: 'castle_kingdom'
+        },
+        {
+          name: 'Lavender Twilight Plaza',
+          farGrassHex: 0x4b7f52,
+          farLotHex: 0xb4b0c9,
+          grassStops: ['#5d9665', '#4d8255', '#3e6e46'],
+          islStops: ['#568e5e', '#417148'],
+          lotStops: ['#c4c0d8', '#b5b0ca', '#a59fbd'],
+          roadStops: ['#48455e', '#3e3c52', '#353346'],
+          curbTop: '#f5f3ff',
+          curbSide: '#a39cb8',
+          dappleRgba: 'rgba(192, 132, 252, 0.22)',
+          archType: 'sakura_torii'
+        },
+        {
+          name: 'Mint Meadow Springs',
+          farGrassHex: 0x489140,
+          farLotHex: 0xaabac4,
+          grassStops: ['#5cb052', '#4c9943', '#3d8235'],
+          islStops: ['#55a64b', '#408537'],
+          lotStops: ['#bad0dc', '#abc0cc', '#9bb0bc'],
+          roadStops: ['#444e5c', '#3b4450', '#333b46'],
+          curbTop: '#f0fdf4',
+          curbSide: '#92a8b4',
+          dappleRgba: 'rgba(74, 222, 128, 0.22)',
+          archType: 'fountain'
+        },
+        {
+          name: 'Coral Sunburst Resort',
+          farGrassHex: 0x568632,
+          farLotHex: 0xc0b4aa,
+          grassStops: ['#6ba042', '#598a34', '#487427'],
+          islStops: ['#63963c', '#4b7729'],
+          lotStops: ['#d0c4ba', '#c1b4a9', '#b1a398'],
+          roadStops: ['#4e4856', '#443f4b', '#3a3640'],
+          curbTop: '#fff1f2',
+          curbSide: '#b4a29a',
+          dappleRgba: 'rgba(251, 113, 133, 0.22)',
+          archType: 'cyber_neon'
+        },
+        {
+          name: 'Alpine Crystal Gardens',
+          farGrassHex: 0x3e884a,
+          farLotHex: 0xa8b8cc,
+          grassStops: ['#4fa25d', '#408d4d', '#33783f'],
+          islStops: ['#499956', '#367b42'],
+          lotStops: ['#b8c8dc', '#a9b9cd', '#99a9bd'],
+          roadStops: ['#434c5e', '#3a4252', '#323947'],
+          curbTop: '#f0f9ff',
+          curbSide: '#90a4bc',
+          dappleRgba: 'rgba(125, 211, 252, 0.24)',
+          archType: 'alpine_crystal'
         }
       ];
 
       const themeIdx = (Math.max(1, levelNum) - 1) % ENV_THEMES.length;
       const theme = ENV_THEMES[themeIdx];
+      const trackShape = this.getTrackShapeForLevel(levelNum);
+      const cacheKey = `${themeIdx}_${trackShape}`;
       this._builtEnvLevelNum = levelNum;
 
       // Ultra-wide fallback planes (MeshBasicMaterial so lighting never blows out colors)
@@ -4508,10 +4904,10 @@
       const centerZ = 2.0; // spans z: [-22, +26]
 
       if (!this._groundTexCache) this._groundTexCache = {};
-      let groundTex = this._groundTexCache[themeIdx];
+      let groundTex = this._groundTexCache[cacheKey];
 
       if (!groundTex) {
-        // Fast Studio-Baked Ground Texture (36 px/unit = 1008x1728, zero CPU shadowBlur stall, cached per theme!)
+        // Fast Studio-Baked Ground Texture (36 px/unit = 1008x1728, zero CPU shadowBlur stall, cached per theme+trackShape!)
         const S = 36;
         const cw = worldW * S; // 1008
         const ch = worldD * S; // 1728
@@ -4582,7 +4978,7 @@
         ctx.fillStyle = lotGrad;
         ctx.fillRect(0, curbY, cw, ch - curbY);
 
-        // 3. Multi-Pass Seamless Connected Road Network (U-Feeders + Oval + Gate + Boarding Bay)
+        // 3. Multi-Pass Seamless Connected Road Network (U-Feeders + Dynamic Track Shape + Gate + Boarding Bay)
         const traceFeederPath = (side, yOff = 0) => {
           ctx.beginPath();
           const steps = 32;
@@ -4594,6 +4990,20 @@
             if (i === 0) ctx.moveTo(x, y);
             else ctx.lineTo(x, y);
           }
+        };
+
+        const traceDynamicLoopPath = (yOff = 0) => {
+          ctx.beginPath();
+          const steps = 96;
+          for (let i = 0; i <= steps; i++) {
+            const theta = (i / steps) * Math.PI * 2;
+            const pt = this.getTrackLoopRawXY(trackShape, theta, -8.55);
+            const x = px(pt.x);
+            const y = py(pt.z) + yOff;
+            if (i === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+          }
+          ctx.closePath();
         };
 
         const traceBoardingBay = (expandWorld = 0, yOff = 0) => {
@@ -4636,20 +5046,12 @@
           traceFeederPath(1, yOff);
           ctx.stroke();
 
-          // Central Oval Outer Footprint
-          ctx.beginPath();
-          ctx.ellipse(
-            px(0),
-            py(-8.55) + yOff,
-            (4.36 + expandWorld) * S,
-            (2.96 + expandWorld) * S,
-            0,
-            0,
-            Math.PI * 2
-          );
+          // Dynamic Revolving Track Shape (Oval, Diamond, 5-Pointed Star, Heart, Infinity, Hexagon, Clover, Octagon!)
+          traceDynamicLoopPath(yOff);
           ctx.fill();
+          ctx.stroke();
 
-          // Bottom Gate Neck connecting Oval Loop into Boarding Bay
+          // Bottom Gate Neck connecting Loop into Boarding Bay
           const neckHalfW = (0.98 + expandWorld) * S;
           ctx.beginPath();
           ctx.roundRect(
@@ -4682,30 +5084,46 @@
         roadGrad.addColorStop(1, theme.roadStops[2]);
         paintUnifiedRoadLayer(0.0, roadGrad, 0);
 
-        // 4. Center Kidney/Bean Grass Island inside Oval Loop (Exact Competitor Shape!)
+        // 4. Sculpted Center Grass Island inside Loop (Matches exact Track Shape: Diamond, Star, Heart, Infinity, etc.!)
         const traceCenterIsland = (expandWorld = 0, yOff = 0) => {
-          const rx = (2.16 + expandWorld) * S;
-          const rz = (0.88 + expandWorld) * S;
-          const cx0 = px(0);
-          const cy0 = py(-8.52) + yOff;
-          ctx.beginPath();
-          ctx.moveTo(cx0 - rx, cy0 + rz * 0.05);
-          ctx.bezierCurveTo(
-            cx0 - rx, cy0 - rz * 1.05,
-            cx0 - rx * 0.35, cy0 - rz * 0.72,
-            cx0, cy0 - rz * 0.68
-          );
-          ctx.bezierCurveTo(
-            cx0 + rx * 0.35, cy0 - rz * 0.72,
-            cx0 + rx, cy0 - rz * 1.05,
-            cx0 + rx, cy0 + rz * 0.05
-          );
-          ctx.bezierCurveTo(
-            cx0 + rx, cy0 + rz * 1.08,
-            cx0 - rx, cy0 + rz * 1.08,
-            cx0 - rx, cy0 + rz * 0.05
-          );
-          ctx.closePath();
+          if (trackShape === 'oval') {
+            const rx = (2.16 + expandWorld) * S;
+            const rz = (0.88 + expandWorld) * S;
+            const cx0 = px(0);
+            const cy0 = py(-8.52) + yOff;
+            ctx.beginPath();
+            ctx.moveTo(cx0 - rx, cy0 + rz * 0.05);
+            ctx.bezierCurveTo(
+              cx0 - rx, cy0 - rz * 1.05,
+              cx0 - rx * 0.35, cy0 - rz * 0.72,
+              cx0, cy0 - rz * 0.68
+            );
+            ctx.bezierCurveTo(
+              cx0 + rx * 0.35, cy0 - rz * 0.72,
+              cx0 + rx, cy0 - rz * 1.05,
+              cx0 + rx, cy0 + rz * 0.05
+            );
+            ctx.bezierCurveTo(
+              cx0 + rx, cy0 + rz * 1.08,
+              cx0 - rx, cy0 + rz * 1.08,
+              cx0 - rx, cy0 + rz * 0.05
+            );
+            ctx.closePath();
+          } else {
+            const scaleX = (1.92 + expandWorld) / 3.40;
+            const scaleZ = (0.98 + expandWorld) / 2.12;
+            const steps = 80;
+            ctx.beginPath();
+            for (let i = 0; i <= steps; i++) {
+              const theta = (i / steps) * Math.PI * 2;
+              const pt = this.getTrackLoopRawXY(trackShape, theta, 0);
+              const ix = px(pt.x * scaleX);
+              const iy = py(-8.52 + pt.z * scaleZ) + yOff;
+              if (i === 0) ctx.moveTo(ix, iy);
+              else ctx.lineTo(ix, iy);
+            }
+            ctx.closePath();
+          }
         };
 
         // Island asphalt drop shadow + 3D curb bevel + white curb + lush grass fill (zero CPU shadowBlur!)
@@ -4753,7 +5171,7 @@
           groundTex.anisotropy = Math.min(4, this.renderer.capabilities.getMaxAnisotropy());
         }
         groundTex.needsUpdate = true;
-        this._groundTexCache[themeIdx] = groundTex;
+        this._groundTexCache[cacheKey] = groundTex;
       }
 
       const groundPlane = new THREE.Mesh(
@@ -5342,6 +5760,7 @@
         sideGlassGeo: new THREE.BoxGeometry(1.11, 0.18, 0.29),
         roofDomeGeo: this.createRoundedBoxGeo(1.03, 0.17, 2.22, 0.22, 0.055),
         roofRailGeo: this.createRoundedBoxGeo(0.08, 0.04, 1.72, 0.03, 0.015),
+        roofPodGeo: this.createRoundedBoxGeo(0.76, 0.07, 0.44, 0.12, 0.02),
         tireGeo: busTireGeo,
         hubcapGeo: busHubGeo,
         hlPillGeo,
@@ -5378,7 +5797,7 @@
       const group = new THREE.Group();
       const colorKey = COLORS[vehicleData.color] ? vehicleData.color : 'blue';
       const isBus = vehicleData.type === 'bus';
-      const isVan = !isBus && (vehicleData.subType === 'van' || vehicleData.cap === 20);
+      const isVan = !isBus && (vehicleData.subType === 'van' || ((vehicleData.id || 0) + (this.levelNum || 1)) % 3 === 1);
 
       const bodyMat = this._vehBodyMats[colorKey];
       const lightMat = this._vehLightMats[colorKey];
@@ -5538,6 +5957,15 @@
           const rail = new THREE.Mesh(g.roofRailGeo, lightMat);
           rail.position.set(rx, 0.91, 0);
           group.add(rail);
+        }
+
+        // Visually distinguish 16-Seat Grand Mega Buses from 8-Seat Shuttle Buses with twin chrome AC pods!
+        if (vehicleData.cap === 16 && g.roofPodGeo) {
+          for (const pz of [-0.64, 0.64]) {
+            const pod = new THREE.Mesh(g.roofPodGeo, this._vehCreamTrimMat);
+            pod.position.set(0, 0.915, pz);
+            group.add(pod);
+          }
         }
 
         for (const sx of [-0.36, 0.36]) {
@@ -6067,20 +6495,16 @@
               fwdZ = pt.fz;
             }
           } else {
-            // Has entered the Central Oval Ring and is marching clockwise along its half-arc!
+            // Has entered the Revolving Track Loop and is marching clockwise along the level's dynamic track shape!
             const slotPos = baseSlot + stepsPastJunction; // 0..15 or 16..31
             const rawTheta = ((slotPos / RING_SLOT_COUNT) * Math.PI * 2) % (Math.PI * 2);
-            const targetTheta = rawTheta + 0.21 * Math.sin(2 * rawTheta);
-            baseX = Math.cos(targetTheta) * rx;
-            baseZ = centerZ + Math.sin(targetTheta) * rz;
-
-            const rawNx = Math.cos(targetTheta) * rz;
-            const rawNz = Math.sin(targetTheta) * rx;
-            const nLen = Math.hypot(rawNx, rawNz) || 1;
-            nx = rawNx / nLen;
-            nz = rawNz / nLen;
-            fwdX = -Math.sin(targetTheta) * rx;
-            fwdZ = Math.cos(targetTheta) * rz;
+            const loopPt = this.getTrackLoopPoint(this.levelNum, rawTheta, centerZ);
+            baseX = loopPt.x;
+            baseZ = loopPt.z;
+            nx = loopPt.nx;
+            nz = loopPt.nz;
+            fwdX = loopPt.fx;
+            fwdZ = loopPt.fz;
 
             // Smooth 1-step corner blend right at the junction entrance (0 <= stepsPastJunction < 1)
             if (stepsPastJunction < 1.0) {
@@ -6096,20 +6520,16 @@
           }
         } else {
           const rawTheta = (this.ringRotationAngle + (k / RING_SLOT_COUNT) * Math.PI * 2) % (Math.PI * 2);
-          const targetTheta = rawTheta + 0.21 * Math.sin(2 * rawTheta);
+          const loopPt = this.getTrackLoopPoint(this.levelNum, rawTheta, centerZ);
 
-          baseX = Math.cos(targetTheta) * rx;
-          baseZ = centerZ + Math.sin(targetTheta) * rz;
+          baseX = loopPt.x;
+          baseZ = loopPt.z;
+          nx = loopPt.nx;
+          nz = loopPt.nz;
+          fwdX = loopPt.fx;
+          fwdZ = loopPt.fz;
 
-          const rawNx = Math.cos(targetTheta) * rz;
-          const rawNz = Math.sin(targetTheta) * rx;
-          const nLen = Math.hypot(rawNx, rawNz) || 1;
-          nx = rawNx / nLen;
-          nz = rawNz / nLen;
-          fwdX = -Math.sin(targetTheta) * rx;
-          fwdZ = Math.cos(targetTheta) * rz;
-
-          // Smoothly walk newly pulled feeder rows from the feeder waiting mouth (u=0.225) onto the revolving oval loop!
+          // Smoothly walk newly pulled feeder rows from the feeder waiting mouth (u=0.225) onto the revolving track loop!
           if (rowData && typeof rowData.joinBlend === 'number' && rowData.joinBlend < 1) {
             rowData.joinBlend = Math.min(1, rowData.joinBlend + dt * (this._isHoldingFastSpin ? 14.0 : 6.2));
             const jb = 1 - Math.pow(1 - rowData.joinBlend, 2);
@@ -7789,7 +8209,12 @@
       const coinsEarned = 50;
       const completedLevel = this.levelNum;
       this._lastCompletedLevel = completedLevel;
-      this._winCoinsClaimed = false;
+
+      // Record coin balance before adding level win reward + separate milestone/rank prizes
+      const coinsBeforeAll = this.profile.coins || 0;
+      this.profile.coins = coinsBeforeAll + coinsEarned;
+      this._winCoinsClaimed = true;
+      this._winAdBonusClaimed = false;
 
       this.profile.levelStars[this.levelNum] = 3;
       this.profile.passengersHelped = (this.profile.passengersHelped || 2800) + 45;
@@ -7809,14 +8234,24 @@
       this.profile.activeMidLevelState = null;
 
       // Check & Grant Recurring 5/10-Level Milestone Prizes, Rank-Up Prizes (Bronze -> Ace Lv.5000) & Avatar Unlocks!
+      // These prize coins add SEPARATELY on top of the +50 level win coins!
+      const coinsBeforePrizes = this.profile.coins;
       this.checkAndGrantLevelMilestoneAndRankPrizes(completedLevel, this.profile.currentLevel);
+      const prizeCoinsAdded = Math.max(0, (this.profile.coins || 0) - coinsBeforePrizes);
+
+      this._coinsAnimStart = coinsBeforeAll;
+      this._lastWinTotalAdded = coinsEarned + prizeCoinsAdded;
 
       this.saveGameProgress(true);
 
       const totalCoinsEl = document.getElementById('win-total-coins');
       if (totalCoinsEl) totalCoinsEl.textContent = `${this.profile.coins}`;
       const earnedCoinsEl = document.getElementById('win-coins-earned');
-      if (earnedCoinsEl) earnedCoinsEl.textContent = `+${coinsEarned}`;
+      if (earnedCoinsEl) {
+        earnedCoinsEl.textContent = prizeCoinsAdded > 0
+          ? `+${coinsEarned} (+${prizeCoinsAdded} Prize!)`
+          : `+${coinsEarned}`;
+      }
 
       // Show "Having Fun?" rating popup on Level 3 (just like Video 01:22!)
       if (completedLevel === 3 && !this.profile.ratedGame) {
