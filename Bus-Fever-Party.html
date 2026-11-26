@@ -49,7 +49,7 @@ html, body {
   position: relative;
   width: 100%;
   height: 100%;
-  background: #d7deeb;
+  background: #132238;
   overflow: hidden;
 }
 
@@ -58,7 +58,7 @@ html, body {
     max-width: 500px;
     max-height: 96vh;
     border-radius: 22px;
-    border: 3px solid rgba(255, 255, 255, 0.85);
+    border: 2px solid rgba(56, 189, 248, 0.35);
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.75);
   }
 }
@@ -163,7 +163,12 @@ html, body {
   align-items: center;
   padding-bottom: 7.2%;
   overflow: hidden;
-  transition: opacity 0.4s ease;
+  transition: opacity 0.38s ease;
+}
+
+#splash-loading.hidden {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .loading-live-canvas {
@@ -9708,16 +9713,16 @@ body, #app-wrapper, #game-container {
       // Run Opening Studio Splash ("TEALS") + 60-FPS Loading Screen (0% -> 100%) immediately with ZERO startup stall!
       this.runOpeningSplashSequence();
 
-      // Warm up 3D slots, passenger mesh pools, and cached environment texture asynchronously during the loading bar!
+      // Warm up 3D slots, passenger mesh pools, and cached environment texture asynchronously after the opening studio fade!
       setTimeout(() => {
         this.initSlots();
         this.buildPassengerMeshPools();
-      }, 90);
+      }, 650);
       setTimeout(() => {
         const startLvl = Math.max(1, (this.profile && this.profile.currentLevel) || 1);
         this.buildEnvironment3D(startLvl);
         this.drawLuckySpinWheel();
-      }, 240);
+      }, 1150);
 
       this.lastFrameTime = performance.now();
       this.animate = this.animate.bind(this);
@@ -9819,53 +9824,15 @@ body, #app-wrapper, #game-container {
             ctx.setTransform(BUF_W / LW, 0, 0, BUF_H / LH, 0, 0);
             const t = nowMs * 0.001;
 
-            // #splash-loading CSS background already displays loading_bg.jpg at 0 CPU cost; only clear & draw animated overlays!
+            // #splash-loading CSS background already displays loading_bg.jpg at 0 CPU cost; only clear & draw subtle gold sparkles (zero white boxes or white flashes!)
             ctx.clearRect(0, 0, LW, LH);
 
-            // 1. ROTATING GOLDEN SUNBEAMS ON TOP-RIGHT SUN (cx=1038, cy=114)
-            ctx.save();
-            ctx.translate(1038, 114);
-            ctx.rotate(t * 0.45);
-            for (let r = 0; r < 10; r++) {
-              ctx.save();
-              ctx.rotate((r * Math.PI * 2) / 10);
-              const rg = ctx.createLinearGradient(0, 0, 145, 0);
-              rg.addColorStop(0.0, 'rgba(255, 253, 210, 0.38)');
-              rg.addColorStop(1.0, 'rgba(255, 253, 210, 0.0)');
-              ctx.fillStyle = rg;
-              ctx.beginPath();
-              ctx.moveTo(18, -4);
-              ctx.lineTo(145, -14);
-              ctx.lineTo(145, 14);
-              ctx.lineTo(18, 4);
-              ctx.closePath();
-              ctx.fill();
-              ctx.restore();
-            }
-            ctx.restore();
+            // Subtle Sparkles around the 3D Logo Badge & Big Ben Clock Hands
+            drawStarGlint(ctx, 336, 148, 14 * (0.5 + 0.5 * Math.sin(t * 5.2)), t * 2.5, '#fef08a', 0.88);
+            drawStarGlint(ctx, 822, 162, 13 * (0.5 + 0.5 * Math.cos(t * 4.8)), -t * 2.5, '#fef08a', 0.88);
+            drawStarGlint(ctx, 764, 346, 12 * (0.5 + 0.5 * Math.sin(t * 5.8 + 1)), t * 3.0, '#7dd3fc', 0.85);
 
-            // 2. DIAGONAL GLOSSY MIRROR SHEEN ACROSS "BUS FEVER PARTY" 3D LOGO (cx=576, cy=242)
-            ctx.save();
-            ctx.beginPath();
-            ctx.ellipse(576, 242, 292, 152, 0, 0, Math.PI * 2);
-            ctx.clip();
-            const sheenX = Math.sin(t * 2.2) * 380;
-            ctx.translate(576 + sheenX, 242);
-            ctx.transform(1, 0, -0.42, 1, 0, 0);
-            const sg = ctx.createLinearGradient(-95, 0, 95, 0);
-            sg.addColorStop(0.0, 'rgba(255, 255, 255, 0.0)');
-            sg.addColorStop(0.5, 'rgba(255, 255, 235, 0.52)');
-            sg.addColorStop(1.0, 'rgba(255, 255, 255, 0.0)');
-            ctx.fillStyle = sg;
-            ctx.fillRect(-100, -170, 200, 340);
-            ctx.restore();
-
-            // Sparkles around the 3D Logo Badge
-            drawStarGlint(ctx, 336, 148, 16 * (0.5 + 0.5 * Math.sin(t * 5.2)), t * 2.5, '#fef08a', 0.92);
-            drawStarGlint(ctx, 822, 162, 15 * (0.5 + 0.5 * Math.cos(t * 4.8)), -t * 2.5, '#ffffff', 0.92);
-            drawStarGlint(ctx, 764, 346, 14 * (0.5 + 0.5 * Math.sin(t * 5.8 + 1)), t * 3.0, '#7dd3fc', 0.9);
-
-            // 3. BIG BEN CLOCK TOWER HANDS TICKING (cx=475, cy=540)
+            // BIG BEN CLOCK TOWER HANDS TICKING (cx=475, cy=540)
             ctx.save();
             ctx.translate(475, 540);
             ctx.strokeStyle = '#475569';
@@ -9884,59 +9851,10 @@ body, #app-wrapper, #game-container {
             ctx.stroke();
             ctx.restore();
 
-            // 4. GOLDEN PARTY HORN 3D SOUND-WAVE RINGS & CONFETTI STREAMERS (cx=858, cy=865)
-            for (let rIdx = 0; rIdx < 3; rIdx++) {
-              const p = (t * 1.8 + rIdx * 0.333) % 1.0;
-              const rad = 16 + p * 64;
-              const aWave = (1.0 - p) * 0.88;
-              ctx.save();
-              ctx.translate(858, 865);
-              ctx.rotate(-0.22);
-              ctx.strokeStyle = rIdx % 2 === 0
-                ? `rgba(254, 240, 138, ${aWave.toFixed(2)})`
-                : `rgba(255, 255, 255, ${aWave.toFixed(2)})`;
-              ctx.lineWidth = 4.5 * (1.0 - p * 0.4);
-              ctx.lineCap = 'round';
-              ctx.beginPath();
-              ctx.arc(0, 0, rad, -0.6, 0.6);
-              ctx.stroke();
-              ctx.restore();
-            }
-
-            for (let i = 0; i < confettiList.length; i++) {
-              const cf = confettiList[i];
-              const life = (t * cf.speed + cf.phase) % 1.0;
-              const px = 858 + cf.vx * life * 1.8 + Math.sin(t * 5 + i) * 10 * life;
-              const py = 865 + cf.vy * life * 1.8 + 65 * life * life;
-              const cAlpha = life < 0.15 ? life / 0.15 : (1.0 - life) / 0.85;
-              if (cAlpha <= 0.02) continue;
-
-              ctx.save();
-              ctx.globalAlpha = cAlpha;
-              ctx.translate(px, py);
-              ctx.rotate(t * cf.rotSpeed + i);
-              ctx.fillStyle = cf.color;
-              ctx.fillRect(-cf.size * 0.6, -cf.size * 0.28, cf.size * 1.2, cf.size * 0.56);
-              ctx.restore();
-            }
-
-            // 5. WARM PULSING HEADLIGHT BEAMS & SHIMMERING 3D GOLD BUS COINS ON THE ROAD
-            const hlAlpha = 0.32 + 0.18 * Math.sin(t * 5.2);
-            [{ x: 636, y: 1344, r: 74 }, { x: 992, y: 1316, r: 68 }].forEach((hl) => {
-              const hg = ctx.createRadialGradient(hl.x, hl.y, 6, hl.x, hl.y, hl.r);
-              hg.addColorStop(0.0, `rgba(255, 252, 200, ${hlAlpha + 0.28})`);
-              hg.addColorStop(0.5, `rgba(253, 224, 71, ${hlAlpha})`);
-              hg.addColorStop(1.0, 'rgba(253, 224, 71, 0)');
-              ctx.fillStyle = hg;
-              ctx.beginPath();
-              ctx.arc(hl.x, hl.y, hl.r, 0, Math.PI * 2);
-              ctx.fill();
-            });
-
             // Twinkling Golden Sparkles on the 3D Gold Bus Coins on the highway
-            drawStarGlint(ctx, 370, 1520, 18 * (0.5 + 0.5 * Math.sin(t * 5.5)), t * 3, '#fef08a', 0.95);
-            drawStarGlint(ctx, 566, 1632, 22 * (0.5 + 0.5 * Math.cos(t * 5.0)), -t * 3, '#ffffff', 0.95);
-            drawStarGlint(ctx, 1110, 1292, 15 * (0.5 + 0.5 * Math.sin(t * 6.0 + 1)), t * 2.5, '#fef08a', 0.92);
+            drawStarGlint(ctx, 370, 1520, 16 * (0.5 + 0.5 * Math.sin(t * 5.5)), t * 3, '#fef08a', 0.90);
+            drawStarGlint(ctx, 566, 1632, 18 * (0.5 + 0.5 * Math.cos(t * 5.0)), -t * 3, '#fef08a', 0.90);
+            drawStarGlint(ctx, 1110, 1292, 14 * (0.5 + 0.5 * Math.sin(t * 6.0 + 1)), t * 2.5, '#fef08a', 0.88);
           }
         }
         requestAnimationFrame(renderLoadingScene);
@@ -10018,13 +9936,15 @@ body, #app-wrapper, #game-container {
                   loadAudio.muted = true;
                 } catch (e) {}
               }
-              if (loadingEl) loadingEl.classList.add('hidden');
+              // Open & paint Home Screen FIRST while #splash-loading is still opaque on top, then smoothly fade out #splash-loading!
               this.openHomeScreen();
-              // Only stop the offscreen loading canvas loop AFTER the fade-out transition is 100% finished
-              setTimeout(() => {
-                loadingAnimActive = false;
-                if (loadingEl) loadingEl.style.display = 'none';
-              }, 400);
+              requestAnimationFrame(() => {
+                if (loadingEl) loadingEl.classList.add('hidden');
+                setTimeout(() => {
+                  loadingAnimActive = false;
+                  if (loadingEl) loadingEl.style.display = 'none';
+                }, 400);
+              });
             }, 90);
           }
         };
@@ -11285,25 +11205,6 @@ body, #app-wrapper, #game-container {
             ctx.scale(sc, sc);
             ctx.drawImage(girlImg, -73, -210, 146, 212);
             ctx.restore();
-
-            // Clean 3D Speech/Gesture Bubble ("OK! 👋") to the upper-right of her cap (never covering her face!)
-            ctx.save();
-            const bPop = Math.min(1, env * 1.4);
-            ctx.translate(492, 1282 - env * 6);
-            ctx.scale(bPop, bPop);
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.96)';
-            ctx.strokeStyle = '#38bdf8';
-            ctx.lineWidth = 4;
-            ctx.beginPath();
-            ctx.roundRect(-48, -22, 96, 44, 18);
-            ctx.fill();
-            ctx.stroke();
-            ctx.fillStyle = '#0f2547';
-            ctx.font = '900 20px "Fredoka", "Segoe UI", sans-serif';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText('OK! 👋', 0, 1);
-            ctx.restore();
           }
         }
 
@@ -11352,26 +11253,24 @@ body, #app-wrapper, #game-container {
           ctx.roundRect(-pW * 0.485, -pH * 0.46, pW * 0.97, pH * 0.88, pH * 0.44);
           ctx.clip();
 
-          // Smooth back-and-forth flash sweep using sine wave (ana jana!)
-          const flashPos = Math.sin(t * 2.35) * (pW * 0.62);
+          // Smooth back-and-forth warm golden-emerald shimmer (no stark white rectangle!)
+          const flashPos = Math.sin(t * 2.15) * (pW * 0.62);
           ctx.save();
           ctx.translate(flashPos, 0);
           ctx.transform(1, 0, -0.42, 1, 0, 0); // Diagonal slant
-          const flashG = ctx.createLinearGradient(-115, 0, 115, 0);
-          flashG.addColorStop(0.0, 'rgba(255, 255, 255, 0.0)');
-          flashG.addColorStop(0.28, 'rgba(254, 249, 195, 0.22)');
-          flashG.addColorStop(0.5, 'rgba(255, 255, 240, 0.82)');
-          flashG.addColorStop(0.72, 'rgba(254, 249, 195, 0.22)');
-          flashG.addColorStop(1.0, 'rgba(255, 255, 255, 0.0)');
+          const flashG = ctx.createLinearGradient(-105, 0, 105, 0);
+          flashG.addColorStop(0.0, 'rgba(254, 240, 138, 0.0)');
+          flashG.addColorStop(0.5, 'rgba(254, 240, 138, 0.28)');
+          flashG.addColorStop(1.0, 'rgba(254, 240, 138, 0.0)');
           ctx.fillStyle = flashG;
-          ctx.fillRect(-120, -pH * 0.6, 240, pH * 1.2);
+          ctx.fillRect(-110, -pH * 0.6, 220, pH * 1.2);
           ctx.restore();
           ctx.restore();
 
           // Twinkling Star Sparkles around Play Button Rim
-          drawStarGlint(ctx, -pW * 0.42, -pH * 0.34, 18 * (0.5 + 0.5 * Math.sin(t * 5.5)), t * 2.5, '#ffffff', 0.95);
-          drawStarGlint(ctx, pW * 0.41, -pH * 0.30, 16 * (0.5 + 0.5 * Math.cos(t * 5.2)), -t * 2.5, '#fef08a', 0.95);
-          drawStarGlint(ctx, pW * 0.18, pH * 0.36, 15 * (0.5 + 0.5 * Math.sin(t * 6.1 + 1.5)), t * 3.0, '#ffffff', 0.9);
+          drawStarGlint(ctx, -pW * 0.42, -pH * 0.34, 16 * (0.5 + 0.5 * Math.sin(t * 5.5)), t * 2.5, '#fef08a', 0.92);
+          drawStarGlint(ctx, pW * 0.41, -pH * 0.30, 15 * (0.5 + 0.5 * Math.cos(t * 5.2)), -t * 2.5, '#fef08a', 0.92);
+          drawStarGlint(ctx, pW * 0.18, pH * 0.36, 14 * (0.5 + 0.5 * Math.sin(t * 6.1 + 1.5)), t * 3.0, '#fef08a', 0.88);
           ctx.restore();
         }
 
@@ -11394,7 +11293,8 @@ body, #app-wrapper, #game-container {
         this._home3dRaf = requestAnimationFrame(tickHomeCanvas);
       };
 
-      this._home3dRaf = requestAnimationFrame(tickHomeCanvas);
+      // Paint first Home frame synchronously so there is 0ms blank canvas when transitioning from Loading Screen!
+      tickHomeCanvas(performance.now());
     }
 
     // -----------------------------------------------------------------------
@@ -13865,8 +13765,8 @@ body, #app-wrapper, #game-container {
         return;
       }
 
-      const INTRO_TOTAL_STEPS = 38.0; // 23 steps down feeder road + 15 steps across half-oval = 38 steps (~2.75s)
-      const speedMult = this._isHoldingFastSpin ? 3.2 : 1.0;
+      const INTRO_TOTAL_STEPS = 38.0; // 23 steps down feeder road + 15 steps across half-oval = 38 steps
+      const speedMult = this._isHoldingFastSpin ? 1.65 : 1.0;
 
       if (typeof this.introMarchSteps !== 'number') {
         this.introMarchSteps = INTRO_TOTAL_STEPS;
@@ -13874,12 +13774,12 @@ body, #app-wrapper, #game-container {
 
       const isIntroMarching = this.introMarchSteps < INTRO_TOTAL_STEPS;
       if (isIntroMarching) {
-        // March at 13.8 row-steps/sec so feeder roads + oval ring fill in ~2.75s (exact video t=8.60s -> 11.35s!)
-        this.introMarchSteps = Math.min(INTRO_TOTAL_STEPS, this.introMarchSteps + dt * 13.8 * speedMult);
+        // March at a smooth, natural 10.2 row-steps/sec so feeder roads + loop fill smoothly without rushing
+        this.introMarchSteps = Math.min(INTRO_TOTAL_STEPS, this.introMarchSteps + dt * 10.2 * speedMult);
         this.levelIntroRushProgress = this.introMarchSteps / INTRO_TOTAL_STEPS;
         this.ringRotationAngle = 0;
 
-        // Update sliding "GO!" badges riding right in front of the leading Left & Right Feeder rows + footstep dust puffs!
+        // Update sliding "GO!" badges riding right in front of the leading Left & Right Feeder rows (zero white sphere dust!)
         const leadStepsPastJunc = this.introMarchSteps - 23.0;
         if (leadStepsPastJunc < 0.8) {
           const leadU = Math.max(0.18, 0.225 + (-leadStepsPastJunc) * 0.041);
@@ -13899,16 +13799,6 @@ body, #app-wrapper, #game-container {
             this._goBadgeRightEl.style.top = `${scrR.y}px`;
             if (leadStepsPastJunc > -1.2) this._goBadgeRightEl.classList.add('open');
           }
-
-          // Periodic white footstep dust puffs under the sprinting leading rows
-          this._introDustTimer = (this._introDustTimer || 0) - dt;
-          if (this._introDustTimer <= 0 && leadU < 1.15) {
-            this._introDustTimer = 0.095;
-            const dL = this.getFeederCurvePoint(-1, leadU);
-            const dR = this.getFeederCurvePoint(1, leadU);
-            this.spawnExhaustSmoke(dL.x, dL.z);
-            this.spawnExhaustSmoke(dR.x, dR.z);
-          }
         } else {
           if (this._goBadgeLeftEl) { this._goBadgeLeftEl.remove(); this._goBadgeLeftEl = null; }
           if (this._goBadgeRightEl) { this._goBadgeRightEl.remove(); this._goBadgeRightEl = null; }
@@ -13918,8 +13808,8 @@ body, #app-wrapper, #game-container {
         if (this._goBadgeLeftEl) { this._goBadgeLeftEl.remove(); this._goBadgeLeftEl = null; }
         if (this._goBadgeRightEl) { this._goBadgeRightEl.remove(); this._goBadgeRightEl = null; }
 
-        // Exact Video Revolving Loop Speed (~1.68 rad/s -> 0.86*PI every 1.6s, 3.2x turbo while holding screen!)
-        const loopSpeed = Math.min(2.05, 1.68 + Math.floor(this.levelNum / 15) * 0.035) * speedMult;
+        // Steady, normal, comfortable revolving circle speed (0.88 rad/s -> ~7.1s per full circle, not too fast!)
+        const loopSpeed = 0.88 * speedMult;
         this.ringRotationAngle = (this.ringRotationAngle + dt * loopSpeed) % (Math.PI * 2);
 
         // Refill any empty slots in the revolving oval ring as they pass the Left (PI) or Right (0) Curved Feeder Junctions!
@@ -14109,7 +13999,7 @@ body, #app-wrapper, #game-container {
         }
 
         const yaw = Math.atan2(fwdX, fwdZ);
-        const runRate = isIntroMarching ? 0.032 : (this._isHoldingFastSpin ? 0.038 : 0.022);
+        const runRate = isIntroMarching ? 0.016 : (this._isHoldingFastSpin ? 0.020 : 0.0125);
         const frames = this._stickmanRunFrames;
         const frameCount = frames ? frames.length : 0;
 
@@ -14195,7 +14085,7 @@ body, #app-wrapper, #game-container {
           const targetZ = pt.z + 0.24 + pt.nz * lateralOffset;
 
           if (isMarchingForward && frameCount > 0) {
-            const phase = now * 0.030 - r * 0.85 + m * 0.55;
+            const phase = now * 0.016 - r * 0.85 + m * 0.55;
             const normPhase = (((phase % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2)) / (Math.PI * 2);
             const fIdx = Math.floor(normPhase * frameCount) % frameCount;
             if (sm.userData.fIdx !== fIdx) {
@@ -14324,19 +14214,13 @@ body, #app-wrapper, #game-container {
       this.levelTimeLeft = 90;
       this._lastUrgentSecond = -1;
 
-      levelData.vehicles.forEach((v, idx) => {
+      levelData.vehicles.forEach((v) => {
         const vObj = {
           ...v,
           maxCap: v.cap,
           mesh: null
         };
         vObj.mesh = this.createVehicleMesh(vObj);
-        if (fromTransition) {
-          vObj.mesh.scale.set(0.01, 0.01, 0.01);
-          setTimeout(() => {
-            if (vObj.mesh) vObj.mesh.scale.set(1, 1, 1);
-          }, Math.min(280, idx * 12));
-        }
         this.vehiclesGroup.add(vObj.mesh);
         this.lotVehicles.push(vObj);
       });
@@ -14376,6 +14260,9 @@ body, #app-wrapper, #game-container {
       this.updateHUD();
       this.updateSlotOverlays();
       this.checkAndAutoUnblockLot();
+      if (this.renderer && this.scene && this.camera) {
+        this.renderer.render(this.scene, this.camera);
+      }
       this.saveGameProgress(false);
     }
 
@@ -17485,13 +17372,21 @@ body, #app-wrapper, #game-container {
     bindUIEvents() {
       this.canvas.addEventListener('pointerdown', (e) => this.onCanvasPointerDown(e));
 
-      // Press & Hold on Screen -> Fast Spin Revolving Loop (3.5x Speed while held, normal speed on release!)
+      // Press & Hold on Screen (>380ms hold) -> Gently speed up Revolving Loop (normal taps on cars never jerk the circle!)
+      let fastSpinHoldTimer = null;
       const startFastSpin = () => {
-        if (!this._inHomeLobby && !this.isLevelOver && !this.isAnyModalOpen()) {
-          this._isHoldingFastSpin = true;
-        }
+        if (fastSpinHoldTimer) clearTimeout(fastSpinHoldTimer);
+        fastSpinHoldTimer = setTimeout(() => {
+          if (!this._inHomeLobby && !this.isLevelOver && !this.isAnyModalOpen()) {
+            this._isHoldingFastSpin = true;
+          }
+        }, 380);
       };
       const stopFastSpin = () => {
+        if (fastSpinHoldTimer) {
+          clearTimeout(fastSpinHoldTimer);
+          fastSpinHoldTimer = null;
+        }
         this._isHoldingFastSpin = false;
       };
       this.canvas.addEventListener('pointerdown', startFastSpin, { passive: true });
