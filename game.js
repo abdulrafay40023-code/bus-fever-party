@@ -6382,7 +6382,7 @@
       }
 
       const INTRO_TOTAL_STEPS = 38.0; // 23 steps down feeder road + 15 steps across half-oval = 38 steps
-      const speedMult = this._isHoldingFastSpin ? 1.65 : 1.0;
+      const speedMult = this._isHoldingFastSpin ? 3.25 : 1.0;
 
       if (typeof this.introMarchSteps !== 'number') {
         this.introMarchSteps = INTRO_TOTAL_STEPS;
@@ -6601,7 +6601,7 @@
 
           // Smoothly walk newly pulled feeder rows from the feeder stop line (u = FEEDER_STOP_U) onto the revolving track loop!
           if (rowData && typeof rowData.joinBlend === 'number' && rowData.joinBlend < 1) {
-            rowData.joinBlend = Math.min(1, rowData.joinBlend + dt * (this._isHoldingFastSpin ? 10.0 : 5.5));
+            rowData.joinBlend = Math.min(1, rowData.joinBlend + dt * (this._isHoldingFastSpin ? 16.0 : 5.5));
             const jb = 1 - Math.pow(1 - rowData.joinBlend, 2);
             const mouthPt = this.getFeederCurvePoint(rowData.joinSide || -1, FEEDER_STOP_U);
             baseX = mouthPt.x + (baseX - mouthPt.x) * jb;
@@ -6614,7 +6614,7 @@
         }
 
         const yaw = Math.atan2(fwdX, fwdZ);
-        const runRate = isIntroMarching ? 0.016 : (this._isHoldingFastSpin ? 0.020 : 0.0125);
+        const runRate = isIntroMarching ? 0.016 : (this._isHoldingFastSpin ? 0.036 : 0.0125);
         const frames = this._stickmanRunFrames;
         const frameCount = frames ? frames.length : 0;
 
@@ -6656,7 +6656,7 @@
     }
 
     positionFeederLane(feederQueue, meshRows, side, now, dt = 0.016, isIntroMarching = false) {
-      const decayRate = this._isHoldingFastSpin ? 12.0 : 5.8;
+      const decayRate = this._isHoldingFastSpin ? 16.5 : 5.8;
       if (!isIntroMarching) {
         if (side < 0) {
           this._leftFeederSlideOffset = (this._leftFeederSlideOffset || 0) * Math.exp(-dt * decayRate);
@@ -6700,7 +6700,8 @@
           const targetZ = pt.z + 0.24 + pt.nz * lateralOffset;
 
           if (isMarchingForward && frameCount > 0) {
-            const phase = now * 0.016 - r * 0.85 + m * 0.55;
+            const feederRunRate = this._isHoldingFastSpin ? 0.034 : 0.016;
+            const phase = now * feederRunRate - r * 0.85 + m * 0.55;
             const normPhase = (((phase % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2)) / (Math.PI * 2);
             const fIdx = Math.floor(normPhase * frameCount) % frameCount;
             if (sm.userData.fIdx !== fIdx) {
@@ -9981,7 +9982,7 @@
     bindUIEvents() {
       this.canvas.addEventListener('pointerdown', (e) => this.onCanvasPointerDown(e));
 
-      // Press & Hold on Screen (>380ms hold) -> Gently speed up Revolving Loop (normal taps on cars never jerk the circle!)
+      // Press & Hold on Screen (>150ms hold) -> Turbo Fast Spin Revolving Loop (3.25x speed while held, normal speed on release!)
       let fastSpinHoldTimer = null;
       const startFastSpin = () => {
         if (fastSpinHoldTimer) clearTimeout(fastSpinHoldTimer);
@@ -9989,7 +9990,7 @@
           if (!this._inHomeLobby && !this.isLevelOver && !this.isAnyModalOpen()) {
             this._isHoldingFastSpin = true;
           }
-        }, 380);
+        }, 150);
       };
       const stopFastSpin = () => {
         if (fastSpinHoldTimer) {
