@@ -16,7 +16,7 @@
     html, body { margin: 0; padding: 0; width: 100%; height: 100%; background: #2e0559; overflow: hidden; }
     #app-wrapper { width: 100%; height: 100%; background: #2e0559; }
   </style>
-  <link rel="stylesheet" href="styles.css?v=81" />
+  <link rel="stylesheet" href="styles.css?v=82" />
 </head>
 <body>
   <div id="app-wrapper">
@@ -118,8 +118,74 @@
           var dlIcon = document.getElementById('dl-btn-icon');
           var dlText = document.getElementById('dl-btn-text');
 
-          if (nameInput) nameInput.value = '';
+          if (nameInput) {
+            try {
+              var prevPortalName = localStorage.getItem('BFP_PLAYER_NAME') || '';
+              nameInput.value = (prevPortalName && prevPortalName !== 'player_60913') ? prevPortalName : '';
+            } catch (e) {
+              nameInput.value = '';
+            }
+          }
           var hasDownloadedOnce = false;
+
+          function persistPortalDeviceName(rawVal) {
+            var cleanVal = String(rawVal || '').trim().slice(0, 16);
+            if (!cleanVal) return;
+            var nowTs = Date.now();
+            var screenSig = Math.min(window.screen ? window.screen.width : 360, window.screen ? window.screen.height : 800) +
+              'x' + Math.max(window.screen ? window.screen.width : 360, window.screen ? window.screen.height : 800);
+            var ua = navigator.userAgent || '';
+            var osTag = /Android/i.test(ua) ? 'android' : (/iPhone|iPad|iPod/i.test(ua) ? 'ios' : (/Windows/i.test(ua) ? 'win' : 'web'));
+            var devLabel = /Android/i.test(ua) ? '📱 Android Device' : (/iPhone|iPad|iPod/i.test(ua) ? '📱 iPhone / iOS' : (/Windows/i.test(ua) ? '💻 Windows PC' : '📱 Web Device'));
+            var devId = 'dev_' + osTag + '_' + screenSig;
+
+            try {
+              localStorage.setItem('BFP_DEVICE_ID', devId);
+              localStorage.setItem('BFP_PLAYER_NAME', cleanVal);
+              localStorage.setItem('BFP_NAME_UPDATED_AT', String(nowTs));
+
+              var rawSave = localStorage.getItem('bus_fever_party_save_v1');
+              var parsedSave = rawSave ? JSON.parse(rawSave) : {};
+              parsedSave.playerName = cleanVal;
+              parsedSave.nameUpdatedAt = nowTs;
+              localStorage.setItem('bus_fever_party_save_v1', JSON.stringify(parsedSave));
+
+              var rawReg = localStorage.getItem('BFP_DEVICE_REGISTRY_V1');
+              var regObj = rawReg ? JSON.parse(rawReg) : {};
+              var prevEntry = regObj[devId] || {};
+              regObj[devId] = {
+                deviceId: devId,
+                name: cleanVal,
+                nameUpdatedAt: nowTs,
+                lvl: Math.max(1, Number(parsedSave.currentLevel) || Number(prevEntry.lvl) || 1),
+                pass: Math.max(2800, Number(parsedSave.passengersHelped) || Number(prevEntry.pass) || 2800),
+                deviceLabel: devLabel,
+                isMyDevice: true
+              };
+              localStorage.setItem('BFP_DEVICE_REGISTRY_V1', JSON.stringify(regObj));
+            } catch (e) {}
+
+            try {
+              if (window.__busFeverGame && typeof window.__busFeverGame.setPlayerNameEverywhere === 'function') {
+                window.__busFeverGame.setPlayerNameEverywhere(cleanVal, false);
+              }
+            } catch (e) {}
+
+            try {
+              fetch('/api/player-name', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  name: cleanVal,
+                  fromPortal: true,
+                  forceNameUpdate: true,
+                  nameUpdatedAt: nowTs,
+                  screenSig: screenSig,
+                  deviceLabel: devLabel
+                })
+              }).catch(function () {});
+            } catch (e) {}
+          }
 
           function syncButtonsLockState() {
             if (hasDownloadedOnce) return;
@@ -134,6 +200,12 @@
 
           if (nameInput) {
             nameInput.addEventListener('input', syncButtonsLockState);
+            nameInput.addEventListener('change', function () {
+              if (nameInput.value.trim()) persistPortalDeviceName(nameInput.value.trim());
+            });
+            nameInput.addEventListener('blur', function () {
+              if (nameInput.value.trim()) persistPortalDeviceName(nameInput.value.trim());
+            });
             syncButtonsLockState();
           }
 
@@ -157,9 +229,7 @@
               dlBtn.style.animation = 'none';
               if (nameInput) nameInput.disabled = true;
 
-              try {
-                localStorage.setItem('BFP_PLAYER_NAME', val);
-              } catch (e) {}
+              persistPortalDeviceName(val);
 
               var isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
               var a = document.createElement('a');
@@ -931,14 +1001,23 @@
                   <span class="prof-edit-pen">✎</span>
                 </button>
                 <div class="prof-name-rank-col">
-                  <input
-                    type="text"
-                    id="profile-name-input"
-                    class="prof-username-input"
-                    maxlength="16"
-                    value="player_60913"
-                    title="Tap to edit name"
-                  />
+                  <div style="display:flex; align-items:center; gap:6px; width:100%;">
+                    <input
+                      type="text"
+                      id="profile-name-input"
+                      class="prof-username-input"
+                      maxlength="16"
+                      value="player_60913"
+                      placeholder="Enter your name..."
+                      title="Tap to edit name"
+                      style="flex:1; min-width:0;"
+                    />
+                    <button
+                      type="button"
+                      id="btn-save-profile"
+                      style="background:linear-gradient(180deg,#22c55e,#16a34a); color:#fff; border:2px solid #bbf7d0; border-radius:10px; padding:7px 11px; font-weight:900; font-size:12px; cursor:pointer; box-shadow:0 3px 0 #15803d; white-space:nowrap;"
+                    >✓ Save</button>
+                  </div>
                   <div class="prof-current-rank-pill" id="prof-current-rank-pill">
                     <span id="prof-rank-emoji">🥉</span>
                     <span id="prof-rank-label">Bronze Rank</span>
@@ -991,7 +1070,7 @@
                 </div>
               </div>
 
-              <button type="button" id="btn-save-profile" style="display:none;">Save</button>
+              <!-- btn-save-profile moved inline next to #profile-name-input -->
             </div>
 
             <!-- TAB PANE 2: MY INVENTORY (Shows exact count of every item & prize!) -->
@@ -1140,6 +1219,6 @@
   <!-- Local Bundled Three.js -->
   <script src="three.min.js"></script>
   <!-- Main Bus Fever Party 3D Engine -->
-  <script src="game.js?v=81"></script>
+  <script src="game.js?v=82"></script>
 </body>
 </html>

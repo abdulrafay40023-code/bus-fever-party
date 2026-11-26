@@ -2575,21 +2575,260 @@
           } catch (e) {}
         }
 
-        const savedName = localStorage.getItem('BFP_PLAYER_NAME');
-        if (savedName && !this.profile.playerName) {
-          this.profile.playerName = savedName;
+        const savedName = (localStorage.getItem('BFP_PLAYER_NAME') || '').trim();
+        const savedNameTs = Number(localStorage.getItem('BFP_NAME_UPDATED_AT') || 0);
+        if (savedName && savedName !== 'player_60913') {
+          if (
+            !this.profile.playerName ||
+            this.profile.playerName === 'player_60913' ||
+            savedNameTs >= (this.profile.nameUpdatedAt || 0)
+          ) {
+            this.profile.playerName = savedName;
+            this.profile.nameUpdatedAt = Math.max(savedNameTs, this.profile.nameUpdatedAt || 0, Date.now());
+          }
         }
         if (!this.profile.playerName) {
           this.profile.playerName = 'player_60913';
         }
+        try {
+          if (this.profile.playerName && this.profile.playerName !== 'player_60913') {
+            localStorage.setItem('BFP_PLAYER_NAME', this.profile.playerName);
+          }
+          localStorage.setItem(SAVE_KEY, JSON.stringify(this.profile));
+        } catch (e) {}
       } catch (e) {
         console.warn('Could not read save data:', e);
       }
+      this.syncDevicePlayerRegistry(true, false);
       this.checkFreeSpinRefill(false);
       sound.sfxEnabled = this.profile.sfx !== false;
       sound.musicEnabled = this.profile.music !== false;
       sound.vibeEnabled = this.profile.vibe !== false;
       this.syncSettingsButtons();
+    }
+
+    getDeviceScreenSig() {
+      const w = (typeof window !== 'undefined' && window.screen && window.screen.width) ? window.screen.width : 360;
+      const h = (typeof window !== 'undefined' && window.screen && window.screen.height) ? window.screen.height : 800;
+      return `${Math.min(w, h)}x${Math.max(w, h)}`;
+    }
+
+    getOrCreateDeviceId() {
+      const ua = (typeof navigator !== 'undefined' && navigator.userAgent) ? navigator.userAgent : '';
+      const osTag = /Android/i.test(ua)
+        ? 'android'
+        : (/iPhone|iPad|iPod/i.test(ua) ? 'ios' : (/Windows/i.test(ua) ? 'win' : 'web'));
+      const deterministicId = `dev_${osTag}_${this.getDeviceScreenSig()}`;
+      try {
+        localStorage.setItem('BFP_DEVICE_ID', deterministicId);
+      } catch (e) {}
+      return deterministicId;
+    }
+
+    getDevicePlatformLabel() {
+      const ua = (typeof navigator !== 'undefined' && navigator.userAgent) ? navigator.userAgent : '';
+      if (/Android/i.test(ua)) {
+        const m = ua.match(/Android\s+[^;]+;\s*([^)]+)\)/i);
+        const model = m ? m[1].replace(/Build\/.*$/i, '').replace(/;\s*wv$/i, '').trim() : '';
+        if (model && model !== 'K' && model.length >= 2) {
+          return `📱 Android (${model.slice(0, 18)})`;
+        }
+        return '📱 Android Device';
+      }
+      if (/iPhone|iPad|iPod/i.test(ua)) return '📱 iPhone / iOS';
+      if (/Windows/i.test(ua)) return '💻 Windows PC';
+      if (/Macintosh|Mac OS X/i.test(ua)) return '💻 Mac';
+      return '📱 Mobile / Web';
+    }
+
+    getEffectivePlayerName() {
+      let savedName = '';
+      try {
+        savedName = (localStorage.getItem('BFP_PLAYER_NAME') || '').trim();
+      } catch (e) {}
+      const profName = (this.profile && this.profile.playerName ? String(this.profile.playerName).trim() : '');
+      if (profName && profName !== 'player_60913') return profName;
+      if (savedName && savedName !== 'player_60913') {
+        if (this.profile) this.profile.playerName = savedName;
+        return savedName;
+      }
+      return profName || savedName || 'player_60913';
+    }
+
+    setPlayerNameEverywhere(rawName, showToast = false) {
+      const cleanName = String(rawName || '').trim().slice(0, 16);
+      if (!cleanName) return;
+      const nowTs = Date.now();
+      this.profile.playerName = cleanName;
+      this.profile.nameUpdatedAt = nowTs;
+      try {
+        localStorage.setItem('BFP_PLAYER_NAME', cleanName);
+        localStorage.setItem('BFP_NAME_UPDATED_AT', String(nowTs));
+        localStorage.setItem(SAVE_KEY, JSON.stringify(this.profile));
+      } catch (e) {}
+
+      const inp = document.getElementById('profile-name-input');
+      if (inp && document.activeElement !== inp) {
+        inp.value = cleanName;
+      }
+      const portalInp = document.getElementById('portal-player-name');
+      if (portalInp && document.activeElement !== portalInp) {
+        portalInp.value = cleanName;
+      }
+      const hudNameEl = document.getElementById('hud-player-name');
+      if (hudNameEl) {
+        hudNameEl.textContent = cleanName;
+      }
+
+      this.syncDevicePlayerRegistry(true, true);
+      this.populateLeaderboard();
+      if (showToast) {
+        this.showAdsUnavailableToast(`✅ Name Saved: ${cleanName}`);
+      }
+    }
+
+    syncDevicePlayerRegistry(pushToServer = false, forceNameUpdate = false) {
+      const myDevId = this.getOrCreateDeviceId();
+      const myName = this.getEffectivePlayerName();
+      const myLvl = Math.max(1, (this.profile && this.profile.currentLevel) || 1);
+      const myPass = Math.max(2800, (this.profile && this.profile.passengersHelped) || (myLvl * 95));
+      const myLabel = this.getDevicePlatformLabel();
+      const myTs = (this.profile && this.profile.nameUpdatedAt) || Date.now();
+      const FAKE_NAMES = new Set(['Ayesha K.', 'Hamza_Pro', 'ZainRacer', 'Sara_Bus', 'Bilal_99', 'MinaPlays']);
+
+      let regObj = {};
+      try {
+        const raw = localStorage.getItem('BFP_DEVICE_REGISTRY_V1');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed && typeof parsed === 'object') regObj = parsed;
+        }
+      } catch (e) {}
+
+      // Remove any fake/legacy or duplicate self-device entries so 1 device = strictly 1 entry
+      Object.keys(regObj).forEach((k) => {
+        const item = regObj[k];
+        if (!item || typeof item !== 'object' || FAKE_NAMES.has(item.name)) {
+          delete regObj[k];
+          return;
+        }
+        if (item.isMyDevice && k !== myDevId) {
+          delete regObj[k];
+        }
+      });
+
+      regObj[myDevId] = {
+        deviceId: myDevId,
+        name: myName,
+        nameUpdatedAt: myTs,
+        lvl: myLvl,
+        pass: myPass,
+        deviceLabel: myLabel,
+        isMyDevice: true
+      };
+
+      try {
+        localStorage.setItem('BFP_DEVICE_REGISTRY_V1', JSON.stringify(regObj));
+      } catch (e) {}
+
+      const nowMs = Date.now();
+      if (!pushToServer && this._lastDeviceServerSyncMs && (nowMs - this._lastDeviceServerSyncMs < 8000)) {
+        return regObj;
+      }
+      this._lastDeviceServerSyncMs = nowMs;
+
+      if (typeof fetch === 'function') {
+        const apiUrl = (typeof window !== 'undefined' && window.location && /^https?:/i.test(window.location.protocol))
+          ? '/api/player-name'
+          : 'https://bus-fever-party-3d.vercel.app/api/player-name';
+
+        fetch(apiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            deviceId: myDevId,
+            name: myName,
+            nameUpdatedAt: myTs,
+            forceNameUpdate: !!forceNameUpdate,
+            lvl: myLvl,
+            pass: myPass,
+            deviceLabel: myLabel,
+            screenSig: this.getDeviceScreenSig()
+          })
+        })
+          .then((r) => (r && r.ok ? r.json() : null))
+          .then((data) => {
+            if (!data || !data.ok) return;
+            let nameChangedFromDevice = false;
+
+            // If user entered a newer name on the Download Portal on this same physical device, adopt it!
+            if (data.myDevice && data.myDevice.name && data.myDevice.name !== 'player_60913') {
+              const srvName = String(data.myDevice.name).trim();
+              const srvTs = Number(data.myDevice.nameUpdatedAt) || 0;
+              const curName = this.getEffectivePlayerName();
+              if (
+                !forceNameUpdate &&
+                srvName &&
+                (curName === 'player_60913' || srvTs > ((this.profile && this.profile.nameUpdatedAt) || 0))
+              ) {
+                this.profile.playerName = srvName;
+                this.profile.nameUpdatedAt = srvTs || Date.now();
+                nameChangedFromDevice = true;
+                try {
+                  localStorage.setItem('BFP_PLAYER_NAME', srvName);
+                  localStorage.setItem('BFP_NAME_UPDATED_AT', String(this.profile.nameUpdatedAt));
+                  localStorage.setItem(SAVE_KEY, JSON.stringify(this.profile));
+                } catch (e) {}
+              }
+            }
+
+            // Rebuild local device registry strictly from real devices (1 entry per device!)
+            const merged = {};
+            const finalMyName = this.getEffectivePlayerName();
+            merged[myDevId] = {
+              deviceId: myDevId,
+              name: finalMyName,
+              nameUpdatedAt: (this.profile && this.profile.nameUpdatedAt) || Date.now(),
+              lvl: Math.max(1, (this.profile && this.profile.currentLevel) || 1),
+              pass: Math.max(2800, (this.profile && this.profile.passengersHelped) || (myLvl * 95)),
+              deviceLabel: (data.myDevice && data.myDevice.deviceLabel) ? data.myDevice.deviceLabel : myLabel,
+              isMyDevice: true
+            };
+
+            if (Array.isArray(data.devices)) {
+              data.devices.forEach((d) => {
+                if (!d || !d.deviceKey || FAKE_NAMES.has(d.name)) return;
+                if (d.isMyDevice || (data.myDevice && d.deviceKey === data.myDevice.deviceKey)) {
+                  return;
+                }
+                const remKey = `srv_${d.deviceKey}`;
+                merged[remKey] = {
+                  deviceId: remKey,
+                  name: d.name || 'Player',
+                  nameUpdatedAt: d.nameUpdatedAt || 0,
+                  lvl: Math.max(1, Number(d.lvl) || 1),
+                  pass: Math.max(2800, Number(d.pass) || 2800),
+                  deviceLabel: d.deviceLabel || '📱 Device',
+                  isMyDevice: false
+                };
+              });
+            }
+
+            try {
+              localStorage.setItem('BFP_DEVICE_REGISTRY_V1', JSON.stringify(merged));
+            } catch (e) {}
+
+            if (nameChangedFromDevice) {
+              const inp = document.getElementById('profile-name-input');
+              if (inp && document.activeElement !== inp) inp.value = finalMyName;
+              this.updateHUD();
+            }
+            this._renderLeaderboardRowsFromRegistry(merged);
+          })
+          .catch(() => {});
+      }
+
+      return regObj;
     }
 
     openModal(id) {
@@ -2759,6 +2998,7 @@
         try {
           this.profile.activeMidLevelState = null;
           localStorage.setItem(SAVE_KEY, JSON.stringify(this.profile));
+          this.syncDevicePlayerRegistry(false, false);
         } catch (e) {}
       };
       if (showToast) {
@@ -4092,7 +4332,9 @@
       const daysEl = document.getElementById('prof-stat-days');
       if (daysEl) daysEl.textContent = `${this.profile.gameDays || 6}`;
       const inp = document.getElementById('profile-name-input');
-      if (inp) inp.value = this.profile.playerName || localStorage.getItem('BFP_PLAYER_NAME') || 'player_60913';
+      if (inp && document.activeElement !== inp) {
+        inp.value = this.getEffectivePlayerName();
+      }
 
       const rkEmoji = document.getElementById('prof-rank-emoji');
       const rkLbl = document.getElementById('prof-rank-label');
@@ -4295,52 +4537,120 @@
       this.syncHomeRankBadgesOnly();
       const lockedEl = document.getElementById('leaderboard-locked-msg');
       const list = document.getElementById('home-ranks-list');
-      const myLvl = Math.max(1, this.profile.currentLevel || 1);
-
-      // Exact Competitor Video 00:36: "Reach level 29 to unlock Leaderboard!"
-      if (myLvl < 29) {
-        if (lockedEl) lockedEl.style.display = 'flex';
-        if (list) list.style.display = 'none';
-        return;
-      }
-
       if (lockedEl) lockedEl.style.display = 'none';
       if (!list) return;
       list.style.display = 'flex';
 
-      const myName = this.profile.playerName || localStorage.getItem('BFP_PLAYER_NAME') || 'You';
-      const myPass = Math.max(2800, this.profile.passengersHelped || (myLvl * 95));
+      const regObj = this.syncDevicePlayerRegistry(false, false);
+      this._renderLeaderboardRowsFromRegistry(regObj);
+    }
 
-      const rivals = [
-        { name: 'Ayesha K.', lvl: 50, pass: 4950 },
-        { name: 'Hamza_Pro', lvl: 44, pass: 4320 },
-        { name: 'ZainRacer', lvl: 38, pass: 3760 },
-        { name: 'Sara_Bus', lvl: 34, pass: 3340 },
-        { name: myName + ' (You)', lvl: myLvl, pass: myPass, isMe: true },
-        { name: 'Bilal_99', lvl: 31, pass: 3020 },
-        { name: 'MinaPlays', lvl: 29, pass: 2810 }
-      ];
-      // Sort by Highest Level first, then by Total Passengers Boarded!
-      rivals.sort((a, b) => (b.lvl !== a.lvl ? b.lvl - a.lvl : (b.pass || 0) - (a.pass || 0)));
+    _renderLeaderboardRowsFromRegistry(regObj) {
+      const list = document.getElementById('home-ranks-list');
+      if (!list) return;
+
+      const myDevId = this.getOrCreateDeviceId();
+      const myName = this.getEffectivePlayerName();
+      const myLvl = Math.max(1, (this.profile && this.profile.currentLevel) || 1);
+      const myPass = Math.max(2800, (this.profile && this.profile.passengersHelped) || (myLvl * 95));
+      const myLabel = this.getDevicePlatformLabel();
+      const FAKE_NAMES = new Set(['Ayesha K.', 'Hamza_Pro', 'ZainRacer', 'Sara_Bus', 'Bilal_99', 'MinaPlays']);
+
+      const entriesMap = new Map();
+      if (regObj && typeof regObj === 'object') {
+        Object.keys(regObj).forEach((k) => {
+          const d = regObj[k];
+          if (!d || typeof d !== 'object' || FAKE_NAMES.has(d.name)) return;
+          if (d.isMyDevice || k === myDevId) return;
+          entriesMap.set(k, {
+            deviceId: k,
+            name: String(d.name || 'Player').trim(),
+            lvl: Math.max(1, Number(d.lvl) || 1),
+            pass: Math.max(2800, Number(d.pass) || 2800),
+            deviceLabel: d.deviceLabel || '📱 Device',
+            isMe: false
+          });
+        });
+      }
+
+      // Strictly 1 entry for the current user's physical device, always with their latest new name!
+      entriesMap.set(myDevId, {
+        deviceId: myDevId,
+        name: myName,
+        lvl: myLvl,
+        pass: myPass,
+        deviceLabel: (regObj && regObj[myDevId] && regObj[myDevId].deviceLabel) ? regObj[myDevId].deviceLabel : myLabel,
+        isMe: true
+      });
+
+      const realDevicePlayers = Array.from(entriesMap.values());
+      realDevicePlayers.sort((a, b) => (b.lvl !== a.lvl ? b.lvl - a.lvl : (b.pass || 0) - (a.pass || 0)));
 
       list.innerHTML = '';
-      rivals.forEach((r, idx) => {
+
+      // Top Real Device Counter & 1-Tap Name Edit Banner
+      const devBanner = document.createElement('div');
+      devBanner.style.cssText = 'display:flex; align-items:center; justify-content:space-between; background:rgba(15,23,42,0.55); border:1.5px solid rgba(96,165,250,0.45); border-radius:14px; padding:8px 12px; margin-bottom:4px; color:#e2e8f0; font-size:12px; font-weight:800;';
+      devBanner.innerHTML = `
+        <div style="display:flex; align-items:center; gap:6px;">
+          <span>📱 Downloaded Devices: <strong style="color:#fde047;">${realDevicePlayers.length}</strong></span>
+          <span style="color:#93c5fd; font-size:11px;">(${myLabel})</span>
+        </div>
+        <button type="button" id="btn-lb-edit-name" style="background:linear-gradient(180deg,#3b82f6,#1d4ed8); color:#fff; border:1.5px solid #93c5fd; border-radius:999px; padding:4px 10px; font-size:11px; font-weight:900; cursor:pointer;">✎ Edit Name</button>
+      `;
+      list.appendChild(devBanner);
+
+      const editBtn = devBanner.querySelector('#btn-lb-edit-name');
+      if (editBtn) {
+        editBtn.addEventListener('click', () => {
+          try { sound.playButtonClick(); } catch (e) {}
+          this.openPlayerHub('profile');
+          setTimeout(() => {
+            const inp = document.getElementById('profile-name-input');
+            if (inp) {
+              inp.focus();
+              inp.select();
+            }
+          }, 120);
+        });
+      }
+
+      realDevicePlayers.forEach((r, idx) => {
         const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `#${idx + 1}`;
         const rRank = this.getRankForLevel(r.lvl);
         const passStr = (r.pass || 0) >= 1000 ? `${((r.pass || 0) / 1000).toFixed(1)}K` : `${r.pass || 0}`;
+        const displayName = r.isMe ? `${r.name} (You)` : r.name;
         const row = document.createElement('div');
         row.className = 'rank-row' + (r.isMe ? ' me' : '');
         row.innerHTML = `
-          <div style="display:flex; align-items:center; gap:8px;">
+          <div style="display:flex; align-items:center; gap:8px; min-width:0;">
             <span style="min-width:26px; font-weight:900; color:#b45309;">${medal}</span>
             ${getRankEmblemHtml(rRank.id, 24)}
-            <span>${r.name}</span>
+            <div style="display:flex; flex-direction:column; min-width:0;">
+              <span style="font-weight:900; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${displayName}</span>
+              <span style="font-size:10px; font-weight:800; color:#64748b;">${r.deviceLabel || '📱 Device'}</span>
+            </div>
           </div>
-          <div style="display:flex; align-items:center; gap:5px;">
+          <div style="display:flex; align-items:center; gap:5px; flex-shrink:0;">
             <span style="background:#fef3c7; color:#b45309; padding:3px 7px; border-radius:999px; font-size:11px; font-weight:900;">🧍‍♂️ ${passStr}</span>
             <span style="background:#dbeafe; color:#1d4ed8; padding:3px 9px; border-radius:999px; font-size:12px; font-weight:900;">Lv.${r.lvl}</span>
           </div>
         `;
+        if (r.isMe) {
+          row.style.cursor = 'pointer';
+          row.title = 'Tap to edit your player name';
+          row.addEventListener('click', () => {
+            try { sound.playButtonClick(); } catch (e) {}
+            this.openPlayerHub('profile');
+            setTimeout(() => {
+              const inp = document.getElementById('profile-name-input');
+              if (inp) {
+                inp.focus();
+                inp.select();
+              }
+            }, 120);
+          });
+        }
         list.appendChild(row);
       });
     }
@@ -10228,18 +10538,44 @@
         });
       }
 
+      const profileNameInput = document.getElementById('profile-name-input');
+      if (profileNameInput) {
+        const flushTypedName = (showToast = false) => {
+          const val = profileNameInput.value.trim();
+          if (val) {
+            this.setPlayerNameEverywhere(val, showToast);
+          }
+        };
+        profileNameInput.addEventListener('input', () => flushTypedName(false));
+        profileNameInput.addEventListener('change', () => flushTypedName(false));
+        profileNameInput.addEventListener('blur', () => flushTypedName(false));
+        profileNameInput.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            flushTypedName(true);
+            profileNameInput.blur();
+          }
+        });
+      }
+
+      bindTap('btn-save-profile', () => {
+        try { sound.playButtonClick(); } catch (err) {}
+        const inp = document.getElementById('profile-name-input');
+        if (inp && inp.value.trim()) {
+          this.setPlayerNameEverywhere(inp.value.trim(), true);
+        }
+      }, 220);
+
       const saveAndCloseProfile = () => {
         try { sound.playButtonClick(); } catch (err) {}
         const inp = document.getElementById('profile-name-input');
         if (inp && inp.value.trim()) {
-          this.profile.playerName = inp.value.trim();
-          try { localStorage.setItem('BFP_PLAYER_NAME', this.profile.playerName); } catch (e) {}
+          this.setPlayerNameEverywhere(inp.value.trim(), false);
         }
         this.updateHUD();
         this.saveGameProgress(false);
         this.closeModal('modal-profile');
       };
-      bindTap('btn-save-profile', saveAndCloseProfile, 250);
       bindTap('btn-close-profile', saveAndCloseProfile, 250);
 
       // 3D Celebration Reward & Character / Rank Unlock Popup Handlers
@@ -10425,12 +10761,18 @@
         this.closeModal('modal-spin');
       }, 250);
 
-      // Allow tapping dark backdrop around modals to close cleanly
+      // Allow tapping dark backdrop around modals to close cleanly (and auto-save profile name if closing modal-profile!)
       ['modal-spin', 'modal-pause', 'modal-supplies', 'modal-profile'].forEach((mId) => {
         const mEl = document.getElementById(mId);
         if (mEl) {
           mEl.addEventListener('click', (e) => {
             if (e.target === mEl && !(mId === 'modal-spin' && this._isSpinning)) {
+              if (mId === 'modal-profile') {
+                const inp = document.getElementById('profile-name-input');
+                if (inp && inp.value.trim()) {
+                  this.setPlayerNameEverywhere(inp.value.trim(), false);
+                }
+              }
               this.closeModal(mId);
             }
           });
