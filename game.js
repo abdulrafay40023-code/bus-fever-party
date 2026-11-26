@@ -1424,6 +1424,11 @@
      * Returns { depth, ax, az } if closer than minGap, or null if separated by >= minGap.
      */
     static getPairOBBOverlap(v1, v2, minGap = 0.34) {
+      const dx = v2.x - v1.x;
+      const dz = v2.z - v1.z;
+      // Fast bounding-circle early-out (skips 85% of non-neighbor pairs in 2 CPU ops!)
+      if (dx * dx + dz * dz > 11.5) return null;
+
       const vec1 = this.getVehicleForward(v1);
       const vec2 = this.getVehicleForward(v2);
 
@@ -1433,9 +1438,6 @@
       const hW1 = (v1.type === 'bus' ? 0.575 : 0.535) + pad;
       const hL2 = (v2.type === 'bus' ? 1.245 : 0.895) + pad;
       const hW2 = (v2.type === 'bus' ? 0.575 : 0.535) + pad;
-
-      const dx = v2.x - v1.x;
-      const dz = v2.z - v1.z;
 
       const axes = [
         { x: vec1.fx, z: vec1.fz },
@@ -1882,21 +1884,50 @@
       this.emojiCooldown = 2.5;
       this._passengersReleased = false;
       this._splashStarted = false;
+      // Keep 3D WebGL loop paused while Opening Splash, Loading Screen, or Home Lobby is active!
+      this._inHomeLobby = true;
 
-      this.initThreeScene();
-      this.buildEnvironment3D();
-      this.initSlots();
-      this.buildPassengerMeshPools();
       this.loadSaveData();
+      this.initThreeScene();
       this.bindUIEvents();
-      this.drawLuckySpinWheel();
 
-      // Run Opening Studio Splash ("Novaria") + Castle Loading Screen (0% -> 100%)
+      // Run Opening Studio Splash ("TEALS") + 60-FPS Loading Screen (0% -> 100%) immediately with ZERO startup stall!
       this.runOpeningSplashSequence();
+
+      // Warm up 3D slots, passenger mesh pools, and cached environment texture asynchronously during the loading bar!
+      setTimeout(() => {
+        this.initSlots();
+        this.buildPassengerMeshPools();
+      }, 90);
+      setTimeout(() => {
+        const startLvl = Math.max(1, (this.profile && this.profile.currentLevel) || 1);
+        this.buildEnvironment3D(startLvl);
+        this.drawLuckySpinWheel();
+      }, 240);
 
       this.lastFrameTime = performance.now();
       this.animate = this.animate.bind(this);
       requestAnimationFrame(this.animate);
+    }
+
+    ensureHomeAssetsLoaded() {
+      if (this._homeNewAssets) return this._homeNewAssets;
+      const loadImg = (src) => {
+        const im = new Image();
+        im.decoding = 'async';
+        im.src = src;
+        return im;
+      };
+      this._homeNewAssets = {
+        bgImg: loadImg('home_new_bg_hd.jpg?v=74'),
+        skylineFgImg: loadImg('home_skyline_fg_hd.png?v=74'),
+        spotsAtlasImg: loadImg('home_spots_atlas_hd.jpg?v=54'),
+        girlImg: loadImg('home_girl_hd.png?v=54'),
+        spinWheelImg: loadImg('home_spin_wheel_hd.png?v=54'),
+        spinOverlayImg: loadImg('home_spin_overlay_hd.png?v=54'),
+        playBtnImg: loadImg('home_play_btn_hd.png?v=54')
+      };
+      return this._homeNewAssets;
     }
 
     // -----------------------------------------------------------------------
@@ -1912,26 +1943,13 @@
       const loadAudio = document.getElementById('loading-live-audio');
       const loadCanvas = document.getElementById('loading-live-canvas');
 
+      // Preload Home Screen images during the 3.5s loading screen so Home Lobby opens 100% instantly without any blue flash!
+      const homeAssets = this.ensureHomeAssetsLoaded();
+
       // ---------------------------------------------------------------------
-      // 60-FPS REAL-TIME 3D LOADING ANIMATION ENGINE + GLB 3D LOADER (3.5 SEC!)
+      // 60-FPS REAL-TIME 3D LOADING ANIMATION ENGINE (3.5 SEC!)
       // ---------------------------------------------------------------------
       let loadingAnimActive = true;
-      const bgImg = new Image();
-      bgImg.src = 'loading_bg.jpg?v=55';
-
-      // Load real binary .glb 3D loading scene models via THREE.GLTFLoader
-      if (window.THREE && THREE.GLTFLoader && !this._loadingGlbLoaded) {
-        this._loadingGlbLoaded = true;
-        this._loadingGlbModels = {};
-        try {
-          const loader = new THREE.GLTFLoader();
-          ['loading_scene_3d.glb?v=55', 'loading_logo_3d.glb?v=55'].forEach((url) => {
-            loader.load(url, (gltf) => {
-              this._loadingGlbModels[url.split('?')[0]] = gltf.scene;
-            }, undefined, () => {});
-          });
-        } catch (e) {}
-      }
 
       // Party horn confetti & sparkles emitted from the upper-deck cheering kids & golden party horn (842, 868 in 1152x2048)
       const confettiColors = ['#f43f5e', '#facc15', '#38bdf8', '#a855f7', '#4ade80', '#fb923c', '#ffffff'];
@@ -1972,24 +1990,23 @@
 
       const LW = 1152;
       const LH = 2048;
+      const BUF_W = 576;
+      const BUF_H = 1024;
 
       const renderLoadingScene = (nowMs) => {
         if (!loadingAnimActive) return;
         if (loadCanvas) {
-          if (loadCanvas.width !== LW || loadCanvas.height !== LH) {
-            loadCanvas.width = LW;
-            loadCanvas.height = LH;
+          if (loadCanvas.width !== BUF_W || loadCanvas.height !== BUF_H) {
+            loadCanvas.width = BUF_W;
+            loadCanvas.height = BUF_H;
           }
           const ctx = loadCanvas.getContext('2d');
           if (ctx) {
-            ctx.imageSmoothingEnabled = true;
-            ctx.imageSmoothingQuality = 'high';
+            ctx.setTransform(BUF_W / LW, 0, 0, BUF_H / LH, 0, 0);
             const t = nowMs * 0.001;
 
+            // #splash-loading CSS background already displays loading_bg.jpg at 0 CPU cost; only clear & draw animated overlays!
             ctx.clearRect(0, 0, LW, LH);
-            if (bgImg && bgImg.complete && bgImg.naturalWidth > 0) {
-              ctx.drawImage(bgImg, 0, 0, LW, LH);
-            }
 
             // 1. ROTATING GOLDEN SUNBEAMS ON TOP-RIGHT SUN (cx=1038, cy=114)
             ctx.save();
@@ -2174,7 +2191,8 @@
           if (fillEl) fillEl.style.width = `${(eased * 100).toFixed(1)}%`;
           if (pctEl) pctEl.textContent = `${pct}%`;
 
-          if (rawP < 1) {
+          const homeBgReady = !!(homeAssets && homeAssets.bgImg && homeAssets.bgImg.complete && homeAssets.bgImg.naturalWidth > 0);
+          if (rawP < 1 || (!homeBgReady && elapsed < durationMs + 1200)) {
             requestAnimationFrame(tickLoading);
           } else {
             // Step 3: Keep 60-FPS loading animation running WITHOUT stopping while fading smoothly into Home Lobby!
@@ -2193,7 +2211,7 @@
                 loadingAnimActive = false;
                 if (loadingEl) loadingEl.style.display = 'none';
               }, 400);
-            }, 120);
+            }, 90);
           }
         };
         requestAnimationFrame(tickLoading);
@@ -2651,46 +2669,8 @@
       if (typeof this._homeRoadScrollVel !== 'number') this._homeRoadScrollVel = 0;
       if (typeof this._homeRoadScrollWaveT !== 'number') this._homeRoadScrollWaveT = 0;
 
-      // Load 2x/4x Super-Resolution Retina Assets & 3D .glb Models once
-      if (!this._homeNewAssets) {
-        const loadImg = (src) => {
-          const im = new Image();
-          im.src = src;
-          return im;
-        };
-        this._homeNewAssets = {
-          bgImg: loadImg('home_new_bg_hd.jpg?v=54'),
-          skylineFgImg: loadImg('home_skyline_fg_hd.png?v=54'),
-          spotsAtlasImg: loadImg('home_spots_atlas_hd.jpg?v=54'),
-          girlImg: loadImg('home_girl_hd.png?v=54'),
-          spinWheelImg: loadImg('home_spin_wheel_hd.png?v=54'),
-          spinOverlayImg: loadImg('home_spin_overlay_hd.png?v=54'),
-          playBtnImg: loadImg('home_play_btn_hd.png?v=54'),
-          avatars100AtlasImg: loadImg('avatars_100_atlas.jpg?v=68'),
-          ranksAtlasImg: loadImg('ranks_atlas_hd.png?v=68')
-        };
-
-        // Load real binary .glb 3D models via THREE.GLTFLoader
-        if (window.THREE && THREE.GLTFLoader && !this._homeGlbLoaded) {
-          this._homeGlbLoaded = true;
-          this._homeGlbModels = {};
-          try {
-            const loader = new THREE.GLTFLoader();
-            [
-              'home_girl_3d.glb?v=52',
-              'home_bus_3d.glb?v=52',
-              'home_spin_3d.glb?v=52',
-              'home_play_3d.glb?v=52',
-              'ranks_3d.glb?v=67',
-              'avatars_100_3d.glb?v=67'
-            ].forEach((url) => {
-              loader.load(url, (gltf) => {
-                this._homeGlbModels[url.split('?')[0]] = gltf.scene;
-              }, undefined, () => {});
-            });
-          } catch (e) {}
-        }
-      }
+      // Load Retina Home Assets once (preloaded during Opening Splash Sequence!)
+      this.ensureHomeAssetsLoaded();
 
       // Bind interactive road drag, mouse wheel & level node tap handlers once
       if (!this._homeRoadEventsBound) {
@@ -2928,6 +2908,8 @@
       const startT = performance.now();
       const CW = 1152;
       const CH = 2048;
+      const HOME_BUF_W = 720;
+      const HOME_BUF_H = 1280;
 
       const tickHomeCanvas = (now) => {
         const homeEl = document.getElementById('home-lobby-screen');
@@ -2941,14 +2923,13 @@
           return;
         }
 
-        if (canvas.width !== CW || canvas.height !== CH) {
-          canvas.width = CW;
-          canvas.height = CH;
+        if (canvas.width !== HOME_BUF_W || canvas.height !== HOME_BUF_H) {
+          canvas.width = HOME_BUF_W;
+          canvas.height = HOME_BUF_H;
         }
 
         const ctx = canvas.getContext('2d');
-        ctx.imageSmoothingEnabled = true;
-        ctx.imageSmoothingQuality = 'high';
+        ctx.setTransform(HOME_BUF_W / CW, 0, 0, HOME_BUF_H / CH, 0, 0);
 
         const t = (now - startT) * 0.001;
         const assets = this._homeNewAssets || {};
@@ -3547,18 +3528,19 @@
           ctx.fill();
           ctx.restore();
 
-          // Outer Emerald Neon Glow Aura
-          const auraAlpha = 0.22 + 0.16 * (0.5 + 0.5 * Math.sin(t * 4.2));
+          // Outer Emerald Neon Glow Aura (Zero-Blur Fast GPU Path!)
+          const auraAlpha = 0.18 + 0.12 * (0.5 + 0.5 * Math.sin(t * 4.2));
           ctx.save();
           ctx.translate(pCX, pCY + pBounceY);
           ctx.rotate(pTilt);
           ctx.scale(pScaleX, pScaleY);
-          ctx.shadowColor = `rgba(74, 222, 128, ${auraAlpha + 0.35})`;
-          ctx.shadowBlur = 28;
+          ctx.fillStyle = `rgba(74, 222, 128, ${auraAlpha.toFixed(2)})`;
+          ctx.beginPath();
+          ctx.roundRect(-pW * 0.515, -pH * 0.515, pW * 1.03, pH * 1.03, pH * 0.515);
+          ctx.fill();
 
           // Draw 2x Retina 3D Glossy Green Play Button
           ctx.drawImage(playBtnImg, -pW * 0.5, -pH * 0.5, pW, pH);
-          ctx.shadowBlur = 0;
 
           // Clip inside Play Button Pill for Back-and-Forth Diagonal Mirror Flash Sweep ("flash ka ana jana")
           ctx.save();
@@ -4481,7 +4463,9 @@
         }
       ];
 
-      const theme = ENV_THEMES[(Math.max(1, levelNum) - 1) % ENV_THEMES.length];
+      const themeIdx = (Math.max(1, levelNum) - 1) % ENV_THEMES.length;
+      const theme = ENV_THEMES[themeIdx];
+      this._builtEnvLevelNum = levelNum;
 
       // Ultra-wide fallback planes (MeshBasicMaterial so lighting never blows out colors)
       const farGrass = new THREE.Mesh(
@@ -4504,263 +4488,258 @@
       farLot.updateMatrix();
       this.envGroup.add(farLot);
 
-      // High-Res 1792x3072 Studio-Baked Ground Texture (28x48 world units = 64 px/unit!)
       const worldW = 28;
       const worldD = 48;
       const centerZ = 2.0; // spans z: [-22, +26]
-      const S = 64;
-      const cw = worldW * S; // 1792
-      const ch = worldD * S; // 3072
 
-      const canvas = document.createElement('canvas');
-      canvas.width = cw;
-      canvas.height = ch;
-      const ctx = canvas.getContext('2d');
+      if (!this._groundTexCache) this._groundTexCache = {};
+      let groundTex = this._groundTexCache[themeIdx];
 
-      const px = (wx) => (wx + worldW * 0.5) * S;
-      const py = (wz) => (wz - (centerZ - worldD * 0.5)) * S;
-      const curbY = py(-0.72);
+      if (!groundTex) {
+        // Fast Studio-Baked Ground Texture (36 px/unit = 1008x1728, zero CPU shadowBlur stall, cached per theme!)
+        const S = 36;
+        const cw = worldW * S; // 1008
+        const ch = worldD * S; // 1728
 
-      // 1. Top Rich Deep Park Lawn (z < -0.72)
-      const grassGrad = ctx.createLinearGradient(0, py(-18), 0, curbY);
-      grassGrad.addColorStop(0, theme.grassStops[0]);
-      grassGrad.addColorStop(0.55, theme.grassStops[1]);
-      grassGrad.addColorStop(1, theme.grassStops[2]);
-      ctx.fillStyle = grassGrad;
-      ctx.fillRect(0, 0, cw, curbY + 2);
+        const canvas = document.createElement('canvas');
+        canvas.width = cw;
+        canvas.height = ch;
+        const ctx = canvas.getContext('2d');
 
-      // Soft sunlit lawn dapples
-      const dappleSpots = [
-        [0, -13.5, 4.5],
-        [-6.2, -7.2, 2.8],
-        [6.2, -7.2, 2.8]
-      ];
-      dappleSpots.forEach(([gx, gz, gr]) => {
-        const rg = ctx.createRadialGradient(px(gx), py(gz), 0, px(gx), py(gz), gr * S);
-        rg.addColorStop(0, theme.dappleRgba);
-        rg.addColorStop(1, 'rgba(0, 0, 0, 0.0)');
-        ctx.fillStyle = rg;
-        ctx.beginPath();
-        ctx.arc(px(gx), py(gz), gr * S, 0, Math.PI * 2);
-        ctx.fill();
-      });
+        const px = (wx) => (wx + worldW * 0.5) * S;
+        const py = (wz) => (wz - (centerZ - worldD * 0.5)) * S;
+        const curbY = py(-0.72);
 
-      // Tiny scattered park wildflowers / petals on lawn
-      const drawTinyCluster = (fx, fz) => {
-        const pts = [[0, 0], [-0.19, 0.11], [0.18, 0.13], [-0.12, -0.16], [0.15, -0.12]];
-        pts.forEach(([ox, oz], idx) => {
-          const cxp = px(fx + ox);
-          const cyp = py(fz + oz);
-          ctx.fillStyle = theme.archType === 'sakura_torii'
-            ? 'rgba(251, 207, 232, 0.92)'
-            : idx % 2 === 0 ? 'rgba(255,255,255,0.88)' : 'rgba(254,240,138,0.85)';
+        // 1. Top Rich Deep Park Lawn (z < -0.72)
+        const grassGrad = ctx.createLinearGradient(0, py(-18), 0, curbY);
+        grassGrad.addColorStop(0, theme.grassStops[0]);
+        grassGrad.addColorStop(0.55, theme.grassStops[1]);
+        grassGrad.addColorStop(1, theme.grassStops[2]);
+        ctx.fillStyle = grassGrad;
+        ctx.fillRect(0, 0, cw, curbY + 2);
+
+        // Soft sunlit lawn dapples
+        const dappleSpots = [
+          [0, -13.5, 4.5],
+          [-6.2, -7.2, 2.8],
+          [6.2, -7.2, 2.8]
+        ];
+        dappleSpots.forEach(([gx, gz, gr]) => {
+          const rg = ctx.createRadialGradient(px(gx), py(gz), 0, px(gx), py(gz), gr * S);
+          rg.addColorStop(0, theme.dappleRgba);
+          rg.addColorStop(1, 'rgba(0, 0, 0, 0.0)');
+          ctx.fillStyle = rg;
           ctx.beginPath();
-          ctx.arc(cxp, cyp, 3.2, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.fillStyle = theme.archType === 'sakura_torii' ? '#ec4899' : '#eab308';
-          ctx.beginPath();
-          ctx.arc(cxp, cyp, 1.3, 0, Math.PI * 2);
+          ctx.arc(px(gx), py(gz), gr * S, 0, Math.PI * 2);
           ctx.fill();
         });
-      };
-      drawTinyCluster(-2.55, -12.1);
-      drawTinyCluster(2.55, -12.1);
-      drawTinyCluster(-3.45, -14.2);
-      drawTinyCluster(3.45, -14.2);
-      drawTinyCluster(-6.55, -11.4);
-      drawTinyCluster(6.55, -11.4);
 
-      // 2. Lower Rich Parking Lot Plaza (z >= -0.72)
-      const lotGrad = ctx.createLinearGradient(0, curbY, 0, py(16));
-      lotGrad.addColorStop(0, theme.lotStops[0]);
-      lotGrad.addColorStop(0.45, theme.lotStops[1]);
-      lotGrad.addColorStop(1, theme.lotStops[2]);
-      ctx.fillStyle = lotGrad;
-      ctx.fillRect(0, curbY, cw, ch - curbY);
+        // Tiny scattered park wildflowers / petals on lawn
+        const drawTinyCluster = (fx, fz) => {
+          const pts = [[0, 0], [-0.19, 0.11], [0.18, 0.13], [-0.12, -0.16], [0.15, -0.12]];
+          pts.forEach(([ox, oz], idx) => {
+            const cxp = px(fx + ox);
+            const cyp = py(fz + oz);
+            ctx.fillStyle = theme.archType === 'sakura_torii'
+              ? 'rgba(251, 207, 232, 0.92)'
+              : idx % 2 === 0 ? 'rgba(255,255,255,0.88)' : 'rgba(254,240,138,0.85)';
+            ctx.beginPath();
+            ctx.arc(cxp, cyp, 2.1, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = theme.archType === 'sakura_torii' ? '#ec4899' : '#eab308';
+            ctx.beginPath();
+            ctx.arc(cxp, cyp, 0.9, 0, Math.PI * 2);
+            ctx.fill();
+          });
+        };
+        drawTinyCluster(-2.55, -12.1);
+        drawTinyCluster(2.55, -12.1);
+        drawTinyCluster(-3.45, -14.2);
+        drawTinyCluster(3.45, -14.2);
+        drawTinyCluster(-6.55, -11.4);
+        drawTinyCluster(6.55, -11.4);
 
-      // 3. Multi-Pass Seamless Connected Road Network (U-Feeders + Oval + Gate + Boarding Bay)
-      const traceFeederPath = (side, yOff = 0) => {
-        ctx.beginPath();
-        const steps = 40;
-        for (let i = 0; i <= steps; i++) {
-          const u = (i / steps) * 1.35;
-          const pt = this.getFeederCurvePoint(side, u);
-          const x = px(pt.x);
-          const y = py(pt.z) + yOff;
-          if (i === 0) ctx.moveTo(x, y);
-          else ctx.lineTo(x, y);
+        // 2. Lower Rich Parking Lot Plaza (z >= -0.72)
+        const lotGrad = ctx.createLinearGradient(0, curbY, 0, py(16));
+        lotGrad.addColorStop(0, theme.lotStops[0]);
+        lotGrad.addColorStop(0.45, theme.lotStops[1]);
+        lotGrad.addColorStop(1, theme.lotStops[2]);
+        ctx.fillStyle = lotGrad;
+        ctx.fillRect(0, curbY, cw, ch - curbY);
+
+        // 3. Multi-Pass Seamless Connected Road Network (U-Feeders + Oval + Gate + Boarding Bay)
+        const traceFeederPath = (side, yOff = 0) => {
+          ctx.beginPath();
+          const steps = 32;
+          for (let i = 0; i <= steps; i++) {
+            const u = (i / steps) * 1.35;
+            const pt = this.getFeederCurvePoint(side, u);
+            const x = px(pt.x);
+            const y = py(pt.z) + yOff;
+            if (i === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+          }
+        };
+
+        const traceBoardingBay = (expandWorld = 0, yOff = 0) => {
+          const e = expandWorld;
+          const topZ = -5.42 - e;
+          const botZ = -0.70 + e * 0.2;
+          ctx.beginPath();
+          ctx.moveTo(px(-14.2), py(botZ) + yOff);
+          ctx.lineTo(px(-8.4 - e), py(-2.45 - e * 0.5) + yOff);
+          ctx.quadraticCurveTo(
+            px(-6.65 - e),
+            py(topZ) + yOff,
+            px(-4.95),
+            py(topZ) + yOff
+          );
+          ctx.lineTo(px(4.95), py(topZ) + yOff);
+          ctx.quadraticCurveTo(
+            px(6.65 + e),
+            py(topZ) + yOff,
+            px(8.4 + e),
+            py(-2.45 - e * 0.5) + yOff
+          );
+          ctx.lineTo(px(14.2), py(botZ) + yOff);
+          ctx.lineTo(px(14.2), py(-0.68) + yOff);
+          ctx.lineTo(px(-14.2), py(-0.68) + yOff);
+          ctx.closePath();
+        };
+
+        const paintUnifiedRoadLayer = (expandWorld, colorOrGrad, yOff = 0) => {
+          ctx.save();
+          ctx.fillStyle = colorOrGrad;
+          ctx.strokeStyle = colorOrGrad;
+          ctx.lineCap = 'round';
+          ctx.lineJoin = 'round';
+
+          const feederWidthPx = (2.02 + expandWorld * 2) * S;
+          ctx.lineWidth = feederWidthPx;
+          traceFeederPath(-1, yOff);
+          ctx.stroke();
+          traceFeederPath(1, yOff);
+          ctx.stroke();
+
+          // Central Oval Outer Footprint
+          ctx.beginPath();
+          ctx.ellipse(
+            px(0),
+            py(-8.55) + yOff,
+            (4.36 + expandWorld) * S,
+            (2.96 + expandWorld) * S,
+            0,
+            0,
+            Math.PI * 2
+          );
+          ctx.fill();
+
+          // Bottom Gate Neck connecting Oval Loop into Boarding Bay
+          const neckHalfW = (0.98 + expandWorld) * S;
+          ctx.beginPath();
+          ctx.roundRect(
+            px(0) - neckHalfW,
+            py(-6.65) + yOff,
+            neckHalfW * 2,
+            (1.65 + expandWorld) * S,
+            6
+          );
+          ctx.fill();
+
+          // Flared Boarding Bay
+          traceBoardingBay(expandWorld, yOff);
+          ctx.fill();
+          ctx.restore();
+        };
+
+        // Pass 1: Soft outer ambient shadow on the lawn (zero CPU shadowBlur!)
+        paintUnifiedRoadLayer(0.27, 'rgba(18, 34, 10, 0.25)', 3.5);
+        // Pass 2: 3D concrete curb side bevel
+        paintUnifiedRoadLayer(0.23, theme.curbSide, 2.5);
+        // Pass 3: Crisp raised white concrete curb top
+        paintUnifiedRoadLayer(0.22, theme.curbTop, 0);
+        // Pass 4: Subtle dark inner curb shadow lip on asphalt
+        paintUnifiedRoadLayer(0.02, '#2d323e', 1.5);
+        // Pass 5: Deep Dark Slate-Charcoal Asphalt fill across entire connected network!
+        const roadGrad = ctx.createLinearGradient(0, py(-15), 0, curbY);
+        roadGrad.addColorStop(0, theme.roadStops[0]);
+        roadGrad.addColorStop(0.55, theme.roadStops[1]);
+        roadGrad.addColorStop(1, theme.roadStops[2]);
+        paintUnifiedRoadLayer(0.0, roadGrad, 0);
+
+        // 4. Center Kidney/Bean Grass Island inside Oval Loop (Exact Competitor Shape!)
+        const traceCenterIsland = (expandWorld = 0, yOff = 0) => {
+          const rx = (2.16 + expandWorld) * S;
+          const rz = (0.88 + expandWorld) * S;
+          const cx0 = px(0);
+          const cy0 = py(-8.52) + yOff;
+          ctx.beginPath();
+          ctx.moveTo(cx0 - rx, cy0 + rz * 0.05);
+          ctx.bezierCurveTo(
+            cx0 - rx, cy0 - rz * 1.05,
+            cx0 - rx * 0.35, cy0 - rz * 0.72,
+            cx0, cy0 - rz * 0.68
+          );
+          ctx.bezierCurveTo(
+            cx0 + rx * 0.35, cy0 - rz * 0.72,
+            cx0 + rx, cy0 - rz * 1.05,
+            cx0 + rx, cy0 + rz * 0.05
+          );
+          ctx.bezierCurveTo(
+            cx0 + rx, cy0 + rz * 1.08,
+            cx0 - rx, cy0 + rz * 1.08,
+            cx0 - rx, cy0 + rz * 0.05
+          );
+          ctx.closePath();
+        };
+
+        // Island asphalt drop shadow + 3D curb bevel + white curb + lush grass fill (zero CPU shadowBlur!)
+        ctx.fillStyle = 'rgba(20, 24, 34, 0.32)';
+        traceCenterIsland(0.24, 3.5);
+        ctx.fill();
+
+        ctx.fillStyle = '#aeb7ca';
+        traceCenterIsland(0.20, 2.2);
+        ctx.fill();
+
+        ctx.fillStyle = '#f4f7fd';
+        traceCenterIsland(0.20, 0);
+        ctx.fill();
+
+        const islGrass = ctx.createLinearGradient(0, py(-9.4), 0, py(-7.6));
+        islGrass.addColorStop(0, theme.islStops[0]);
+        islGrass.addColorStop(1, theme.islStops[1]);
+        ctx.fillStyle = islGrass;
+        traceCenterIsland(0.0, 0);
+        ctx.fill();
+
+        // 5. Crisp Horizontal 3D Concrete Curb Ledge at z = -0.72
+        const ledgeTopY = py(-0.84);
+        const ledgeMidY = py(-0.71);
+        const ledgeBotY = py(-0.63);
+
+        // Soft shadow cast downward onto the parking lot
+        const ledgeShadow = ctx.createLinearGradient(0, ledgeBotY, 0, ledgeBotY + 9);
+        ledgeShadow.addColorStop(0, 'rgba(35, 45, 68, 0.20)');
+        ledgeShadow.addColorStop(1, 'rgba(35, 45, 68, 0.0)');
+        ctx.fillStyle = ledgeShadow;
+        ctx.fillRect(0, ledgeBotY, cw, 9);
+
+        // Bright top face of concrete ledge
+        ctx.fillStyle = '#f4f7fd';
+        ctx.fillRect(0, ledgeTopY, cw, ledgeMidY - ledgeTopY);
+
+        // 3D front bevel face of concrete ledge
+        ctx.fillStyle = '#b4bdd0';
+        ctx.fillRect(0, ledgeMidY, cw, ledgeBotY - ledgeMidY);
+
+        groundTex = new THREE.CanvasTexture(canvas);
+        if (this.renderer && this.renderer.capabilities) {
+          groundTex.anisotropy = Math.min(4, this.renderer.capabilities.getMaxAnisotropy());
         }
-      };
-
-      const traceBoardingBay = (expandWorld = 0, yOff = 0) => {
-        const e = expandWorld;
-        const topZ = -5.42 - e;
-        const botZ = -0.70 + e * 0.2;
-        ctx.beginPath();
-        ctx.moveTo(px(-14.2), py(botZ) + yOff);
-        ctx.lineTo(px(-8.4 - e), py(-2.45 - e * 0.5) + yOff);
-        ctx.quadraticCurveTo(
-          px(-6.65 - e),
-          py(topZ) + yOff,
-          px(-4.95),
-          py(topZ) + yOff
-        );
-        ctx.lineTo(px(4.95), py(topZ) + yOff);
-        ctx.quadraticCurveTo(
-          px(6.65 + e),
-          py(topZ) + yOff,
-          px(8.4 + e),
-          py(-2.45 - e * 0.5) + yOff
-        );
-        ctx.lineTo(px(14.2), py(botZ) + yOff);
-        ctx.lineTo(px(14.2), py(-0.68) + yOff);
-        ctx.lineTo(px(-14.2), py(-0.68) + yOff);
-        ctx.closePath();
-      };
-
-      const paintUnifiedRoadLayer = (expandWorld, colorOrGrad, yOff = 0, blurPx = 0) => {
-        ctx.save();
-        if (blurPx > 0) {
-          ctx.shadowColor = colorOrGrad;
-          ctx.shadowBlur = blurPx;
-          ctx.shadowOffsetY = yOff;
-          yOff = 0;
-        }
-        ctx.fillStyle = colorOrGrad;
-        ctx.strokeStyle = colorOrGrad;
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
-
-        const feederWidthPx = (2.02 + expandWorld * 2) * S;
-        ctx.lineWidth = feederWidthPx;
-        traceFeederPath(-1, yOff);
-        ctx.stroke();
-        traceFeederPath(1, yOff);
-        ctx.stroke();
-
-        // Central Oval Outer Footprint
-        ctx.beginPath();
-        ctx.ellipse(
-          px(0),
-          py(-8.55) + yOff,
-          (4.36 + expandWorld) * S,
-          (2.96 + expandWorld) * S,
-          0,
-          0,
-          Math.PI * 2
-        );
-        ctx.fill();
-
-        // Bottom Gate Neck connecting Oval Loop into Boarding Bay
-        const neckHalfW = (0.98 + expandWorld) * S;
-        ctx.beginPath();
-        ctx.roundRect(
-          px(0) - neckHalfW,
-          py(-6.65) + yOff,
-          neckHalfW * 2,
-          (1.65 + expandWorld) * S,
-          10
-        );
-        ctx.fill();
-
-        // Flared Boarding Bay
-        traceBoardingBay(expandWorld, yOff);
-        ctx.fill();
-        ctx.restore();
-      };
-
-      // Pass 1: Soft outer ambient shadow on the lawn
-      paintUnifiedRoadLayer(0.24, 'rgba(18, 34, 10, 0.34)', 5, 10);
-      // Pass 2: 3D concrete curb side bevel
-      paintUnifiedRoadLayer(0.23, theme.curbSide, 4.5, 0);
-      // Pass 3: Crisp raised white concrete curb top
-      paintUnifiedRoadLayer(0.22, theme.curbTop, 0, 0);
-      // Pass 4: Subtle dark inner curb shadow lip on asphalt
-      paintUnifiedRoadLayer(0.02, '#2d323e', 2.5, 0);
-      // Pass 5: Deep Dark Slate-Charcoal Asphalt fill across entire connected network!
-      const roadGrad = ctx.createLinearGradient(0, py(-15), 0, curbY);
-      roadGrad.addColorStop(0, theme.roadStops[0]);
-      roadGrad.addColorStop(0.55, theme.roadStops[1]);
-      roadGrad.addColorStop(1, theme.roadStops[2]);
-      paintUnifiedRoadLayer(0.0, roadGrad, 0, 0);
-
-      // 4. Center Kidney/Bean Grass Island inside Oval Loop (Exact Competitor Shape!)
-      const traceCenterIsland = (expandWorld = 0, yOff = 0) => {
-        const rx = (2.16 + expandWorld) * S;
-        const rz = (0.88 + expandWorld) * S;
-        const cx0 = px(0);
-        const cy0 = py(-8.52) + yOff;
-        ctx.beginPath();
-        ctx.moveTo(cx0 - rx, cy0 + rz * 0.05);
-        ctx.bezierCurveTo(
-          cx0 - rx, cy0 - rz * 1.05,
-          cx0 - rx * 0.35, cy0 - rz * 0.72,
-          cx0, cy0 - rz * 0.68
-        );
-        ctx.bezierCurveTo(
-          cx0 + rx * 0.35, cy0 - rz * 0.72,
-          cx0 + rx, cy0 - rz * 1.05,
-          cx0 + rx, cy0 + rz * 0.05
-        );
-        ctx.bezierCurveTo(
-          cx0 + rx, cy0 + rz * 1.08,
-          cx0 - rx, cy0 + rz * 1.08,
-          cx0 - rx, cy0 + rz * 0.05
-        );
-        ctx.closePath();
-      };
-
-      // Island asphalt drop shadow
-      ctx.save();
-      ctx.shadowColor = 'rgba(20, 24, 34, 0.38)';
-      ctx.shadowBlur = 9;
-      ctx.shadowOffsetY = 4;
-      ctx.fillStyle = '#aeb7ca';
-      traceCenterIsland(0.20, 3);
-      ctx.fill();
-      ctx.restore();
-
-      // Island 3D curb bevel + white curb + lush grass fill
-      ctx.fillStyle = '#aeb7ca';
-      traceCenterIsland(0.20, 3.5);
-      ctx.fill();
-
-      ctx.fillStyle = '#f4f7fd';
-      traceCenterIsland(0.20, 0);
-      ctx.fill();
-
-      const islGrass = ctx.createLinearGradient(0, py(-9.4), 0, py(-7.6));
-      islGrass.addColorStop(0, theme.islStops[0]);
-      islGrass.addColorStop(1, theme.islStops[1]);
-      ctx.fillStyle = islGrass;
-      traceCenterIsland(0.0, 0);
-      ctx.fill();
-
-      // 5. Crisp Horizontal 3D Concrete Curb Ledge at z = -0.72
-      const ledgeTopY = py(-0.84);
-      const ledgeMidY = py(-0.71);
-      const ledgeBotY = py(-0.63);
-
-      // Soft shadow cast downward onto the parking lot
-      const ledgeShadow = ctx.createLinearGradient(0, ledgeBotY, 0, ledgeBotY + 14);
-      ledgeShadow.addColorStop(0, 'rgba(35, 45, 68, 0.20)');
-      ledgeShadow.addColorStop(1, 'rgba(35, 45, 68, 0.0)');
-      ctx.fillStyle = ledgeShadow;
-      ctx.fillRect(0, ledgeBotY, cw, 14);
-
-      // Bright top face of concrete ledge
-      ctx.fillStyle = '#f4f7fd';
-      ctx.fillRect(0, ledgeTopY, cw, ledgeMidY - ledgeTopY);
-
-      // 3D front bevel face of concrete ledge
-      ctx.fillStyle = '#b4bdd0';
-      ctx.fillRect(0, ledgeMidY, cw, ledgeBotY - ledgeMidY);
-
-      const groundTex = new THREE.CanvasTexture(canvas);
-      if (this.renderer && this.renderer.capabilities) {
-        groundTex.anisotropy = this.renderer.capabilities.getMaxAnisotropy();
+        groundTex.needsUpdate = true;
+        this._groundTexCache[themeIdx] = groundTex;
       }
-      groundTex.needsUpdate = true;
 
       const groundPlane = new THREE.Mesh(
         new THREE.PlaneGeometry(worldW, worldD),
@@ -4775,16 +4754,6 @@
     }
 
     buildThemeArchitecture3D(archType = 'fountain') {
-      // Load real binary 3D .glb model (level_architecture_3d.glb) once via THREE.GLTFLoader
-      if (window.THREE && THREE.GLTFLoader && !this._levelArchGlbLoaded) {
-        this._levelArchGlbLoaded = true;
-        try {
-          const loader = new THREE.GLTFLoader();
-          loader.load('level_architecture_3d.glb?v=70', (gltf) => {
-            this._levelArchGlbScene = gltf.scene;
-          }, undefined, () => {});
-        } catch (e) {}
-      }
 
       const archIndexMap = {
         fountain: 0,
@@ -5624,21 +5593,26 @@
     }
 
     // -----------------------------------------------------------------------
-    // 3D REVOLVING OVAL LOOP & DUAL FEEDER PASSENGER MESHES (ARTICULATED 3D RUNNERS!)
+    // 3D REVOLVING OVAL LOOP & DUAL FEEDER PASSENGER MESHES (ULTRA-FAST INDEXED 3D RUNNERS!)
     // -----------------------------------------------------------------------
     initSharedStickmanResources() {
       if (this._mergedStickmanGeo) return;
 
-      // Build a 24-frame 3D Articulated Running Character Table (this._stickmanRunFrames[0..23]) + Standing Pose (this._stickmanIdleGeo)
+      // Build a 10-frame Indexed 3D Articulated Running Character Table (this._stickmanRunFrames[0..9]) + Standing Pose (this._stickmanIdleGeo)
+      // - Preserves .index buffer (NEVER calls .toNonIndexed()!), reducing vertex count 12x (308 indexed vertices vs 3,720 non-indexed!)
       // - Head & Torso stay 100% steady (ZERO vertical/sideways jiggle!)
-      // - Left/Right Arms + Bent Forearms + Hands ("Hath") pump forward & backward around the shoulder joints
-      // - Left/Right Thighs + Bending Knees + Shins + Feet ("Pair") scissor forward & backward around the hip joints in a full running stride!
+      // - Left/Right Arms + Bent Forearms + Hands ("Hath") pump forward & backward around shoulder joints
+      // - Left/Right Thighs + Bending Knees + Shins + Feet ("Pair") scissor forward & backward around hip joints!
       const buildPoseGeo = (swingPhase, isRunning) => {
         const parts = [];
+        let totalVerts = 0;
+        let totalIndices = 0;
+
         const addPart = (geo, aoMin, aoMax) => {
-          const g = geo.toNonIndexed();
-          const p = g.attributes.position.array;
-          const n = g.attributes.normal.array;
+          const p = geo.attributes.position.array;
+          const n = geo.attributes.normal.array;
+          const idxArr = geo.index ? geo.index.array : null;
+          const vCount = p.length / 3;
           let minY = Infinity, maxY = -Infinity;
           for (let i = 1; i < p.length; i += 3) {
             if (p[i] < minY) minY = p[i];
@@ -5653,47 +5627,47 @@
             c[i + 1] = ao;
             c[i + 2] = ao;
           }
-          parts.push({ pos: p, norm: n, col: c });
+          parts.push({ pos: p, norm: n, col: c, idx: idxArr, vCount });
+          totalVerts += vCount;
+          totalIndices += idxArr ? idxArr.length : vCount;
         };
 
-        // 1. Plump Glossy 3D Head (r = 0.218 so 4 heads across a row touch snugly shoulder-to-shoulder like the reference video!)
-        const headGeo = new THREE.SphereGeometry(0.218, 16, 12);
+        // 1. Plump Glossy 3D Head (r = 0.218 so 4 heads across a row touch snugly shoulder-to-shoulder!)
+        const headGeo = new THREE.SphereGeometry(0.218, 12, 8);
         headGeo.translate(0, 0.67, 0.03);
         addPart(headGeo, 0.74, 1.00);
 
         // 2. Darkened Neck Collar Crease separating head from shoulders
-        const neckGeo = new THREE.CylinderGeometry(0.088, 0.112, 0.075, 10);
+        const neckGeo = new THREE.CylinderGeometry(0.088, 0.112, 0.075, 8, 1);
         neckGeo.translate(0, 0.495, 0.01);
         addPart(neckGeo, 0.42, 0.56);
 
         // 3. Rounded Runner Torso (slightly leaned forward in running direction)
-        const torsoGeo = new THREE.CylinderGeometry(0.125, 0.112, 0.25, 12);
+        const torsoGeo = new THREE.CylinderGeometry(0.125, 0.112, 0.25, 8, 1);
         torsoGeo.scale(1.12, 1.0, 0.92);
         torsoGeo.rotateX(0.10);
         torsoGeo.translate(0, 0.375, 0.01);
         addPart(torsoGeo, 0.55, 0.86);
 
-        // 4. Articulated Left & Right Arms + Bent Forearms + Hands ("Hath" pumping forward & back along running direction!)
+        // 4. Articulated Left & Right Arms + Bent Forearms + Hands ("Hath" pumping forward & back!)
         for (const side of [-1, 1]) {
           const s = isRunning ? (side === -1 ? 1 : -1) * Math.sin(swingPhase) : (side === -1 ? 0.32 : -0.32);
-          const shoulderTheta = -s * 0.98; // negative rotateX swings downward-hanging arm forward (+Z)
+          const shoulderTheta = -s * 0.98;
 
-          // Upper arm from shoulder (0,0,0) to elbow (side*0.015, -0.125, 0)
-          const uArm = new THREE.CylinderGeometry(0.046, 0.042, 0.135, 8);
+          const uArm = new THREE.CylinderGeometry(0.046, 0.042, 0.135, 6, 1);
           uArm.translate(side * 0.01, -0.065, 0);
           uArm.rotateX(shoulderTheta);
           uArm.translate(side * 0.162, 0.465, 0.01);
           addPart(uArm, 0.60, 0.86);
 
-          // Forearm bent forward at elbow + Round Hand
-          const fArm = new THREE.CylinderGeometry(0.042, 0.038, 0.135, 8);
+          const fArm = new THREE.CylinderGeometry(0.042, 0.038, 0.135, 6, 1);
           fArm.rotateX(-0.62);
           fArm.translate(side * 0.015, -0.175, 0.055);
           fArm.rotateX(shoulderTheta);
           fArm.translate(side * 0.162, 0.465, 0.01);
           addPart(fArm, 0.64, 0.90);
 
-          const hand = new THREE.SphereGeometry(0.054, 8, 8);
+          const hand = new THREE.SphereGeometry(0.054, 6, 5);
           hand.translate(side * 0.018, -0.225, 0.105);
           hand.rotateX(shoulderTheta);
           hand.translate(side * 0.162, 0.465, 0.01);
@@ -5703,18 +5677,16 @@
         // 5. Articulated Left & Right Running Legs + Bending Knees + Shoes ("Pair" scissoring wide forward & back!)
         for (const side of [-1, 1]) {
           const s = isRunning ? (side === -1 ? -1 : 1) * Math.sin(swingPhase) : (side === -1 ? -0.36 : 0.36);
-          const hipTheta = -s * 0.96; // negative rotateX swings leg forward (+Z), positive swings leg backward (-Z)
+          const hipTheta = -s * 0.96;
           const kneeBend = Math.max(0, hipTheta * 0.62) + (isRunning ? 0.18 : 0.08);
 
-          // Thigh from hip (0,0,0) to knee (0, -0.125, 0)
-          const thigh = new THREE.CylinderGeometry(0.056, 0.050, 0.135, 8);
+          const thigh = new THREE.CylinderGeometry(0.056, 0.050, 0.135, 6, 1);
           thigh.translate(0, -0.065, 0);
           thigh.rotateX(hipTheta);
           thigh.translate(side * 0.084, 0.265, 0.0);
           addPart(thigh, 0.46, 0.74);
 
-          // Lower leg (shin) pivoting at knee (0, -0.125, 0)
-          const shin = new THREE.CylinderGeometry(0.048, 0.043, 0.125, 8);
+          const shin = new THREE.CylinderGeometry(0.048, 0.043, 0.125, 6, 1);
           shin.translate(0, -0.06, 0);
           shin.rotateX(kneeBend);
           shin.translate(0, -0.125, 0);
@@ -5722,8 +5694,7 @@
           shin.translate(side * 0.084, 0.265, 0.0);
           addPart(shin, 0.42, 0.68);
 
-          // Rounded 3D Running Shoe/Foot ("Pair") at ankle
-          const shoe = new THREE.SphereGeometry(0.060, 8, 8);
+          const shoe = new THREE.SphereGeometry(0.060, 6, 5);
           shoe.scale(0.95, 0.66, 1.42);
           shoe.translate(0, -0.122, 0.036);
           shoe.rotateX(kneeBend);
@@ -5733,30 +5704,41 @@
           addPart(shoe, 0.38, 0.64);
         }
 
-        let totalLen = 0;
-        for (const pt of parts) totalLen += pt.pos.length;
+        const mergedPos = new Float32Array(totalVerts * 3);
+        const mergedNorm = new Float32Array(totalVerts * 3);
+        const mergedCol = new Float32Array(totalVerts * 3);
+        const mergedIdx = new Uint16Array(totalIndices);
 
-        const mergedPos = new Float32Array(totalLen);
-        const mergedNorm = new Float32Array(totalLen);
-        const mergedCol = new Float32Array(totalLen);
-
-        let offset = 0;
+        let vOffset = 0;
+        let iOffset = 0;
         for (const pt of parts) {
-          mergedPos.set(pt.pos, offset);
-          mergedNorm.set(pt.norm, offset);
-          mergedCol.set(pt.col, offset);
-          offset += pt.pos.length;
+          mergedPos.set(pt.pos, vOffset * 3);
+          mergedNorm.set(pt.norm, vOffset * 3);
+          mergedCol.set(pt.col, vOffset * 3);
+          if (pt.idx) {
+            for (let j = 0; j < pt.idx.length; j++) {
+              mergedIdx[iOffset + j] = pt.idx[j] + vOffset;
+            }
+            iOffset += pt.idx.length;
+          } else {
+            for (let j = 0; j < pt.vCount; j++) {
+              mergedIdx[iOffset + j] = vOffset + j;
+            }
+            iOffset += pt.vCount;
+          }
+          vOffset += pt.vCount;
         }
 
         const geo = new THREE.BufferGeometry();
         geo.setAttribute('position', new THREE.BufferAttribute(mergedPos, 3));
         geo.setAttribute('normal', new THREE.BufferAttribute(mergedNorm, 3));
         geo.setAttribute('color', new THREE.BufferAttribute(mergedCol, 3));
+        geo.setIndex(new THREE.BufferAttribute(mergedIdx, 1));
         return geo;
       };
 
       this._stickmanRunFrames = [];
-      const FRAME_COUNT = 24;
+      const FRAME_COUNT = 10;
       for (let f = 0; f < FRAME_COUNT; f++) {
         const phase = (f / FRAME_COUNT) * Math.PI * 2;
         this._stickmanRunFrames.push(buildPoseGeo(phase, true));
@@ -5777,7 +5759,7 @@
 
     setStickmanColor(sm, colorKey) {
       if (sm.userData.colorKey === colorKey) return;
-      this.initSharedStickmanResources();
+      if (!this._stickColorMats) this.initSharedStickmanResources();
       sm.material = this._stickColorMats[colorKey] || this._stickColorMats.blue;
       sm.userData.colorKey = colorKey;
     }
@@ -6062,7 +6044,11 @@
 
           if (frameCount > 0) {
             const normPhase = (((phase % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2)) / (Math.PI * 2);
-            sm.geometry = frames[Math.floor(normPhase * frameCount) % frameCount];
+            const fIdx = Math.floor(normPhase * frameCount) % frameCount;
+            if (sm.userData.fIdx !== fIdx) {
+              sm.userData.fIdx = fIdx;
+              sm.geometry = frames[fIdx];
+            }
           }
 
           // Steady y = 0 & rotation.z = 0 (ZERO head/body jiggle!), facing running direction while arms & legs actively pump!
@@ -6124,8 +6110,13 @@
           if (isMarchingForward && frameCount > 0) {
             const phase = now * 0.030 - r * 0.85 + m * 0.55;
             const normPhase = (((phase % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2)) / (Math.PI * 2);
-            sm.geometry = frames[Math.floor(normPhase * frameCount) % frameCount];
-          } else if (this._stickmanIdleGeo) {
+            const fIdx = Math.floor(normPhase * frameCount) % frameCount;
+            if (sm.userData.fIdx !== fIdx) {
+              sm.userData.fIdx = fIdx;
+              sm.geometry = frames[fIdx];
+            }
+          } else if (this._stickmanIdleGeo && sm.userData.fIdx !== -1) {
+            sm.userData.fIdx = -1;
             sm.geometry = this._stickmanIdleGeo;
           }
 
@@ -6230,7 +6221,11 @@
       this.profile.highestLevel = this.levelNum;
 
       // Refresh 3D World & Park Architecture so every Level Up reveals a fresh architectural theme!
-      this.buildEnvironment3D(this.levelNum);
+      if (this._builtEnvLevelNum !== this.levelNum || this.envGroup.children.length === 0) {
+        this.buildEnvironment3D(this.levelNum);
+      } else {
+        this.syncLevelArchitecturePropsOverlay();
+      }
 
       const levelData = LevelGenerator.generateLevel(this.levelNum);
       this.totalBusesSentThisLevel = 0;

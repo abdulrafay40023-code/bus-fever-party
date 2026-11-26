@@ -136,7 +136,7 @@ html, body {
   position: absolute;
   inset: 0;
   z-index: 190;
-  background: #132238 url('loading_bg.jpg?v=55') center center / 100% 100% no-repeat;
+  background: #132238 url('loading_bg.jpg?v=74') center center / 100% 100% no-repeat;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
@@ -6086,7 +6086,7 @@ body, #app-wrapper, #game-container {
 .level-arch-3d-prop {
   position: absolute;
   display: block;
-  background-image: url('level_arch_atlas_hd.png?v=73');
+  background-image: url('level_arch_atlas_hd.png?v=74');
   background-size: 600% 100%;
   background-repeat: no-repeat;
   transform: translate(-50%, -60%);
