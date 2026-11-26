@@ -1975,17 +1975,21 @@
       const vehById = {};
       for (const v of vehicles) vehById[v.id] = v;
 
-      // Split initially unblocked outer vehicles into Winning Circle-Matched Vehicles vs Decoy Withheld-Color Vehicles!
+      // Split initially unblocked outer vehicles by how many inner vehicles they block:
+      // - Vehicles that block inner vehicles get activeCircleColors (winning entry keys whose passengers ARE in the circle!)
+      // - Leaf unblocked vehicles (that don't block inner progression) get withheldColors (decoy traps whose colors are 100% MISSING from the circle!)
       const initialFreeVehicles = vehicles.filter((v) => !this.findBlockingVehicle(v, vehicles));
       const decoyIds = new Set();
       if (withheldColors.length > 0 && initialFreeVehicles.length >= 2) {
-        const numWinners = Math.max(1, Math.min(2, Math.floor(initialFreeVehicles.length / 2)));
-        for (let i = 0; i < initialFreeVehicles.length; i++) {
+        const countBlockedBy = (cand) => vehicles.filter((other) => other.id !== cand.id && this.findBlockingVehicle(other, vehicles)?.id === cand.id).length;
+        const sortedFree = [...initialFreeVehicles].sort((a, b) => countBlockedBy(b) - countBlockedBy(a));
+        const numWinners = Math.max(1, Math.min(2, Math.ceil(sortedFree.length * 0.45)));
+        for (let i = 0; i < sortedFree.length; i++) {
           if (i < numWinners) {
-            initialFreeVehicles[i].color = activeCircleColors[i % activeCircleColors.length];
+            sortedFree[i].color = activeCircleColors[i % activeCircleColors.length];
           } else {
-            initialFreeVehicles[i].color = withheldColors[(i - numWinners) % withheldColors.length];
-            decoyIds.add(initialFreeVehicles[i].id);
+            sortedFree[i].color = withheldColors[(i - numWinners) % withheldColors.length];
+            decoyIds.add(sortedFree[i].id);
           }
         }
       }
@@ -1995,8 +1999,9 @@
       const rand = this.createSeededRandom(levelNum * 4999 + 71);
       let accumRows = 0;
       let withheldAssignIdx = 0;
-      // Keep withheldColors completely out of the 32-row circle AND the front 8 feeder rows (40 rows total)
-      const WAVE1_ROW_CUTOFF = RING_SLOT_COUNT + 8;
+      const totalLevelRows = vehicles.reduce((sum, v) => sum + Math.max(1, Math.round(v.cap / ROW_PASSENGERS)), 0);
+      // Reserve at least 12-16 rows at the end for withheldColors so withheldColors are ALWAYS present on vehicles and absent from the initial circle!
+      const WAVE1_ROW_CUTOFF = Math.min(RING_SLOT_COUNT, Math.max(16, totalLevelRows - 14));
 
       while (simRemaining.length > 0) {
         let unblocked = simRemaining.filter((v) => !this.findBlockingVehicle(v, simRemaining));
@@ -2004,32 +2009,30 @@
           unblocked = [simRemaining[0]];
         }
 
-        // During Wave 1 (the 32 circle rows + front 8 feeder rows), peel non-decoy unblocked vehicles first
-        // and guarantee their color is strictly in activeCircleColors (so 0 rows of withheldColors appear in the moving circle!)
+        // During Wave 1 (the initial revolving circle rows), strictly hold decoyIds back in the lot
+        // and peel non-decoy unblocked vehicles using activeCircleColors!
         let candidates = unblocked;
         if (accumRows < WAVE1_ROW_CUTOFF && unblocked.length > 1) {
-          const nonDecoy = unblocked.filter((v) => !decoyIds.has(v.id) && !withheldColors.includes(v.color));
+          const nonDecoy = unblocked.filter((v) => !decoyIds.has(v.id));
           if (nonDecoy.length > 0) {
-            candidates = nonDecoy;
-          } else {
-            const notDecoyId = unblocked.filter((v) => !decoyIds.has(v.id));
-            if (notDecoyId.length > 0) candidates = notDecoyId;
+            const nonWithheld = nonDecoy.filter((v) => !withheldColors.includes(v.color));
+            candidates = nonWithheld.length > 0 ? nonWithheld : nonDecoy;
           }
         }
 
         const pick = candidates[Math.floor(rand() * candidates.length)];
         const vRows = Math.max(1, Math.round(pick.cap / ROW_PASSENGERS));
 
-        if (accumRows < WAVE1_ROW_CUTOFF) {
-          // Vehicle has rows inside Wave 1 (initial 32-row circle + front 8 feeder rows) -> must strictly use an activeCircleColor!
+        if (accumRows + vRows <= WAVE1_ROW_CUTOFF && !decoyIds.has(pick.id)) {
+          // Vehicle's rows sit inside the initial circle -> must strictly use an activeCircleColor!
           if (withheldColors.includes(pick.color)) {
             const newCol = activeCircleColors[exitSequence.length % activeCircleColors.length];
             pick.color = newCol;
             if (vehById[pick.id]) vehById[pick.id].color = newCol;
           }
-        } else if (withheldColors.length > 0 && accumRows < WAVE1_ROW_CUTOFF + 36) {
-          // Vehicle belongs to Wave 2 (deeper in feeder roads) -> ensure withheldColors appear prominently on Wave 2 & decoy vehicles!
-          if (decoyIds.has(pick.id) || withheldAssignIdx < withheldColors.length * 4) {
+        } else if (withheldColors.length > 0) {
+          // Vehicle belongs to Wave 2 (feeder road waves + decoy vehicles) -> assign withheldColors so they are in the lot & feeder road, NOT in the circle!
+          if (decoyIds.has(pick.id) || withheldAssignIdx < withheldColors.length * 4 || accumRows >= RING_SLOT_COUNT) {
             const wCol = withheldColors[withheldAssignIdx % withheldColors.length];
             pick.color = wCol;
             if (vehById[pick.id]) vehById[pick.id].color = wCol;
@@ -2044,8 +2047,37 @@
       }
 
       // Convert exitSequence capacities into rows of 4 passengers (ROW_PASSENGERS = 4).
-      // Mix colors in 1-2 row chunks within each 3-vehicle wave so the circle has mixed colors (while strictly excluding withheldColors!)
+      // Strictly keep Wave 1 (first WAVE1_ROW_CUTOFF rows) and Wave 2 separate so withheldColors NEVER leak into the initial 32-slot circle!
       const allRows = [];
+      let curRowSum = 0;
+      const wave1Vehicles = [];
+      const wave2Vehicles = [];
+      for (const v of exitSequence) {
+        const rCnt = Math.max(1, Math.round(v.cap / ROW_PASSENGERS));
+        if (curRowSum + rCnt <= RING_SLOT_COUNT && !withheldColors.includes(v.color)) {
+          wave1Vehicles.push(v);
+          curRowSum += rCnt;
+        } else {
+          wave2Vehicles.push(v);
+        }
+      }
+      // If wave1Vehicles has fewer than 32 rows, top up wave1 rows by recoloring the earliest wave2 vehicles to activeCircleColors
+      // while keeping all decoyIds and remaining wave2 vehicles strictly in withheldColors!
+      while (curRowSum < RING_SLOT_COUNT && wave2Vehicles.length > Math.max(3, decoyIds.size)) {
+        const promoteIdx = wave2Vehicles.findIndex((v) => !decoyIds.has(v.id));
+        if (promoteIdx === -1) break;
+        const promV = wave2Vehicles.splice(promoteIdx, 1)[0];
+        const newCol = activeCircleColors[wave1Vehicles.length % activeCircleColors.length];
+        promV.color = newCol;
+        if (vehById[promV.id]) vehById[promV.id].color = newCol;
+        wave1Vehicles.push(promV);
+        curRowSum += Math.max(1, Math.round(promV.cap / ROW_PASSENGERS));
+      }
+
+      const orderedSeq = [...wave1Vehicles, ...wave2Vehicles];
+      exitSequence.length = 0;
+      exitSequence.push(...orderedSeq);
+
       const waveSize = 3;
       const maxChunkRows = 2;
 
