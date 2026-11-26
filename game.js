@@ -710,80 +710,80 @@
     }
 
     static buildLevel1() {
-      // Level 1: 10 Vehicles (Cross Pattern), 3 Colors (Yellow, Blue, Red)
+      // Level 1: 10 Vehicles (Cross Pattern), 3 Colors (Yellow, Blue, Red) — Small Car = 4, Big Bus = 8 or 16!
       const vehicles = [
-        { id: 'l1_1', x: -2.0, z: 1.0, dir: 'LEFT', type: 'bus', color: 'yellow', cap: 24 },
-        { id: 'l1_2', x: 2.0, z: 1.0, dir: 'RIGHT', type: 'bus', color: 'blue', cap: 24 },
-        { id: 'l1_3', x: -1.6, z: 3.2, dir: 'UP', type: 'car', color: 'red', cap: 16 },
-        { id: 'l1_4', x: 0.0, z: 3.2, dir: 'DOWN', type: 'bus', color: 'yellow', cap: 24 },
-        { id: 'l1_5', x: 1.6, z: 3.2, dir: 'UP', type: 'car', color: 'blue', cap: 16 },
-        { id: 'l1_6', x: -2.8, z: 5.5, dir: 'LEFT', type: 'car', color: 'blue', cap: 16 },
-        { id: 'l1_7', x: 2.8, z: 5.5, dir: 'RIGHT', type: 'car', color: 'red', cap: 16 },
-        { id: 'l1_8', x: 0.0, z: 6.2, dir: 'DOWN', type: 'car', color: 'red', cap: 16 },
-        { id: 'l1_9', x: -2.0, z: 8.6, dir: 'LEFT', type: 'bus', color: 'red', cap: 24 },
-        { id: 'l1_10', x: 2.0, z: 8.6, dir: 'RIGHT', type: 'bus', color: 'blue', cap: 24 }
+        { id: 'l1_1', x: -2.0, z: 1.0, dir: 'LEFT', type: 'bus', color: 'yellow', cap: 16 },
+        { id: 'l1_2', x: 2.0, z: 1.0, dir: 'RIGHT', type: 'bus', color: 'blue', cap: 16 },
+        { id: 'l1_3', x: -1.6, z: 3.2, dir: 'UP', type: 'car', color: 'red', cap: 4 },
+        { id: 'l1_4', x: 0.0, z: 3.2, dir: 'DOWN', type: 'bus', color: 'yellow', cap: 8 },
+        { id: 'l1_5', x: 1.6, z: 3.2, dir: 'UP', type: 'car', color: 'blue', cap: 4 },
+        { id: 'l1_6', x: -2.8, z: 5.5, dir: 'LEFT', type: 'car', color: 'blue', cap: 4 },
+        { id: 'l1_7', x: 2.8, z: 5.5, dir: 'RIGHT', type: 'car', color: 'red', cap: 4 },
+        { id: 'l1_8', x: 0.0, z: 6.2, dir: 'DOWN', type: 'car', color: 'red', cap: 4 },
+        { id: 'l1_9', x: -2.0, z: 8.6, dir: 'LEFT', type: 'bus', color: 'red', cap: 16 },
+        { id: 'l1_10', x: 2.0, z: 8.6, dir: 'RIGHT', type: 'bus', color: 'blue', cap: 8 }
       ];
       return this.finalizeWithRevolvingFeederQueues(1, vehicles);
     }
 
     static buildLevel2() {
-      // Level 2: 14 Vehicles (Interlocking Diamond), Fresh Colors (Green, Purple, Orange!)
+      // Level 2: 14 Vehicles (Interlocking Diamond), Fresh Colors (Green, Purple, Orange!) — Small Car = 4, Big Bus = 8 or 16!
       const vehicles = [
-        { id: 'l2_1', x: -2.1, z: 0.7, dir: 'RIGHT', type: 'bus', color: 'green', cap: 28, tilt: -0.1 },
-        { id: 'l2_2', x: 2.1, z: 0.7, dir: 'LEFT', type: 'bus', color: 'purple', cap: 28, tilt: 0.1 },
+        { id: 'l2_1', x: -2.1, z: 0.7, dir: 'RIGHT', type: 'bus', color: 'green', cap: 16, tilt: -0.1 },
+        { id: 'l2_2', x: 2.1, z: 0.7, dir: 'LEFT', type: 'bus', color: 'purple', cap: 16, tilt: 0.1 },
 
-        { id: 'l2_3', x: -2.8, z: 2.8, dir: 'UP', type: 'car', color: 'orange', cap: 16 },
-        { id: 'l2_4', x: -1.2, z: 2.8, dir: 'DOWN', type: 'car', color: 'purple', cap: 16 },
-        { id: 'l2_5', x: 1.2, z: 2.8, dir: 'DOWN', type: 'car', color: 'green', cap: 16 },
-        { id: 'l2_6', x: 2.8, z: 2.8, dir: 'UP', type: 'car', color: 'orange', cap: 16 },
+        { id: 'l2_3', x: -2.8, z: 2.8, dir: 'UP', type: 'car', color: 'orange', cap: 4 },
+        { id: 'l2_4', x: -1.2, z: 2.8, dir: 'DOWN', type: 'car', color: 'purple', cap: 4 },
+        { id: 'l2_5', x: 1.2, z: 2.8, dir: 'DOWN', type: 'car', color: 'green', cap: 4 },
+        { id: 'l2_6', x: 2.8, z: 2.8, dir: 'UP', type: 'car', color: 'orange', cap: 4 },
 
-        { id: 'l2_7', x: -2.4, z: 4.9, dir: 'LEFT', type: 'bus', color: 'orange', cap: 28 },
-        { id: 'l2_8', x: 2.4, z: 4.9, dir: 'RIGHT', type: 'bus', color: 'purple', cap: 28 },
+        { id: 'l2_7', x: -2.4, z: 4.9, dir: 'LEFT', type: 'bus', color: 'orange', cap: 8 },
+        { id: 'l2_8', x: 2.4, z: 4.9, dir: 'RIGHT', type: 'bus', color: 'purple', cap: 8 },
 
-        { id: 'l2_9', x: -3.2, z: 7.0, dir: 'LEFT', type: 'car', color: 'green', cap: 16 },
-        { id: 'l2_10', x: -1.1, z: 7.1, dir: 'DOWN', type: 'car', color: 'orange', cap: 16 },
-        { id: 'l2_11', x: 1.1, z: 7.1, dir: 'DOWN', type: 'car', color: 'purple', cap: 16 },
-        { id: 'l2_12', x: 3.2, z: 7.0, dir: 'RIGHT', type: 'car', color: 'green', cap: 16 },
+        { id: 'l2_9', x: -3.2, z: 7.0, dir: 'LEFT', type: 'car', color: 'green', cap: 4 },
+        { id: 'l2_10', x: -1.1, z: 7.1, dir: 'DOWN', type: 'car', color: 'orange', cap: 4 },
+        { id: 'l2_11', x: 1.1, z: 7.1, dir: 'DOWN', type: 'car', color: 'purple', cap: 4 },
+        { id: 'l2_12', x: 3.2, z: 7.0, dir: 'RIGHT', type: 'car', color: 'green', cap: 4 },
 
-        { id: 'l2_13', x: -2.15, z: 9.5, dir: 'LEFT', type: 'bus', color: 'purple', cap: 28 },
-        { id: 'l2_14', x: 2.15, z: 9.5, dir: 'RIGHT', type: 'bus', color: 'green', cap: 28 }
+        { id: 'l2_13', x: -2.15, z: 9.5, dir: 'LEFT', type: 'bus', color: 'purple', cap: 16 },
+        { id: 'l2_14', x: 2.15, z: 9.5, dir: 'RIGHT', type: 'bus', color: 'green', cap: 16 }
       ];
       return this.finalizeWithRevolvingFeederQueues(2, vehicles);
     }
 
     /**
-     * Exact 19-Vehicle Replica of Video Level 3 (00:28 - 01:21)!
+     * Exact 19-Vehicle Replica of Video Level 3 (00:28 - 01:21)! — Small Car = 4, Big Bus = 8 or 16!
      */
     static buildExactVideoLevel3() {
       const vehicles = [
-        { id: 'v3_top_l', x: -2.05, z: 0.55, dir: 'RIGHT', type: 'bus', color: 'blue', cap: 40, tilt: -0.12 },
-        { id: 'v3_top_r', x: 2.05, z: 0.55, dir: 'RIGHT', type: 'bus', color: 'yellow', cap: 32, tilt: 0.12 },
+        { id: 'v3_top_l', x: -2.05, z: 0.55, dir: 'RIGHT', type: 'bus', color: 'blue', cap: 16, tilt: -0.12 },
+        { id: 'v3_top_r', x: 2.05, z: 0.55, dir: 'RIGHT', type: 'bus', color: 'yellow', cap: 8, tilt: 0.12 },
 
-        { id: 'v3_r1_1', x: -3.0, z: 2.75, dir: 'UP', type: 'car', color: 'yellow', cap: 16 },
-        { id: 'v3_r1_2', x: -1.5, z: 2.75, dir: 'UP', type: 'car', color: 'red', cap: 16 },
-        { id: 'v3_r1_3', x: 0.0, z: 2.65, dir: 'DOWN', type: 'bus', color: 'blue', cap: 40 },
-        { id: 'v3_r1_4', x: 1.5, z: 2.75, dir: 'UP', type: 'car', color: 'red', cap: 16 },
-        { id: 'v3_r1_5', x: 3.0, z: 2.75, dir: 'UP', type: 'car', color: 'yellow', cap: 16 },
+        { id: 'v3_r1_1', x: -3.0, z: 2.75, dir: 'UP', type: 'car', color: 'yellow', cap: 4 },
+        { id: 'v3_r1_2', x: -1.5, z: 2.75, dir: 'UP', type: 'car', color: 'red', cap: 4 },
+        { id: 'v3_r1_3', x: 0.0, z: 2.65, dir: 'DOWN', type: 'bus', color: 'blue', cap: 16 },
+        { id: 'v3_r1_4', x: 1.5, z: 2.75, dir: 'UP', type: 'car', color: 'red', cap: 4 },
+        { id: 'v3_r1_5', x: 3.0, z: 2.75, dir: 'UP', type: 'car', color: 'yellow', cap: 4 },
 
-        { id: 'v3_r2_1', x: -3.15, z: 4.75, dir: 'LEFT', type: 'car', color: 'red', cap: 16 },
-        { id: 'v3_r2_2', x: 0.0, z: 4.75, dir: 'LEFT', type: 'bus', color: 'red', cap: 40 },
-        { id: 'v3_r2_3', x: 3.15, z: 4.75, dir: 'LEFT', type: 'car', color: 'red', cap: 16 },
+        { id: 'v3_r2_1', x: -3.15, z: 4.75, dir: 'LEFT', type: 'car', color: 'red', cap: 4 },
+        { id: 'v3_r2_2', x: 0.0, z: 4.75, dir: 'LEFT', type: 'bus', color: 'red', cap: 16 },
+        { id: 'v3_r2_3', x: 3.15, z: 4.75, dir: 'LEFT', type: 'car', color: 'red', cap: 4 },
 
-        { id: 'v3_mid_1', x: 0.0, z: 6.7, dir: 'DOWN', type: 'car', color: 'red', cap: 16 },
-        { id: 'v3_mid_2', x: 0.0, z: 8.8, dir: 'DOWN', type: 'car', color: 'yellow', cap: 16 },
+        { id: 'v3_mid_1', x: 0.0, z: 6.7, dir: 'DOWN', type: 'car', color: 'red', cap: 4 },
+        { id: 'v3_mid_2', x: 0.0, z: 8.8, dir: 'DOWN', type: 'car', color: 'yellow', cap: 4 },
 
-        { id: 'v3_l_1', x: -4.2, z: 6.75, dir: 'LEFT', type: 'car', color: 'yellow', cap: 16 },
-        { id: 'v3_l_2', x: -2.0, z: 6.75, dir: 'LEFT', type: 'car', color: 'blue', cap: 16 },
-        { id: 'v3_l_3', x: -4.2, z: 8.15, dir: 'LEFT', type: 'car', color: 'blue', cap: 16 },
-        { id: 'v3_l_4', x: -2.0, z: 8.15, dir: 'LEFT', type: 'car', color: 'blue', cap: 16 },
+        { id: 'v3_l_1', x: -4.2, z: 6.75, dir: 'LEFT', type: 'car', color: 'yellow', cap: 4 },
+        { id: 'v3_l_2', x: -2.0, z: 6.75, dir: 'LEFT', type: 'car', color: 'blue', cap: 4 },
+        { id: 'v3_l_3', x: -4.2, z: 8.15, dir: 'LEFT', type: 'car', color: 'blue', cap: 4 },
+        { id: 'v3_l_4', x: -2.0, z: 8.15, dir: 'LEFT', type: 'car', color: 'blue', cap: 4 },
 
-        { id: 'v3_rt_1', x: 2.0, z: 6.75, dir: 'RIGHT', type: 'car', color: 'blue', cap: 16 },
-        { id: 'v3_rt_2', x: 4.2, z: 6.75, dir: 'RIGHT', type: 'car', color: 'yellow', cap: 16 },
-        { id: 'v3_rt_3', x: 2.0, z: 8.15, dir: 'RIGHT', type: 'car', color: 'blue', cap: 16 },
-        { id: 'v3_rt_4', x: 4.2, z: 8.15, dir: 'RIGHT', type: 'car', color: 'blue', cap: 16 },
+        { id: 'v3_rt_1', x: 2.0, z: 6.75, dir: 'RIGHT', type: 'car', color: 'blue', cap: 4 },
+        { id: 'v3_rt_2', x: 4.2, z: 6.75, dir: 'RIGHT', type: 'car', color: 'yellow', cap: 4 },
+        { id: 'v3_rt_3', x: 2.0, z: 8.15, dir: 'RIGHT', type: 'car', color: 'blue', cap: 4 },
+        { id: 'v3_rt_4', x: 4.2, z: 8.15, dir: 'RIGHT', type: 'car', color: 'blue', cap: 4 },
 
-        { id: 'v3_bot_l', x: -2.15, z: 10.45, dir: 'LEFT', type: 'bus', color: 'yellow', cap: 40 },
-        { id: 'v3_bot_r', x: 2.15, z: 10.45, dir: 'RIGHT', type: 'bus', color: 'blue', cap: 40 }
+        { id: 'v3_bot_l', x: -2.15, z: 10.45, dir: 'LEFT', type: 'bus', color: 'yellow', cap: 8 },
+        { id: 'v3_bot_r', x: 2.15, z: 10.45, dir: 'RIGHT', type: 'bus', color: 'blue', cap: 16 }
       ];
 
       return this.finalizeWithRevolvingFeederQueues(3, vehicles);
@@ -879,11 +879,9 @@
         }
       }
 
-      // Bus capacities scale with level difficulty (28 -> 32 -> 36 -> 40 -> 44)
-      const busCap = levelNum < 6 ? 28 : levelNum < 10 ? 32 : levelNum < 16 ? 36 : levelNum < 25 ? 40 : 44;
-      const vanCap = levelNum < 12 ? 20 : 24;
-
-      // Anti-streak balanced color assignment so adjacent vehicles have rich, tricky color variety!
+      // Strict Vehicle Capacities requested by User:
+      // - Small Car / Van (type !== 'bus'): strictly 4 passengers (1 full row of 4)
+      // - Large Bus (type === 'bus'): strictly 8 or 16 passengers (2 rows or 4 rows of 4)
       const colorBag = [];
       while (colorBag.length < slots.length + colorPool.length) {
         const copy = [...colorPool];
@@ -895,6 +893,7 @@
       }
 
       let prevCol = null;
+      let busIdx = 0;
       const vehicles = slots.map((s, idx) => {
         let color = colorBag[idx];
         if (color === prevCol && colorPool.length > 1) {
@@ -902,7 +901,11 @@
         }
         prevCol = color;
         const isVan = s.type !== 'bus' && (s.subType === 'van' || idx % 3 === 1);
-        const cap = s.type === 'bus' ? busCap : isVan ? vanCap : 16;
+        let cap = 4;
+        if (s.type === 'bus') {
+          busIdx++;
+          cap = (busIdx % 2 === 1) ? 16 : 8;
+        }
         return {
           id: `lvl${levelNum}_v${idx}`,
           x: s.x,
@@ -1597,7 +1600,7 @@
       const oppositeDir = (d) => (d === 'UP' ? 'DOWN' : d === 'DOWN' ? 'UP' : d === 'LEFT' ? 'RIGHT' : 'LEFT');
       let guard = 0;
 
-      while (remaining.length > 0 && guard < 220) {
+      while (remaining.length > 0 && guard < 260) {
         guard++;
         const unblocked = remaining.filter((v) => !this.findBlockingVehicle(v, remaining));
         if (unblocked.length > 0) {
@@ -1623,36 +1626,52 @@
         // Next try 90-degree turns ONLY if the turned vehicle still has 0 OBB overlap with all vehicles in the lot!
         if (!fixed) {
           for (const v of remaining) {
-            if (Math.abs(v.tilt || 0) > 0.25) continue;
             const origDir = v.dir;
+            const origTilt = v.tilt || 0;
             for (const d of dirs) {
               v.dir = d;
-              if (!this.findBlockingVehicle(v, remaining) && !this.hasAnyOBBOverlap(v, vehicles, 0.28)) {
+              v.tilt = 0;
+              if (!this.findBlockingVehicle(v, remaining) && !this.hasAnyOBBOverlap(v, vehicles, 0.24)) {
                 fixed = true;
                 break;
               }
             }
             if (fixed) break;
             v.dir = origDir;
+            v.tilt = origTilt;
           }
         }
 
-        // Fallback: flip the outermost remaining vehicle 180° (or point outward if collision-free)
+        // Fallback: orient the outermost remaining vehicle in a genuinely unblocked direction (NEVER shift a still-blocked vehicle!)
         if (!fixed) {
           remaining.sort((a, b) => Math.hypot(b.x, b.z - 5.5) - Math.hypot(a.x, a.z - 5.5));
-          const outer = remaining[0];
-          const flippedD = oppositeDir(outer.dir);
-          outer.dir = flippedD;
-          if (this.findBlockingVehicle(outer, remaining)) {
-            const oldTilt = outer.tilt || 0;
-            const outD = outer.z < 5.5 ? 'UP' : 'DOWN';
-            outer.tilt = 0;
-            outer.dir = outD;
-            if (this.hasAnyOBBOverlap(outer, vehicles, 0.26)) {
-              outer.tilt = oldTilt;
-              outer.dir = flippedD;
+          let unlockedAny = false;
+          for (const cand of remaining) {
+            const origD = cand.dir;
+            const origT = cand.tilt || 0;
+            const prefDirs = cand.z < 3.5
+              ? ['UP', 'LEFT', 'RIGHT', 'DOWN']
+              : cand.z > 8.0
+                ? ['DOWN', 'LEFT', 'RIGHT', 'UP']
+                : cand.x < 0
+                  ? ['LEFT', 'UP', 'DOWN', 'RIGHT']
+                  : ['RIGHT', 'UP', 'DOWN', 'LEFT'];
+            for (const d of prefDirs) {
+              cand.dir = d;
+              cand.tilt = 0;
+              if (!this.findBlockingVehicle(cand, remaining)) {
+                unlockedAny = true;
+                break;
+              }
             }
-            // Peel outer so the solver never loops infinitely
+            if (unlockedAny) break;
+            cand.dir = origD;
+            cand.tilt = origT;
+          }
+          if (!unlockedAny) {
+            const outer = remaining[0];
+            outer.tilt = 0;
+            outer.dir = outer.z < 5.5 ? 'UP' : 'DOWN';
             remaining.shift();
           }
         }
@@ -1665,6 +1684,21 @@
      * plus calculates the level's Countdown Timer!
      */
     static finalizeWithRevolvingFeederQueues(levelNum, vehicles) {
+      // Strictly enforce User's requested vehicle capacities across all 5000 levels:
+      // - Small Car / Van (type !== 'bus'): strictly 4 passengers (1 row of 4)
+      // - Large Bus (type === 'bus'): strictly 8 or 16 passengers (2 rows or 4 rows of 4)
+      let busToggle = 0;
+      vehicles.forEach((v) => {
+        if (v.type === 'bus') {
+          if (v.cap !== 8 && v.cap !== 16) {
+            busToggle++;
+            v.cap = (busToggle % 2 === 1) ? 16 : 8;
+          }
+        } else {
+          v.cap = 4;
+        }
+      });
+
       this.enforceCleanVehicleSpacing(vehicles, 0.35);
       this.ensureNoCyclicDeadlock(vehicles);
       const simRemaining = vehicles.map((v) => ({ ...v }));
@@ -1684,23 +1718,18 @@
       }
 
       // Convert exitSequence capacities into rows of 4 passengers (ROW_PASSENGERS = 4)
-      // Keep waveSize = 4 (~20-26 rows < 32 ring slots!) so unblocked vehicles' matching colors
-      // smoothly enter the 32-row spinning loop without unfair instant-slot-lock ambushes!
+      // Keep waveSize = 5..6 vehicles (~9-13 rows per wave, so Waves 1, 2 & 3 ALL fit inside the 32-row spinning loop!)
+      // guaranteeing 100% of required passengers for playable vehicles are reachable without slot deadlock!
       const allRows = [];
-      // Progressive multi-wave passenger mixing: larger waves on higher levels require real slot planning!
-      const waveSize = levelNum <= 3
-        ? 3
-        : Math.min(18, 6 + Math.floor((levelNum - 4) * 0.75));
+      const waveSize = levelNum <= 3 ? 4 : 6;
 
       for (let w = 0; w < exitSequence.length; w += waveSize) {
         const waveVehicles = exitSequence.slice(w, w + waveSize);
-        // Aggregate rows by color within each wave first so small cars don't create 1-row rainbow stripes,
-        // then emit bold 4..7 row contiguous color blocks (with occasional 1-2 row accent) like the reference video!
+        // Aggregate rows by color within each wave so same-color rows form clean contiguous color blocks!
         const colorRowCounts = {};
         const colorOrder = [];
         for (const v of waveVehicles) {
-          const rows = Math.round(v.cap / ROW_PASSENGERS);
-          if (rows <= 0) continue;
+          const rows = Math.max(1, Math.round(v.cap / ROW_PASSENGERS));
           if (!colorRowCounts[v.color]) {
             colorRowCounts[v.color] = 0;
             colorOrder.push(v.color);
@@ -1712,12 +1741,7 @@
         for (const col of colorOrder) {
           let rem = colorRowCounts[col];
           while (rem > 0) {
-            let chunkLen = rem;
-            if (rem >= 8) {
-              chunkLen = rand() < 0.75 ? 6 : 5;
-            } else if (rem >= 5) {
-              chunkLen = rem;
-            }
+            const chunkLen = rem >= 7 ? 5 : rem;
             const chunk = [];
             for (let r = 0; r < chunkLen; r++) {
               chunk.push({ color: col, count: ROW_PASSENGERS });
@@ -1727,9 +1751,12 @@
           }
         }
 
-        for (let i = waveChunks.length - 1; i > 0; i--) {
-          const j = Math.floor(rand() * (i + 1));
-          [waveChunks[i], waveChunks[j]] = [waveChunks[j], waveChunks[i]];
+        // Keep wave 0 in exact solvable exit order; gently shuffle chunks within later waves
+        if (w > 0) {
+          for (let i = waveChunks.length - 1; i > 0; i--) {
+            const j = Math.floor(rand() * (i + 1));
+            [waveChunks[i], waveChunks[j]] = [waveChunks[j], waveChunks[i]];
+          }
         }
 
         for (const ch of waveChunks) {
@@ -1737,37 +1764,25 @@
         }
       }
 
-      // Ensure the #1 key exit vehicle's color block is present inside the initial 32-slot oval ring so every level is 100% solvable!
+      // Guarantee that ALL initial unblocked vehicles have their full required passenger rows inside the 32-slot oval ring!
       const ringWindow = Math.min(RING_SLOT_COUNT, allRows.length);
-      if (levelNum <= 3) {
-        const initialUnblockedColors = new Set(
-          vehicles
-            .filter((v) => !this.findBlockingVehicle(v, vehicles))
-            .map((v) => v.color)
-        );
-        initialUnblockedColors.forEach((col) => {
-          const inRing = allRows.slice(0, ringWindow).some((r) => r && r.color === col);
-          if (!inRing) {
-            const laterIdx = allRows.findIndex((r, idx) => idx >= ringWindow && r && r.color === col);
-            if (laterIdx !== -1 && ringWindow > 4) {
-              const tmp = allRows[ringWindow - 1];
-              allRows[ringWindow - 1] = allRows[laterIdx];
-              allRows[laterIdx] = tmp;
-            }
-          }
-        });
-      } else if (exitSequence.length > 0) {
-        const keyCol = exitSequence[0].color;
-        const keyRowsNeeded = Math.min(5, Math.round(exitSequence[0].cap / ROW_PASSENGERS));
-        let curKeyInRing = allRows.slice(0, ringWindow).filter((r) => r && r.color === keyCol).length;
-        for (let fIdx = ringWindow; fIdx < allRows.length && curKeyInRing < keyRowsNeeded; fIdx++) {
-          if (allRows[fIdx] && allRows[fIdx].color === keyCol) {
-            const rPos = Math.min(ringWindow - 1, 6 + curKeyInRing);
-            if (allRows[rPos].color !== keyCol) {
-              const tmp = allRows[rPos];
-              allRows[rPos] = allRows[fIdx];
-              allRows[fIdx] = tmp;
-              curKeyInRing++;
+      if (exitSequence.length > 0) {
+        for (let eIdx = 0; eIdx < Math.min(3, exitSequence.length); eIdx++) {
+          const keyVeh = exitSequence[eIdx];
+          const keyCol = keyVeh.color;
+          const keyRowsNeeded = Math.max(1, Math.round(keyVeh.cap / ROW_PASSENGERS));
+          let curKeyInRing = allRows.slice(0, ringWindow).filter((r) => r && r.color === keyCol).length;
+          for (let fIdx = ringWindow; fIdx < allRows.length && curKeyInRing < keyRowsNeeded; fIdx++) {
+            if (allRows[fIdx] && allRows[fIdx].color === keyCol) {
+              for (let rPos = ringWindow - 1; rPos >= 4; rPos--) {
+                if (allRows[rPos].color !== keyCol) {
+                  const tmp = allRows[rPos];
+                  allRows[rPos] = allRows[fIdx];
+                  allRows[fIdx] = tmp;
+                  curKeyInRing++;
+                  break;
+                }
+              }
             }
           }
         }
@@ -5895,28 +5910,115 @@
         this.ringRotationAngle = (this.ringRotationAngle + dt * loopSpeed) % (Math.PI * 2);
 
         // Refill any empty slots in the revolving oval ring as they pass the Left (PI) or Right (0) Curved Feeder Junctions!
-        const juncTol = this._isHoldingFastSpin ? 0.48 : 0.28;
+        // Smart Priority Pull: If any parked vehicle in slots needs passengers of its color that are waiting in a feeder road,
+        // prioritize pulling that needed color into the circle (or swapping a non-parked ring row at the junction if the ring is full!)
+        // so parked vehicles NEVER get stranded with 1-3 passengers left while their matching passengers wait in feeder roads!
+        const juncTol = this._isHoldingFastSpin ? 0.52 : 0.34;
+        const parkedNeedByColor = {};
+        const partiallyBoardedNeedByColor = {};
+        const parkedColorsSet = new Set();
+        for (let sIdx = 0; sIdx < this.slots.length; sIdx++) {
+          const sv = this.slots[sIdx].vehicle;
+          if (sv && sv.cap > 0) {
+            const rem = Math.max(0, sv.cap - (sv.inFlightCount || 0));
+            if (rem > 0) {
+              parkedNeedByColor[sv.color] = (parkedNeedByColor[sv.color] || 0) + rem;
+              parkedColorsSet.add(sv.color);
+              // Track vehicles that already started boarding so they NEVER get stranded with remaining seats!
+              if (sv.cap < (sv.maxCap || sv.cap) || (sv.inFlightCount || 0) > 0) {
+                partiallyBoardedNeedByColor[sv.color] = (partiallyBoardedNeedByColor[sv.color] || 0) + rem;
+              }
+            }
+          }
+        }
+
+        const ringCountByColor = {};
+        for (let k = 0; k < RING_SLOT_COUNT; k++) {
+          const r = this.ovalRingSlots[k];
+          if (r && r.count > 0) {
+            ringCountByColor[r.color] = (ringCountByColor[r.color] || 0) + r.count;
+          }
+        }
+
+        const pullFromFeederQueue = (queue) => {
+          if (!queue || queue.length === 0) return null;
+          // 1. Highest priority: finish any partially-boarded parked vehicle so it never stalls mid-fill!
+          for (let i = 0; i < queue.length; i++) {
+            const col = queue[i].color;
+            const partNeed = partiallyBoardedNeedByColor[col] || 0;
+            const inRing = ringCountByColor[col] || 0;
+            if (partNeed > inRing) {
+              const pulled = queue.splice(i, 1)[0];
+              ringCountByColor[col] = inRing + pulled.count;
+              return pulled;
+            }
+          }
+          // 2. Second priority: any parked vehicle waiting in a slot
+          for (let i = 0; i < queue.length; i++) {
+            const col = queue[i].color;
+            const need = parkedNeedByColor[col] || 0;
+            const inRing = ringCountByColor[col] || 0;
+            if (need > inRing) {
+              const pulled = queue.splice(i, 1)[0];
+              ringCountByColor[col] = inRing + pulled.count;
+              return pulled;
+            }
+          }
+          const pulled = queue.shift();
+          ringCountByColor[pulled.color] = (ringCountByColor[pulled.color] || 0) + pulled.count;
+          return pulled;
+        };
+
         for (let k = 0; k < RING_SLOT_COUNT; k++) {
           const rowData = this.ovalRingSlots[k];
           const isEmpty = !rowData || rowData.count <= 0;
-          if (!isEmpty) continue;
 
           const theta = (this.ringRotationAngle + (k / RING_SLOT_COUNT) * Math.PI * 2) % (Math.PI * 2);
           const distLeft = Math.abs(theta - Math.PI);
           const distRight = Math.min(theta, Math.PI * 2 - theta);
 
-          if (this.leftFeederRows.length > 0 && distLeft < juncTol) {
-            const pulled = this.leftFeederRows.shift();
-            pulled.joinBlend = 0.0;
-            pulled.joinSide = -1;
-            this.ovalRingSlots[k] = pulled;
-            this._leftFeederSlideOffset = Math.min(6.0, (this._leftFeederSlideOffset || 0) + 1.0);
-          } else if (this.rightFeederRows.length > 0 && distRight < juncTol) {
-            const pulled = this.rightFeederRows.shift();
-            pulled.joinBlend = 0.0;
-            pulled.joinSide = 1;
-            this.ovalRingSlots[k] = pulled;
-            this._rightFeederSlideOffset = Math.min(6.0, (this._rightFeederSlideOffset || 0) + 1.0);
+          if (isEmpty) {
+            if (this.leftFeederRows.length > 0 && distLeft < juncTol) {
+              const pulled = pullFromFeederQueue(this.leftFeederRows);
+              pulled.joinBlend = 0.0;
+              pulled.joinSide = -1;
+              this.ovalRingSlots[k] = pulled;
+              this._leftFeederSlideOffset = Math.min(6.0, (this._leftFeederSlideOffset || 0) + 1.0);
+            } else if (this.rightFeederRows.length > 0 && distRight < juncTol) {
+              const pulled = pullFromFeederQueue(this.rightFeederRows);
+              pulled.joinBlend = 0.0;
+              pulled.joinSide = 1;
+              this.ovalRingSlots[k] = pulled;
+              this._rightFeederSlideOffset = Math.min(6.0, (this._rightFeederSlideOffset || 0) + 1.0);
+            }
+          } else if (!parkedColorsSet.has(rowData.color)) {
+            // If a parked vehicle ALREADY started boarding (partially boarded) and its remaining passengers are waiting
+            // in the feeder road while all 32 ring slots are occupied, swap this non-parked ring row with the needed feeder row!
+            const trySwapWithFeeder = (queue, side) => {
+              for (let i = 0; i < queue.length; i++) {
+                const col = queue[i].color;
+                const partNeed = partiallyBoardedNeedByColor[col] || 0;
+                const inRing = ringCountByColor[col] || 0;
+                if (partNeed > inRing) {
+                  const neededRow = queue[i];
+                  queue[i] = { color: rowData.color, count: rowData.count };
+                  ringCountByColor[rowData.color] = Math.max(0, (ringCountByColor[rowData.color] || 0) - rowData.count);
+                  ringCountByColor[col] = inRing + neededRow.count;
+                  neededRow.joinBlend = 0.0;
+                  neededRow.joinSide = side;
+                  this.ovalRingSlots[k] = neededRow;
+                  if (side < 0) this._leftFeederSlideOffset = Math.min(6.0, (this._leftFeederSlideOffset || 0) + 0.6);
+                  else this._rightFeederSlideOffset = Math.min(6.0, (this._rightFeederSlideOffset || 0) + 0.6);
+                  return true;
+                }
+              }
+              return false;
+            };
+            if (distLeft < juncTol && this.leftFeederRows.length > 0) {
+              trySwapWithFeeder(this.leftFeederRows, -1);
+            } else if (distRight < juncTol && this.rightFeederRows.length > 0) {
+              trySwapWithFeeder(this.rightFeederRows, 1);
+            }
           }
         }
       }
@@ -6860,7 +6962,8 @@
     }
 
     // -----------------------------------------------------------------------
-    // SMART AI HINT (Highlights the #1 Best Unblocked Vehicle Matching the Loop!)
+    // SMART AI HINT (Strictly highlights an UNBLOCKED vehicle whose passenger color is INSIDE the revolving circle!)
+    // ("woh hint do jis color ka passenger circle mn ho or uski buss nikl k jaskti ho")
     // -----------------------------------------------------------------------
     showSmartMoveHint() {
       if (this.isLevelOver || this.lotVehicles.length === 0) return;
@@ -6871,39 +6974,99 @@
       );
       const candidates = unblocked.length > 0 ? unblocked : this.lotVehicles;
 
-      // Count passenger color demand in the revolving oval loop (3x weight) + front of feeder lanes (1x weight)
-      const colorScore = {};
+      // 1. Count exact available passengers of each color CURRENTLY INSIDE the revolving oval circle (ovalRingSlots),
+      //    minus any seats already claimed by vehicles currently parked in boarding slots or driving toward slots!
+      const ringAvailByColor = {};
       for (let k = 0; k < RING_SLOT_COUNT; k++) {
         const r = this.ovalRingSlots[k];
         if (r && r.count > 0) {
-          colorScore[r.color] = (colorScore[r.color] || 0) + r.count * 3;
+          ringAvailByColor[r.color] = (ringAvailByColor[r.color] || 0) + r.count;
         }
       }
-      for (let i = 0; i < Math.min(4, this.leftFeederRows.length); i++) {
-        const r = this.leftFeederRows[i];
-        if (r && r.count > 0) colorScore[r.color] = (colorScore[r.color] || 0) + r.count;
+      for (let sIdx = 0; sIdx < this.slots.length; sIdx++) {
+        const sv = this.slots[sIdx].vehicle;
+        if (sv && sv.cap > 0) {
+          const rem = Math.max(0, sv.cap - (sv.inFlightCount || 0));
+          ringAvailByColor[sv.color] = Math.max(0, (ringAvailByColor[sv.color] || 0) - rem);
+        }
       }
-      for (let i = 0; i < Math.min(4, this.rightFeederRows.length); i++) {
-        const r = this.rightFeederRows[i];
-        if (r && r.count > 0) colorScore[r.color] = (colorScore[r.color] || 0) + r.count;
+      for (let mIdx = 0; mIdx < this.movingVehicles.length; mIdx++) {
+        const mv = this.movingVehicles[mIdx];
+        if (mv && mv.cap > 0) {
+          ringAvailByColor[mv.color] = Math.max(0, (ringAvailByColor[mv.color] || 0) - mv.cap);
+        }
       }
 
-      let bestVeh = candidates[0];
-      let bestVal = -1;
+      // 2. If NO currently unblocked vehicle matches any passenger color currently inside the circle,
+      //    pull a matching row for the best unblocked vehicle from the feeder road into the circle right now!
+      const anyUnblockedInCircle = candidates.some((v) => (ringAvailByColor[v.color] || 0) > 0);
+      if (!anyUnblockedInCircle && candidates.length > 0) {
+        const targetV = candidates[0];
+        const pullColIntoRing = (queue, side) => {
+          const fIdx = queue.findIndex((r) => r && r.color === targetV.color && r.count > 0);
+          if (fIdx === -1) return false;
+          const slotIdx = side < 0 ? 16 : 0;
+          const oldRingRow = this.ovalRingSlots[slotIdx];
+          this.ovalRingSlots[slotIdx] = queue[fIdx];
+          if (oldRingRow && oldRingRow.count > 0) {
+            queue[fIdx] = oldRingRow;
+          } else {
+            queue.splice(fIdx, 1);
+          }
+          ringAvailByColor[targetV.color] = (ringAvailByColor[targetV.color] || 0) + this.ovalRingSlots[slotIdx].count;
+          return true;
+        };
+        if (!pullColIntoRing(this.leftFeederRows, -1)) {
+          pullColIntoRing(this.rightFeederRows, 1);
+        }
+      }
+
+      // 3. Score each unblocked candidate:
+      //    - MUST have passengers currently inside the revolving circle (avail > 0)
+      //    - Highest priority (+10,000) if avail >= v.cap (can fill 100% of its seats from the circle and fly away immediately!)
+      //    - Bonus for how many other vehicles in the parking lot this vehicle unblocks when it leaves!
+      let bestVeh = null;
+      let bestScore = -1;
+
       for (const v of candidates) {
-        const sc = (colorScore[v.color] || 0) + (v.type === 'bus' ? 2 : 0);
-        if (sc > bestVal) {
-          bestVal = sc;
+        const avail = ringAvailByColor[v.color] || 0;
+        if (avail <= 0) continue; // NEVER hint a vehicle whose passenger color is not in the revolving circle!
+
+        const remainingWithoutV = this.lotVehicles.filter((o) => o.id !== v.id);
+        let unblocksCount = 0;
+        for (const o of remainingWithoutV) {
+          const wasBlocked = !!LevelGenerator.findBlockingVehicle(o, this.lotVehicles);
+          const nowBlocked = !!LevelGenerator.findBlockingVehicle(o, remainingWithoutV);
+          if (wasBlocked && !nowBlocked) unblocksCount++;
+        }
+
+        const canCompleteImmediately = avail >= v.cap ? 10000 : 0;
+        const fillRatioScore = Math.round((Math.min(avail, v.cap) / Math.max(1, v.cap)) * 500);
+        const score = canCompleteImmediately + fillRatioScore + avail * 25 + unblocksCount * 120;
+
+        if (score > bestScore) {
+          bestScore = score;
           bestVeh = v;
         }
       }
 
+      if (!bestVeh) {
+        bestVeh = candidates[0];
+      }
+
       if (bestVeh) {
         sound.playButtonClick();
-        bestVeh.baseRotY = bestVeh.mesh ? bestVeh.mesh.rotation.y : 0;
-        bestVeh.shuffleAnim = 0.9;
+        const rotY = LevelGenerator.getVehicleRotY(bestVeh);
+        bestVeh.baseRotY = rotY;
+        bestVeh.shuffleFromRotY = rotY;
+        bestVeh.shuffleFromX = bestVeh.x;
+        bestVeh.shuffleFromZ = bestVeh.z;
+        bestVeh.shuffleTargetX = bestVeh.x;
+        bestVeh.shuffleTargetZ = bestVeh.z;
+        bestVeh.shuffleArcSide = 0;
+        bestVeh.shuffleAnim = 0.72;
         this.spawnShockwave(bestVeh.x, bestVeh.z);
-        this.spawnFloatingText(bestVeh.x, bestVeh.z, '💡 Best Move!', '#4ade80');
+        this.spawnFloatingText(bestVeh.x, bestVeh.z, `💡 Best Move (${bestVeh.cap})!`, '#4ade80');
       }
     }
 
@@ -7140,11 +7303,10 @@
       this.boardingCooldown -= dt;
       if (this.boardingCooldown > 0) return;
 
-      // Strict revolving loop rule: Parked vehicles ONLY board if their color is genuinely inside the revolving circle!
-      // Colors waiting in feeder roads only enter the circle naturally when existing circle rows are cleared.
-
-      // Find any row in the revolving oval ring that is near the bottom boarding gate (theta around PI/2 = 1.57)
-      // and matches a parked vehicle's color!
+      // Atomic Full-Row Boarding:
+      // Whenever a matching row in the bottom boarding zone of the oval ring reaches the gate,
+      // board ALL needed passengers from that row together in one atomic batch (e.g. all 4 passengers at once!)
+      // so 3 passengers NEVER leave 1 passenger stranded behind in a partial row!
       let boardedAny = false;
 
       for (let k = 0; k < RING_SLOT_COUNT; k++) {
@@ -7152,8 +7314,8 @@
         if (!rowData || rowData.count <= 0) continue;
 
         const theta = (this.ringRotationAngle + (k / RING_SLOT_COUNT) * Math.PI * 2) % (Math.PI * 2);
-        // Bottom boarding zone of the oval ring (sin(theta) > 0.35 means near bottom gate!)
-        if (Math.sin(theta) < 0.35) continue;
+        // Bottom boarding zone of the oval ring (sin(theta) > 0.30 means near bottom gate!)
+        if (Math.sin(theta) < 0.30) continue;
 
         const matchingSlot = this.slots.find(
           (s) =>
@@ -7163,29 +7325,37 @@
         );
 
         if (matchingSlot) {
-          this.boardingCooldown = this._isHoldingFastSpin ? 0.009 : 0.025; // Turbo boarding stream while holding screen!
-          rowData.count -= 1;
-          const startPos = this.ringRowMeshes[k][rowData.count].position;
+          const remNeed = Math.max(0, matchingSlot.vehicle.cap - (matchingSlot.vehicle.inFlightCount || 0));
+          const take = Math.min(rowData.count, remNeed);
+          if (take <= 0) continue;
+
+          this.boardingCooldown = this._isHoldingFastSpin ? 0.025 : 0.065;
+
+          for (let c = 0; c < take; c++) {
+            rowData.count -= 1;
+            const meshIdx = Math.max(0, Math.min(ROW_PASSENGERS - 1, rowData.count));
+            const startPos = this.ringRowMeshes[k][meshIdx].position;
+
+            matchingSlot.vehicle.inFlightCount = (matchingSlot.vehicle.inFlightCount || 0) + 1;
+
+            const jumper = this.getPooledJumperMesh(rowData.color);
+            jumper.position.copy(startPos);
+
+            this.jumpingPassengers.push({
+              mesh: jumper,
+              color: rowData.color,
+              startX: startPos.x,
+              startZ: startPos.z,
+              endX: matchingSlot.x,
+              endZ: matchingSlot.z,
+              targetSlotIndex: matchingSlot.index,
+              progress: -c * 0.042
+            });
+          }
 
           if (rowData.count <= 0) {
             this.ovalRingSlots[k] = null;
           }
-
-          matchingSlot.vehicle.inFlightCount = (matchingSlot.vehicle.inFlightCount || 0) + 1;
-
-          const jumper = this.getPooledJumperMesh(rowData.color);
-          jumper.position.copy(startPos);
-
-          this.jumpingPassengers.push({
-            mesh: jumper,
-            color: rowData.color,
-            startX: startPos.x,
-            startZ: startPos.z,
-            endX: matchingSlot.x,
-            endZ: matchingSlot.z,
-            targetSlotIndex: matchingSlot.index,
-            progress: 0
-          });
 
           boardedAny = true;
           this.updatePassengerCountOnly();
@@ -7239,7 +7409,23 @@
         (s) => s.vehicle && s.vehicle.cap > 0 && colorsInOvalRing.has(s.vehicle.color)
       );
 
-      if (anyMatchingInRing) {
+      // Also check if any partially-boarded vehicle has its remaining passengers waiting in a feeder road (about to be swapped into the ring!)
+      const colorsInFeeders = new Set();
+      for (const r of this.leftFeederRows) {
+        if (r && r.count > 0) colorsInFeeders.add(r.color);
+      }
+      for (const r of this.rightFeederRows) {
+        if (r && r.count > 0) colorsInFeeders.add(r.color);
+      }
+      const anyPartialMatchingInFeeder = this.slots.some(
+        (s) =>
+          s.vehicle &&
+          s.vehicle.cap > 0 &&
+          s.vehicle.cap < (s.vehicle.maxCap || s.vehicle.cap) &&
+          colorsInFeeders.has(s.vehicle.color)
+      );
+
+      if (anyMatchingInRing || anyPartialMatchingInFeeder) {
         this._deadlockHoldSec = 0;
         return;
       }
