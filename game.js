@@ -710,80 +710,97 @@
     }
 
     static buildLevel1() {
-      // Level 1: 10 Vehicles (Cross Pattern), 3 Colors (Yellow, Blue, Red) — Small Car = 4, Big Bus = 8 or 16!
+      // Level 1: 18 Vehicles (Grand Cross & Wing Pattern), 3 Colors (Yellow, Blue, Red) — 46 passenger rows (full 32-row circle + 14 feeder rows!)
       const vehicles = [
-        { id: 'l1_1', x: -2.0, z: 1.0, dir: 'LEFT', type: 'bus', color: 'yellow', cap: 16 },
-        { id: 'l1_2', x: 2.0, z: 1.0, dir: 'RIGHT', type: 'bus', color: 'blue', cap: 16 },
-        { id: 'l1_3', x: -1.6, z: 3.2, dir: 'UP', type: 'car', color: 'red', cap: 4 },
-        { id: 'l1_4', x: 0.0, z: 3.2, dir: 'DOWN', type: 'bus', color: 'yellow', cap: 8 },
-        { id: 'l1_5', x: 1.6, z: 3.2, dir: 'UP', type: 'car', color: 'blue', cap: 4 },
-        { id: 'l1_6', x: -2.8, z: 5.5, dir: 'LEFT', type: 'car', color: 'blue', cap: 4 },
-        { id: 'l1_7', x: 2.8, z: 5.5, dir: 'RIGHT', type: 'car', color: 'red', cap: 4 },
-        { id: 'l1_8', x: 0.0, z: 6.2, dir: 'DOWN', type: 'car', color: 'red', cap: 4 },
-        { id: 'l1_9', x: -2.0, z: 8.6, dir: 'LEFT', type: 'bus', color: 'red', cap: 16 },
-        { id: 'l1_10', x: 2.0, z: 8.6, dir: 'RIGHT', type: 'bus', color: 'blue', cap: 8 }
+        { id: 'l1_1', x: -2.2, z: 0.65, dir: 'LEFT', type: 'bus', color: 'yellow', cap: 16 },
+        { id: 'l1_2', x: 2.2, z: 0.65, dir: 'RIGHT', type: 'bus', color: 'blue', cap: 16 },
+        { id: 'l1_3', x: -3.7, z: 2.65, dir: 'UP', type: 'bus', color: 'red', cap: 16 },
+        { id: 'l1_4', x: -1.8, z: 2.65, dir: 'UP', type: 'car', color: 'yellow', cap: 4 },
+        { id: 'l1_5', x: 0.0, z: 2.65, dir: 'DOWN', type: 'bus', color: 'yellow', cap: 16 },
+        { id: 'l1_6', x: 1.8, z: 2.65, dir: 'UP', type: 'car', color: 'blue', cap: 4 },
+        { id: 'l1_7', x: 3.7, z: 2.65, dir: 'UP', type: 'bus', color: 'red', cap: 16 },
+        { id: 'l1_8', x: -3.2, z: 4.95, dir: 'LEFT', type: 'bus', color: 'blue', cap: 16 },
+        { id: 'l1_9', x: 0.0, z: 5.05, dir: 'DOWN', type: 'car', color: 'red', cap: 4 },
+        { id: 'l1_10', x: 3.2, z: 4.95, dir: 'RIGHT', type: 'bus', color: 'red', cap: 16 },
+        { id: 'l1_11', x: -3.4, z: 7.15, dir: 'LEFT', type: 'car', color: 'yellow', cap: 4 },
+        { id: 'l1_12', x: 0.0, z: 7.25, dir: 'DOWN', type: 'bus', color: 'blue', cap: 8 },
+        { id: 'l1_13', x: 3.4, z: 7.15, dir: 'RIGHT', type: 'car', color: 'yellow', cap: 4 },
+        { id: 'l1_14', x: -2.3, z: 9.35, dir: 'LEFT', type: 'bus', color: 'red', cap: 16 },
+        { id: 'l1_15', x: 0.0, z: 9.45, dir: 'DOWN', type: 'car', color: 'blue', cap: 4 },
+        { id: 'l1_16', x: 2.3, z: 9.35, dir: 'RIGHT', type: 'bus', color: 'yellow', cap: 8 },
+        { id: 'l1_17', x: -2.2, z: 11.15, dir: 'LEFT', type: 'car', color: 'red', cap: 4 },
+        { id: 'l1_18', x: 2.2, z: 11.15, dir: 'RIGHT', type: 'car', color: 'blue', cap: 4 }
       ];
       return this.finalizeWithRevolvingFeederQueues(1, vehicles);
     }
 
     static buildLevel2() {
-      // Level 2: 14 Vehicles (Interlocking Diamond), Fresh Colors (Green, Purple, Orange!) — Small Car = 4, Big Bus = 8 or 16!
+      // Level 2: 20 Vehicles (Expanded Interlocking Diamond), 4 Colors (Green, Purple, Orange, Cyan!) — Small Car = 4, Big Bus = 8 or 16!
       const vehicles = [
-        { id: 'l2_1', x: -2.1, z: 0.7, dir: 'RIGHT', type: 'bus', color: 'green', cap: 16, tilt: -0.1 },
-        { id: 'l2_2', x: 2.1, z: 0.7, dir: 'LEFT', type: 'bus', color: 'purple', cap: 16, tilt: 0.1 },
+        { id: 'l2_1', x: -2.3, z: 0.6, dir: 'RIGHT', type: 'bus', color: 'green', cap: 16, tilt: -0.1 },
+        { id: 'l2_2', x: 2.3, z: 0.6, dir: 'LEFT', type: 'bus', color: 'purple', cap: 16, tilt: 0.1 },
 
-        { id: 'l2_3', x: -2.8, z: 2.8, dir: 'UP', type: 'car', color: 'orange', cap: 4 },
-        { id: 'l2_4', x: -1.2, z: 2.8, dir: 'DOWN', type: 'car', color: 'purple', cap: 4 },
-        { id: 'l2_5', x: 1.2, z: 2.8, dir: 'DOWN', type: 'car', color: 'green', cap: 4 },
-        { id: 'l2_6', x: 2.8, z: 2.8, dir: 'UP', type: 'car', color: 'orange', cap: 4 },
+        { id: 'l2_3', x: -3.9, z: 2.55, dir: 'UP', type: 'bus', color: 'orange', cap: 16 },
+        { id: 'l2_4', x: -2.3, z: 2.55, dir: 'DOWN', type: 'car', color: 'purple', cap: 4 },
+        { id: 'l2_5', x: 0.0, z: 2.55, dir: 'UP', type: 'bus', color: 'cyan', cap: 16 },
+        { id: 'l2_6', x: 2.3, z: 2.55, dir: 'DOWN', type: 'car', color: 'green', cap: 4 },
+        { id: 'l2_7', x: 3.9, z: 2.55, dir: 'UP', type: 'bus', color: 'orange', cap: 16 },
 
-        { id: 'l2_7', x: -2.4, z: 4.9, dir: 'LEFT', type: 'bus', color: 'orange', cap: 8 },
-        { id: 'l2_8', x: 2.4, z: 4.9, dir: 'RIGHT', type: 'bus', color: 'purple', cap: 8 },
+        { id: 'l2_8', x: -3.1, z: 4.65, dir: 'LEFT', type: 'bus', color: 'orange', cap: 16 },
+        { id: 'l2_9', x: 0.0, z: 4.75, dir: 'DOWN', type: 'car', color: 'cyan', cap: 4 },
+        { id: 'l2_10', x: 3.1, z: 4.65, dir: 'RIGHT', type: 'bus', color: 'purple', cap: 8 },
 
-        { id: 'l2_9', x: -3.2, z: 7.0, dir: 'LEFT', type: 'car', color: 'green', cap: 4 },
-        { id: 'l2_10', x: -1.1, z: 7.1, dir: 'DOWN', type: 'car', color: 'orange', cap: 4 },
-        { id: 'l2_11', x: 1.1, z: 7.1, dir: 'DOWN', type: 'car', color: 'purple', cap: 4 },
-        { id: 'l2_12', x: 3.2, z: 7.0, dir: 'RIGHT', type: 'car', color: 'green', cap: 4 },
+        { id: 'l2_11', x: -3.9, z: 6.75, dir: 'LEFT', type: 'car', color: 'green', cap: 4 },
+        { id: 'l2_12', x: -1.8, z: 6.85, dir: 'DOWN', type: 'bus', color: 'cyan', cap: 16 },
+        { id: 'l2_13', x: 0.0, z: 6.85, dir: 'UP', type: 'car', color: 'orange', cap: 4 },
+        { id: 'l2_14', x: 1.8, z: 6.85, dir: 'DOWN', type: 'bus', color: 'purple', cap: 8 },
+        { id: 'l2_15', x: 3.9, z: 6.75, dir: 'RIGHT', type: 'car', color: 'green', cap: 4 },
 
-        { id: 'l2_13', x: -2.15, z: 9.5, dir: 'LEFT', type: 'bus', color: 'purple', cap: 16 },
-        { id: 'l2_14', x: 2.15, z: 9.5, dir: 'RIGHT', type: 'bus', color: 'green', cap: 16 }
+        { id: 'l2_16', x: -3.3, z: 9.05, dir: 'LEFT', type: 'car', color: 'cyan', cap: 4 },
+        { id: 'l2_17', x: 0.0, z: 9.05, dir: 'LEFT', type: 'bus', color: 'orange', cap: 8 },
+        { id: 'l2_18', x: 3.3, z: 9.05, dir: 'RIGHT', type: 'car', color: 'purple', cap: 4 },
+
+        { id: 'l2_19', x: -2.35, z: 10.85, dir: 'LEFT', type: 'bus', color: 'purple', cap: 16 },
+        { id: 'l2_20', x: 2.35, z: 10.85, dir: 'RIGHT', type: 'bus', color: 'green', cap: 16 }
       ];
       return this.finalizeWithRevolvingFeederQueues(2, vehicles);
     }
 
     /**
-     * Exact 19-Vehicle Replica of Video Level 3 (00:28 - 01:21)! — Small Car = 4, Big Bus = 8 or 16!
+     * Expanded 24-Vehicle Level 3 Citadel — Small Car = 4, Big Bus = 8 or 16!
      */
     static buildExactVideoLevel3() {
       const vehicles = [
-        { id: 'v3_top_l', x: -2.05, z: 0.55, dir: 'RIGHT', type: 'bus', color: 'blue', cap: 16, tilt: -0.12 },
-        { id: 'v3_top_r', x: 2.05, z: 0.55, dir: 'RIGHT', type: 'bus', color: 'yellow', cap: 8, tilt: 0.12 },
+        { id: 'v3_top_l', x: -2.25, z: 0.55, dir: 'RIGHT', type: 'bus', color: 'blue', cap: 16, tilt: -0.12 },
+        { id: 'v3_top_r', x: 2.25, z: 0.55, dir: 'LEFT', type: 'bus', color: 'yellow', cap: 16, tilt: 0.12 },
 
-        { id: 'v3_r1_1', x: -3.0, z: 2.75, dir: 'UP', type: 'car', color: 'yellow', cap: 4 },
-        { id: 'v3_r1_2', x: -1.5, z: 2.75, dir: 'UP', type: 'car', color: 'red', cap: 4 },
+        { id: 'v3_r1_1', x: -3.8, z: 2.65, dir: 'UP', type: 'bus', color: 'yellow', cap: 16 },
+        { id: 'v3_r1_2', x: -2.0, z: 2.65, dir: 'DOWN', type: 'bus', color: 'red', cap: 16 },
         { id: 'v3_r1_3', x: 0.0, z: 2.65, dir: 'DOWN', type: 'bus', color: 'blue', cap: 16 },
-        { id: 'v3_r1_4', x: 1.5, z: 2.75, dir: 'UP', type: 'car', color: 'red', cap: 4 },
-        { id: 'v3_r1_5', x: 3.0, z: 2.75, dir: 'UP', type: 'car', color: 'yellow', cap: 4 },
+        { id: 'v3_r1_4', x: 2.0, z: 2.65, dir: 'DOWN', type: 'bus', color: 'green', cap: 16 },
+        { id: 'v3_r1_5', x: 3.8, z: 2.65, dir: 'UP', type: 'bus', color: 'yellow', cap: 16 },
 
-        { id: 'v3_r2_1', x: -3.15, z: 4.75, dir: 'LEFT', type: 'car', color: 'red', cap: 4 },
+        { id: 'v3_r2_1', x: -3.35, z: 4.75, dir: 'LEFT', type: 'bus', color: 'red', cap: 8 },
         { id: 'v3_r2_2', x: 0.0, z: 4.75, dir: 'LEFT', type: 'bus', color: 'red', cap: 16 },
-        { id: 'v3_r2_3', x: 3.15, z: 4.75, dir: 'LEFT', type: 'car', color: 'red', cap: 4 },
+        { id: 'v3_r2_3', x: 3.35, z: 4.75, dir: 'RIGHT', type: 'bus', color: 'green', cap: 8 },
 
         { id: 'v3_mid_1', x: 0.0, z: 6.7, dir: 'DOWN', type: 'car', color: 'red', cap: 4 },
         { id: 'v3_mid_2', x: 0.0, z: 8.8, dir: 'DOWN', type: 'car', color: 'yellow', cap: 4 },
 
-        { id: 'v3_l_1', x: -4.2, z: 6.75, dir: 'LEFT', type: 'car', color: 'yellow', cap: 4 },
-        { id: 'v3_l_2', x: -2.0, z: 6.75, dir: 'LEFT', type: 'car', color: 'blue', cap: 4 },
-        { id: 'v3_l_3', x: -4.2, z: 8.15, dir: 'LEFT', type: 'car', color: 'blue', cap: 4 },
+        { id: 'v3_l_1', x: -4.2, z: 6.65, dir: 'LEFT', type: 'car', color: 'yellow', cap: 4 },
+        { id: 'v3_l_2', x: -2.0, z: 6.65, dir: 'LEFT', type: 'car', color: 'blue', cap: 4 },
+        { id: 'v3_l_3', x: -4.2, z: 8.15, dir: 'LEFT', type: 'car', color: 'green', cap: 4 },
         { id: 'v3_l_4', x: -2.0, z: 8.15, dir: 'LEFT', type: 'car', color: 'blue', cap: 4 },
 
-        { id: 'v3_rt_1', x: 2.0, z: 6.75, dir: 'RIGHT', type: 'car', color: 'blue', cap: 4 },
-        { id: 'v3_rt_2', x: 4.2, z: 6.75, dir: 'RIGHT', type: 'car', color: 'yellow', cap: 4 },
-        { id: 'v3_rt_3', x: 2.0, z: 8.15, dir: 'RIGHT', type: 'car', color: 'blue', cap: 4 },
+        { id: 'v3_rt_1', x: 2.0, z: 6.65, dir: 'RIGHT', type: 'car', color: 'blue', cap: 4 },
+        { id: 'v3_rt_2', x: 4.2, z: 6.65, dir: 'RIGHT', type: 'car', color: 'yellow', cap: 4 },
+        { id: 'v3_rt_3', x: 2.0, z: 8.15, dir: 'RIGHT', type: 'car', color: 'green', cap: 4 },
         { id: 'v3_rt_4', x: 4.2, z: 8.15, dir: 'RIGHT', type: 'car', color: 'blue', cap: 4 },
 
-        { id: 'v3_bot_l', x: -2.15, z: 10.45, dir: 'LEFT', type: 'bus', color: 'yellow', cap: 8 },
-        { id: 'v3_bot_r', x: 2.15, z: 10.45, dir: 'RIGHT', type: 'bus', color: 'blue', cap: 16 }
+        { id: 'v3_b_1', x: -4.1, z: 9.75, dir: 'DOWN', type: 'car', color: 'red', cap: 4 },
+        { id: 'v3_b_2', x: 4.1, z: 9.75, dir: 'DOWN', type: 'car', color: 'green', cap: 4 },
+        { id: 'v3_bot_l', x: -2.15, z: 10.65, dir: 'LEFT', type: 'bus', color: 'yellow', cap: 16 },
+        { id: 'v3_bot_r', x: 2.15, z: 10.65, dir: 'RIGHT', type: 'bus', color: 'blue', cap: 16 }
       ];
 
       return this.finalizeWithRevolvingFeederQueues(3, vehicles);
@@ -847,41 +864,127 @@
         });
       }
 
-      // Ensure base formation has crisp, open spacing before adding any extra perimeter flankers
-      this.enforceCleanVehicleSpacing(slots, 0.36);
+      // Ensure base formation has crisp, open spacing before adding progressive expansion vehicles
+      this.enforceCleanVehicleSpacing(slots, 0.25);
 
-      // Add progressive extra angled perimeter & inner lock vehicles (only where full open OBB clearance exists!)
-      const extraWanted = Math.min(10, Math.max(2, 2 + Math.floor((levelNum - 4) * 0.45)));
-      if (extraWanted > 0) {
+      // Progressively grow total vehicle count as level increases (Lv.4 = 26 -> Lv.10 = 32 -> Lv.18 = 40 -> Lv.25+ = 44-46 vehicles!)
+      const targetVehicleCount = Math.min(45, 26 + Math.floor((levelNum - 4) * 0.95));
+      if (slots.length < targetVehicleCount) {
         const candidateFlankers = [
-          { x: -1.55, z: 0.62, dir: 'DOWN', type: 'car', subType: 'van', tilt: 0.28 },
-          { x: 1.55, z: 0.62, dir: 'DOWN', type: 'car', subType: 'van', tilt: -0.28 },
-          { x: -4.92, z: 1.45, dir: 'DOWN', type: 'car', subType: 'van', tilt: -0.42 },
-          { x: 4.92, z: 1.45, dir: 'DOWN', type: 'car', subType: 'van', tilt: 0.42 },
-          { x: -4.98, z: 3.75, dir: 'RIGHT', type: 'car', subType: 'van', tilt: 0.28 },
-          { x: 4.98, z: 3.75, dir: 'LEFT', type: 'car', subType: 'van', tilt: -0.28 },
-          { x: -4.98, z: 6.05, dir: 'RIGHT', type: 'car', tilt: 0.24 },
-          { x: 4.98, z: 6.05, dir: 'LEFT', type: 'car', tilt: -0.24 },
-          { x: -4.92, z: 8.25, dir: 'RIGHT', type: 'car', subType: 'van', tilt: -0.28 },
-          { x: 4.92, z: 8.25, dir: 'LEFT', type: 'car', subType: 'van', tilt: 0.28 },
-          { x: -1.75, z: 8.95, dir: 'UP', type: 'car', tilt: 0.24 },
-          { x: 1.75, z: 8.95, dir: 'UP', type: 'car', tilt: -0.24 },
-          { x: -4.75, z: 10.15, dir: 'UP', type: 'car', subType: 'van', tilt: 0.40 },
-          { x: 4.75, z: 10.15, dir: 'UP', type: 'car', subType: 'van', tilt: -0.40 }
+          // Inner & Mid-Ring Reinforcement Locks
+          { x: -1.55, z: 0.52, dir: 'DOWN', type: 'car', subType: 'van', tilt: 0.24 },
+          { x: 1.55, z: 0.52, dir: 'DOWN', type: 'car', subType: 'van', tilt: -0.24 },
+          { x: -3.25, z: 1.55, dir: 'DOWN', type: 'car', tilt: 0.22 },
+          { x: 3.25, z: 1.55, dir: 'DOWN', type: 'car', tilt: -0.22 },
+          { x: -1.35, z: 3.65, dir: 'DOWN', type: 'car', subType: 'van', tilt: 0.20 },
+          { x: 1.35, z: 3.65, dir: 'DOWN', type: 'car', subType: 'van', tilt: -0.20 },
+          { x: -2.85, z: 5.75, dir: 'RIGHT', type: 'car', tilt: 0.18 },
+          { x: 2.85, z: 5.75, dir: 'LEFT', type: 'car', tilt: -0.18 },
+          { x: -1.45, z: 7.75, dir: 'UP', type: 'car', subType: 'van', tilt: -0.20 },
+          { x: 1.45, z: 7.75, dir: 'UP', type: 'car', subType: 'van', tilt: 0.20 },
+          { x: -1.75, z: 9.25, dir: 'UP', type: 'car', tilt: 0.22 },
+          { x: 1.75, z: 9.25, dir: 'UP', type: 'car', tilt: -0.22 },
+
+          // Outer Wing & Perimeter Columns (x = ±4.95..5.55)
+          { x: -5.15, z: 0.95, dir: 'DOWN', type: 'bus', tilt: -0.22 },
+          { x: 5.15, z: 0.95, dir: 'DOWN', type: 'bus', tilt: 0.22 },
+          { x: -5.32, z: 2.85, dir: 'RIGHT', type: 'car', subType: 'van', tilt: 0.25 },
+          { x: 5.32, z: 2.85, dir: 'LEFT', type: 'car', subType: 'van', tilt: -0.25 },
+          { x: -5.38, z: 4.65, dir: 'RIGHT', type: 'bus', tilt: 0.18 },
+          { x: 5.38, z: 4.65, dir: 'LEFT', type: 'bus', tilt: -0.18 },
+          { x: -5.38, z: 6.55, dir: 'RIGHT', type: 'car', tilt: 0.22 },
+          { x: 5.38, z: 6.55, dir: 'LEFT', type: 'car', tilt: -0.22 },
+          { x: -5.32, z: 8.35, dir: 'RIGHT', type: 'car', subType: 'van', tilt: -0.24 },
+          { x: 5.32, z: 8.35, dir: 'LEFT', type: 'car', subType: 'van', tilt: 0.24 },
+          { x: -5.12, z: 10.25, dir: 'UP', type: 'bus', tilt: 0.26 },
+          { x: 5.12, z: 10.25, dir: 'UP', type: 'bus', tilt: -0.26 },
+
+          // Deep Bottom Apron Row (z = 11.35..11.65)
+          { x: -3.75, z: 11.45, dir: 'UP', type: 'bus', tilt: 0.14 },
+          { x: -1.35, z: 11.55, dir: 'UP', type: 'car', subType: 'van' },
+          { x: 1.35, z: 11.55, dir: 'UP', type: 'car', subType: 'van' },
+          { x: 3.75, z: 11.45, dir: 'UP', type: 'bus', tilt: -0.14 },
+          { x: 0.0, z: 11.60, dir: 'UP', type: 'car' },
+          { x: -5.18, z: 11.55, dir: 'RIGHT', type: 'car', tilt: -0.20 },
+          { x: 5.18, z: 11.55, dir: 'LEFT', type: 'car', tilt: 0.20 }
         ];
-        let added = 0;
         for (const cand of candidateFlankers) {
-          if (added >= extraWanted) break;
-          if (!this.hasAnyOBBOverlap(cand, slots, 0.38)) {
+          if (slots.length >= targetVehicleCount) break;
+          if (!this.hasAnyOBBOverlap(cand, slots, 0.23)) {
             slots.push({ ...cand });
-            added++;
+          } else if (cand.type === 'bus') {
+            const carCand = { ...cand, type: 'car', subType: 'van' };
+            if (!this.hasAnyOBBOverlap(carCand, slots, 0.22)) {
+              slots.push(carCand);
+            }
+          }
+        }
+
+        // Symmetric Open-Pocket Formation Filler: guarantees every level monotonically reaches targetVehicleCount!
+        if (slots.length < targetVehicleCount) {
+          const zRows = [];
+          for (let gz = 0.38; gz <= 11.92; gz += 0.54) zRows.push(Number(gz.toFixed(2)));
+          const xAbsCols = [];
+          for (let ax = 0.0; ax <= 6.22; ax += 0.54) xAbsCols.push(Number(ax.toFixed(2)));
+
+          for (const gz of zRows) {
+            if (slots.length >= targetVehicleCount) break;
+            for (const ax of xAbsCols) {
+              if (slots.length >= targetVehicleCount) break;
+              const sides = ax === 0 ? [0] : [-ax, ax];
+              for (const gx of sides) {
+                if (slots.length >= targetVehicleCount) break;
+                const dirOpts = gz < 3.0
+                  ? ['DOWN', 'LEFT', 'RIGHT', 'UP']
+                  : gz > 9.0
+                    ? ['UP', 'LEFT', 'RIGHT', 'DOWN']
+                    : gx < 0
+                      ? ['RIGHT', 'DOWN', 'UP', 'LEFT']
+                      : ['LEFT', 'DOWN', 'UP', 'RIGHT'];
+                const tilts = [0, gx < 0 ? 0.18 : -0.18];
+                let placed = false;
+                for (const tilt of tilts) {
+                  if (placed) break;
+                  for (const d of dirOpts) {
+                    const busTry = { x: gx, z: gz, dir: d, type: 'bus', tilt };
+                    if (!this.hasAnyOBBOverlap(busTry, slots, 0.22)) {
+                      slots.push(busTry);
+                      placed = true;
+                      break;
+                    }
+                    const carTry = { x: gx, z: gz, dir: d, type: 'car', subType: 'van', tilt };
+                    if (!this.hasAnyOBBOverlap(carTry, slots, 0.20)) {
+                      slots.push(carTry);
+                      placed = true;
+                      break;
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+
+      // As level increases, progressively upgrade more cars with open clearance into 8/16-seat buses for bigger passenger waves!
+      const targetBusRatio = Math.min(0.55, 0.38 + (levelNum - 4) * 0.009);
+      let currentBuses = slots.filter((s) => s.type === 'bus').length;
+      const desiredBuses = Math.round(slots.length * targetBusRatio);
+      for (let i = 0; i < slots.length && currentBuses < desiredBuses; i++) {
+        const s = slots[i];
+        if (s.type !== 'bus') {
+          s.type = 'bus';
+          if (this.hasAnyOBBOverlap(s, slots, 0.20)) {
+            s.type = 'car';
+          } else {
+            currentBuses++;
           }
         }
       }
 
       // Strict Vehicle Capacities requested by User:
       // - Small Car / Van (type !== 'bus'): strictly 4 passengers (1 full row of 4)
-      // - Large Bus (type === 'bus'): strictly 8 or 16 passengers (2 rows or 4 rows of 4)
+      // - Large Bus (type === 'bus'): strictly 8 or 16 passengers (2 rows or 4 rows of 4, with more 16-seat buses as level increases!)
       const colorBag = [];
       while (colorBag.length < slots.length + colorPool.length) {
         const copy = [...colorPool];
@@ -894,6 +997,7 @@
 
       let prevCol = null;
       let busIdx = 0;
+      const megaBusMod = levelNum >= 18 ? 3 : 2; // On higher levels, 2 out of 3 buses are 16-seat Mega Buses!
       const vehicles = slots.map((s, idx) => {
         let color = colorBag[idx];
         if (color === prevCol && colorPool.length > 1) {
@@ -904,7 +1008,7 @@
         let cap = 4;
         if (s.type === 'bus') {
           busIdx++;
-          cap = (busIdx % 2 === 1) ? 16 : 8;
+          cap = (busIdx % megaBusMod !== 0) ? 16 : 8;
         }
         return {
           id: `lvl${levelNum}_v${idx}`,
@@ -919,7 +1023,7 @@
         };
       });
 
-      this.enforceCleanVehicleSpacing(vehicles, 0.35);
+      this.enforceCleanVehicleSpacing(vehicles, 0.20);
       this.ensureNoCyclicDeadlock(vehicles);
 
       // NARROW-ENTRY PUZZLE LOCK TIGHTENER:
@@ -1709,11 +1813,11 @@
      * Universally enforces clean, open visual breathing space between all vehicles in a level
      * so no two buses/vans/cars ever touch or overlap ("thora sa khula khula ho, chipka hua na ho").
      */
-    static enforceCleanVehicleSpacing(vehicles, minGap = 0.35) {
+    static enforceCleanVehicleSpacing(vehicles, minGap = 0.24) {
       if (!vehicles || vehicles.length <= 1) return vehicles;
 
-      const minX = -5.12, maxX = 5.12;
-      const minZ = 0.48,  maxZ = 10.85;
+      const minX = -6.32, maxX = 6.32;
+      const minZ = 0.26,  maxZ = 12.02;
 
       const relax = (iters, gap) => {
         for (let iter = 0; iter < iters; iter++) {
@@ -1737,12 +1841,12 @@
         }
       };
 
-      relax(75, minGap);
+      relax(95, minGap);
 
-      // If any cluster is still tighter than (minGap - 0.07), prune the single most-crowded vehicle and re-relax
-      const strictGap = Math.max(0.26, minGap - 0.07);
+      // If any cluster is still tighter than strictGap, prune the single most-crowded vehicle and re-relax
+      const strictGap = Math.max(0.16, minGap - 0.06);
       let pruneGuard = 0;
-      while (vehicles.length > 8 && pruneGuard < 14) {
+      while (vehicles.length > 10 && pruneGuard < 14) {
         pruneGuard++;
         let worstIdx = -1;
         let worstOverlapSum = 0;
@@ -1764,7 +1868,7 @@
           break;
         }
         vehicles.splice(worstIdx, 1);
-        relax(35, minGap);
+        relax(45, minGap);
       }
 
       vehicles.forEach((v) => {
@@ -1876,7 +1980,7 @@
             for (const d of prefDirs) {
               cand.dir = d;
               cand.tilt = 0;
-              if (!this.findBlockingVehicle(cand, remaining)) {
+              if (!this.findBlockingVehicle(cand, remaining) && !this.hasAnyOBBOverlap(cand, vehicles, 0.14)) {
                 unlockedAny = true;
                 break;
               }
@@ -1916,7 +2020,7 @@
         }
       });
 
-      this.enforceCleanVehicleSpacing(vehicles, 0.35);
+      this.enforceCleanVehicleSpacing(vehicles, 0.20);
       this.ensureNoCyclicDeadlock(vehicles);
       const simRemaining = vehicles.map((v) => ({ ...v }));
       const exitSequence = [];
@@ -1934,15 +2038,15 @@
         }
       }
 
-      // Convert exitSequence capacities into rows of 4 passengers (ROW_PASSENGERS = 4)
-      // Keep waveSize = 5..6 vehicles (~9-13 rows per wave, so Waves 1, 2 & 3 ALL fit inside the 32-row spinning loop!)
-      // guaranteeing 100% of required passengers for playable vehicles are reachable without slot deadlock!
+      // Convert exitSequence capacities into rows of 4 passengers (ROW_PASSENGERS = 4).
+      // Use tight 3-vehicle waves (~5-8 rows per wave) so the 32-row spinning loop ALWAYS contains 100% of required rows
+      // for the next 3-4 solvable unblocked vehicles in strict FIFO order, while interleaving color bands on harder levels!
       const allRows = [];
-      const waveSize = levelNum <= 3 ? 4 : 6;
+      const waveSize = 3;
+      const maxChunkRows = levelNum >= 14 ? 2 : levelNum >= 6 ? 3 : 4;
 
       for (let w = 0; w < exitSequence.length; w += waveSize) {
         const waveVehicles = exitSequence.slice(w, w + waveSize);
-        // Aggregate rows by color within each wave so same-color rows form clean contiguous color blocks!
         const colorRowCounts = {};
         const colorOrder = [];
         for (const v of waveVehicles) {
@@ -1958,7 +2062,7 @@
         for (const col of colorOrder) {
           let rem = colorRowCounts[col];
           while (rem > 0) {
-            const chunkLen = rem >= 7 ? 5 : rem;
+            const chunkLen = Math.min(rem, maxChunkRows);
             const chunk = [];
             for (let r = 0; r < chunkLen; r++) {
               chunk.push({ color: col, count: ROW_PASSENGERS });
@@ -1968,8 +2072,8 @@
           }
         }
 
-        // Keep wave 0 in exact solvable exit order; gently shuffle chunks within later waves
-        if (w > 0) {
+        // Keep wave 0 in exact solvable exit order; gently interleave chunks within each 3-vehicle wave
+        if (w > 0 && waveChunks.length > 1) {
           for (let i = waveChunks.length - 1; i > 0; i--) {
             const j = Math.floor(rand() * (i + 1));
             [waveChunks[i], waveChunks[j]] = [waveChunks[j], waveChunks[i]];
@@ -2005,7 +2109,8 @@
         }
       }
 
-      // First 32 rows populate the Central Revolving Oval Ring; remaining rows split into Left & Right Feeder Roads in contiguous color blocks!
+      // First 32 rows populate the Central Revolving Track; remaining rows split evenly in 1-2 row alternating blocks
+      // between Left & Right Feeder Roads so both junctions feed into the revolving track in exact chronological wave order!
       const ovalRingSlots = new Array(RING_SLOT_COUNT).fill(null);
       const initialRingCount = Math.min(RING_SLOT_COUNT, allRows.length);
       for (let i = 0; i < initialRingCount; i++) {
@@ -2019,20 +2124,19 @@
       while (idx < allRows.length) {
         const blockCol = allRows[idx].color;
         let runEnd = idx + 1;
-        while (runEnd < allRows.length && allRows[runEnd].color === blockCol && (runEnd - idx) < 8) {
+        while (runEnd < allRows.length && allRows[runEnd].color === blockCol && (runEnd - idx) < 2) {
           runEnd++;
         }
         const targetFeeder = toLeft ? leftFeederRows : rightFeederRows;
         for (let k = idx; k < runEnd; k++) {
           targetFeeder.push(allRows[k]);
         }
-        // Balance left and right feeder lengths
         toLeft = leftFeederRows.length <= rightFeederRows.length;
         idx = runEnd;
       }
 
-      // Timer strictly 90s (01:30 = 1 min 30 sec) for every level as requested!
-      const timeLimitSeconds = 90;
+      // Scale timer cleanly with vehicle count (90s for standard levels up to 135s for 45-vehicle mega formations!)
+      const timeLimitSeconds = Math.max(90, Math.min(135, 70 + Math.round(vehicles.length * 1.45)));
 
       return {
         levelNum,
@@ -4624,16 +4728,16 @@
         // Rounded Diamond / Rhombus Track (Screenshot 1 Level 13/18 & Screenshot 3 Level 20!)
         const c = Math.cos(rawTheta);
         const s = Math.sin(rawTheta);
-        const p = 1.28;
+        const p = 1.32;
         const norm = Math.pow(Math.pow(Math.abs(c), p) + Math.pow(Math.abs(s), p), 1 / p) || 1;
-        return { x: (c / norm) * 3.56, z: centerZ + (s / norm) * 2.28 };
+        return { x: (c / norm) * 3.62, z: centerZ + (s / norm) * 2.32 };
       }
       if (shape === 'star') {
         // 5-Pointed Golden Star Track (Screenshot 1 & 2 Level 28!)
-        const wave = 1.0 + 0.165 * Math.cos(5 * (rawTheta - Math.PI * 0.5));
+        const wave = 1.0 + 0.145 * Math.cos(5 * (rawTheta - Math.PI * 0.5));
         return {
-          x: Math.cos(rawTheta) * 3.36 * wave,
-          z: centerZ + Math.sin(rawTheta) * 2.12 * wave
+          x: Math.cos(rawTheta) * 3.52 * wave,
+          z: centerZ + Math.sin(rawTheta) * 2.20 * wave
         };
       }
       if (shape === 'heart') {
@@ -4641,37 +4745,37 @@
         const tTheta = rawTheta + 0.16 * Math.sin(2 * rawTheta);
         const s = Math.sin(tTheta);
         const c = Math.cos(tTheta);
-        const topDip = s < 0 ? 0.52 * Math.pow(s, 4) : 0;
+        const topDip = s < 0 ? 0.46 * Math.pow(s, 4) : 0;
         const sideSwell = 1.0 + 0.08 * Math.sin(tTheta);
         return {
-          x: c * 3.42 * sideSwell,
-          z: centerZ + s * 2.08 + topDip
+          x: c * 3.54 * sideSwell,
+          z: centerZ + s * 2.16 + topDip
         };
       }
       if (shape === 'infinity') {
         // Pinched-Waist Peanut / Infinity Hourglass Track (Screenshot 3 Bottom-Middle!)
         const tTheta = rawTheta + 0.18 * Math.sin(2 * rawTheta);
         const s = Math.sin(tTheta);
-        const pinch = 1.0 - 0.27 * (1 - Math.abs(Math.cos(tTheta)));
+        const pinch = 1.0 - 0.22 * (1 - Math.abs(Math.cos(tTheta)));
         return {
-          x: Math.cos(tTheta) * 3.48,
-          z: centerZ + s * 2.24 * pinch
+          x: Math.cos(tTheta) * 3.58,
+          z: centerZ + s * 2.28 * pinch
         };
       }
       if (shape === 'hexagon') {
         // 6-Sided Royal Hexagon Jewel Track
-        const hexMod = 1.0 + 0.082 * Math.cos(6 * rawTheta);
+        const hexMod = 1.0 + 0.078 * Math.cos(6 * rawTheta);
         return {
-          x: Math.cos(rawTheta) * 3.40 * hexMod,
-          z: centerZ + Math.sin(rawTheta) * 2.10 * hexMod
+          x: Math.cos(rawTheta) * 3.52 * hexMod,
+          z: centerZ + Math.sin(rawTheta) * 2.18 * hexMod
         };
       }
       if (shape === 'clover') {
         // 4-Leaf Clover / Floral Petal Track
-        const petal = 1.0 + 0.125 * Math.cos(4 * (rawTheta + Math.PI * 0.25));
+        const petal = 1.0 + 0.115 * Math.cos(4 * (rawTheta + Math.PI * 0.25));
         return {
-          x: Math.cos(rawTheta) * 3.38 * petal,
-          z: centerZ + Math.sin(rawTheta) * 2.10 * petal
+          x: Math.cos(rawTheta) * 3.50 * petal,
+          z: centerZ + Math.sin(rawTheta) * 2.18 * petal
         };
       }
       if (shape === 'octagon') {
@@ -4680,13 +4784,13 @@
         const s = Math.sin(rawTheta);
         const p = 2.65;
         const norm = Math.pow(Math.pow(Math.abs(c), p) + Math.pow(Math.abs(s), p), 1 / p) || 1;
-        return { x: (c / norm) * 3.32, z: centerZ + (s / norm) * 2.02 };
+        return { x: (c / norm) * 3.46, z: centerZ + (s / norm) * 2.12 };
       }
       // Default: Classic Stadium Oval ('oval')
       const targetTheta = rawTheta + 0.21 * Math.sin(2 * rawTheta);
       return {
-        x: Math.cos(targetTheta) * 3.36,
-        z: centerZ + Math.sin(targetTheta) * 2.02
+        x: Math.cos(targetTheta) * 3.46,
+        z: centerZ + Math.sin(targetTheta) * 2.10
       };
     }
 
@@ -6368,28 +6472,36 @@
           }
         }
 
-        const pullFromFeederQueue = (queue) => {
-          if (!queue || queue.length === 0) return null;
-          // 1. Highest priority: finish any partially-boarded parked vehicle so it never stalls mid-fill!
-          for (let i = 0; i < queue.length; i++) {
-            const col = queue[i].color;
-            const partNeed = partiallyBoardedNeedByColor[col] || 0;
-            const inRing = ringCountByColor[col] || 0;
-            if (partNeed > inRing) {
-              const pulled = queue.splice(i, 1)[0];
-              ringCountByColor[col] = inRing + pulled.count;
-              return pulled;
+        // Count how many parking slots are currently occupied and whether ANY parked vehicle has matching rows in the ring
+        let occupiedSlotsCount = 0;
+        let anyParkedHasMatchInRing = false;
+        if (this.slots) {
+          for (const sl of this.slots) {
+            if (sl.vehicle && sl.vehicle.state === 'PARKED') {
+              occupiedSlotsCount++;
+              if ((ringCountByColor[sl.vehicle.color] || 0) >= ROW_PASSENGERS) {
+                anyParkedHasMatchInRing = true;
+              }
             }
           }
-          // 2. Second priority: any parked vehicle waiting in a slot
-          for (let i = 0; i < queue.length; i++) {
-            const col = queue[i].color;
-            const need = parkedNeedByColor[col] || 0;
-            const inRing = ringCountByColor[col] || 0;
-            if (need > inRing) {
-              const pulled = queue.splice(i, 1)[0];
-              ringCountByColor[col] = inRing + pulled.count;
-              return pulled;
+        }
+
+        // Pure FIFO feeder queue pull during normal gameplay (so players must genuinely match colors in the circle!).
+        // Only if >= 3 slots are occupied AND zero parked vehicles have any matching row in the ring, prioritize finishing
+        // a partially-boarded vehicle from the front 4 rows of the feeder road to prevent an unavoidable soft-lock.
+        const pullFromFeederQueue = (queue) => {
+          if (!queue || queue.length === 0) return null;
+          if (occupiedSlotsCount >= 3 && !anyParkedHasMatchInRing) {
+            const scanLim = Math.min(queue.length, 4);
+            for (let i = 0; i < scanLim; i++) {
+              const col = queue[i].color;
+              const partNeed = partiallyBoardedNeedByColor[col] || 0;
+              const inRing = ringCountByColor[col] || 0;
+              if (partNeed > inRing) {
+                const pulled = queue.splice(i, 1)[0];
+                ringCountByColor[col] = inRing + pulled.count;
+                return pulled;
+              }
             }
           }
           const pulled = queue.shift();
@@ -6418,34 +6530,6 @@
               pulled.joinSide = 1;
               this.ovalRingSlots[k] = pulled;
               this._rightFeederSlideOffset = Math.min(6.0, (this._rightFeederSlideOffset || 0) + 1.0);
-            }
-          } else if (!parkedColorsSet.has(rowData.color)) {
-            // If a parked vehicle ALREADY started boarding (partially boarded) and its remaining passengers are waiting
-            // in the feeder road while all 32 ring slots are occupied, swap this non-parked ring row with the needed feeder row!
-            const trySwapWithFeeder = (queue, side) => {
-              for (let i = 0; i < queue.length; i++) {
-                const col = queue[i].color;
-                const partNeed = partiallyBoardedNeedByColor[col] || 0;
-                const inRing = ringCountByColor[col] || 0;
-                if (partNeed > inRing) {
-                  const neededRow = queue[i];
-                  queue[i] = { color: rowData.color, count: rowData.count };
-                  ringCountByColor[rowData.color] = Math.max(0, (ringCountByColor[rowData.color] || 0) - rowData.count);
-                  ringCountByColor[col] = inRing + neededRow.count;
-                  neededRow.joinBlend = 0.0;
-                  neededRow.joinSide = side;
-                  this.ovalRingSlots[k] = neededRow;
-                  if (side < 0) this._leftFeederSlideOffset = Math.min(6.0, (this._leftFeederSlideOffset || 0) + 0.6);
-                  else this._rightFeederSlideOffset = Math.min(6.0, (this._rightFeederSlideOffset || 0) + 0.6);
-                  return true;
-                }
-              }
-              return false;
-            };
-            if (distLeft < juncTol && this.leftFeederRows.length > 0) {
-              trySwapWithFeeder(this.leftFeederRows, -1);
-            } else if (distRight < juncTol && this.rightFeederRows.length > 0) {
-              trySwapWithFeeder(this.rightFeederRows, 1);
             }
           }
         }
