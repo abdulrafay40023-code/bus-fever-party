@@ -2557,16 +2557,16 @@
         if (loadingSplash) {
           loadingSplash.style.backgroundImage = "url('loading_bg.jpg?v=83')";
         }
-        // Auto-upgrade live webview if an older HTML shell was served from Android disk cache
-        const CLIENT_BUILD_TAG = 'bus-rush-party-v96';
+        // Auto-upgrade live webview if an older HTML shell was served from Android disk cache (strictly guarded against reload loops!)
+        const CLIENT_BUILD_TAG = 'bus-rush-party-v98';
         const checkServerBuild = () => {
           if (location.protocol !== 'http:' && location.protocol !== 'https:') return;
           fetch('/sw.js?t=' + Date.now(), { cache: 'no-store' })
             .then((r) => (r && r.ok ? r.text() : ''))
             .then((txt) => {
               const m = txt && txt.match(/bus-rush-party-v\d+/);
-              if (m && m[0] && m[0] !== CLIENT_BUILD_TAG) {
-                const u = new URL(location.href);
+              const u = new URL(location.href);
+              if (m && m[0] && m[0] !== CLIENT_BUILD_TAG && u.searchParams.get('_v') !== m[0]) {
                 u.searchParams.set('play', '1');
                 u.searchParams.set('_v', m[0]);
                 location.replace(u.toString());
