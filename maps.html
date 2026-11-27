@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bus Rush Party — Level 1 to 5000 Visual Map Atlas</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 0;
+      background: #0f172a;
+      color: #f8fafc;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    }
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(15, 23, 42, 0.96);
+      backdrop-filter: blur(10px);
+      border-bottom: 2px solid #334155;
+      padding: 12px 18px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .brand {
+      font-size: 19px;
+      font-weight: 900;
+      color: #facc15;
+    }
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn {
+      background: linear-gradient(180deg, #3b82f6, #1d4ed8);
+      color: #fff;
+      border: 1.5px solid #93c5fd;
+      border-radius: 10px;
+      padding: 7px 13px;
+      font-size: 13px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+    .btn.gold {
+      background: linear-gradient(180deg, #facc15, #ca8a04);
+      color: #0f172a;
+      border-color: #fef08a;
+    }
+    .inp {
+      background: #1e293b;
+      color: #fff;
+      border: 1.5px solid #60a5fa;
+      border-radius: 10px;
+      padding: 7px 10px;
+      width: 110px;
+      font-size: 13px;
+      font-weight: 800;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 16px;
+      padding: 18px;
+      max-width: 1600px;
+      margin: 0 auto;
+    }
+    .card {
+      background: #1e293b;
+      border: 2px solid #475569;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 10px 24px rgba(0,0,0,0.45);
+      display: flex;
+      flex-direction: column;
+    }
+    .card-hdr {
+      padding: 8px 12px;
+      background: #0f172a;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid #334155;
+    }
+    .lvl-num {
+      font-size: 15px;
+      font-weight: 900;
+      color: #facc15;
+    }
+    .lvl-meta {
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #93c5fd;
+    }
+    .map-canvas {
+      width: 100%;
+      aspect-ratio: 340 / 500;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand">🚌 Bus Rush Party — All 5,000 Level Maps Viewer (Level 1 – 5000)</div>
+    <div class="controls">
+      <button class="btn" id="btn-prev">◀ Prev 50 Levels</button>
+      <span id="page-label" style="font-weight:900; font-size:14px; color:#e2e8f0; min-width:140px; text-align:center;">Levels 1 – 50</span>
+      <button class="btn" id="btn-next">Next 50 Levels ▶</button>
+      <input type="number" id="jump-input" class="inp" min="1" max="5000" placeholder="Level 1-5000" />
+      <button class="btn gold" id="btn-jump">Go to Level</button>
+      <button class="btn" onclick="location.href='/?play=1'">🎮 Back to Game</button>
+    </div>
+  </div>
+  <div class="grid" id="maps-grid"></div>
+
+  <script>
+    window.BFP_PORTAL_ACTIVE = true;
+  </script>
+  <script src="game.js?v=96"></script>
+  <script>
+    (function () {
+      const COLORS_HEX = {
+        yellow: '#e59e00',
+        blue:   '#1565d8',
+        red:    '#d92323',
+        green:  '#18a82b',
+        purple: '#7e22ce',
+        brown:  '#78350f',
+        cyan:   '#0284c7',
+        orange: '#ea580c',
+        pink:   '#db2777'
+      };
+      const pairedTrackShapes = ['heart', 'infinity', 'heart', 'hexagon', 'octagon', 'star', 'oval', 'diamond', 'clover', 'diamond'];
+      const getTrackShape = (lvl) => lvl === 1 ? 'oval' : lvl === 2 ? 'diamond' : lvl === 3 ? 'heart' : pairedTrackShapes[(lvl - 1) % 10];
+
+      function getTrackPoint(shape, rawTheta) {
+        const centerZ = -8.55;
+        const c = Math.cos(rawTheta);
+        const s = Math.sin(rawTheta);
+        if (shape === 'diamond') {
+          const p = 1.36;
+          const norm = Math.pow(Math.pow(Math.abs(c), p) + Math.pow(Math.abs(s), p), 1 / p) || 1;
+          return { x: (c / norm) * 3.68, z: centerZ + (s / norm) * 2.38 };
+        }
+        if (shape === 'star') {
+          const wave = 1.0 + 0.135 * Math.cos(5 * (rawTheta - Math.PI * 0.5));
+          return { x: c * 3.58 * wave, z: centerZ + s * 2.28 * wave };
+        }
+        if (shape === 'heart') {
+          const tTheta = rawTheta + 0.14 * Math.sin(2 * rawTheta);
+          const s2 = Math.sin(tTheta);
+          const c2 = Math.cos(tTheta);
+          const topDip = s2 < 0 ? 0.58 * s2 * s2 : -0.14 * s2 * s2;
+          const sideSwell = 1.0 - 0.06 * s2;
+          return { x: c2 * 3.56 * sideSwell, z: centerZ + s2 * 2.24 + topDip };
+        }
+        if (shape === 'infinity') {
+          const tTheta = rawTheta + 0.16 * Math.sin(2 * rawTheta);
+          const s2 = Math.sin(tTheta);
+          const c2 = Math.cos(tTheta);
+          const pinch = 1.0 - 0.22 * s2 * s2;
+          return { x: c2 * 3.62, z: centerZ + s2 * 2.34 * pinch };
+        }
+        if (shape === 'hexagon') {
+          const hexMod = 1.0 + 0.075 * Math.cos(6 * rawTheta);
+          return { x: c * 3.56 * hexMod, z: centerZ + s * 2.24 * hexMod };
+        }
+        if (shape === 'clover') {
+          const petal = 1.0 + 0.11 * Math.cos(4 * (rawTheta + Math.PI * 0.25));
+          return { x: c * 3.56 * petal, z: centerZ + s * 2.24 * petal };
+        }
+        if (shape === 'octagon') {
+          const p = 2.75;
+          const norm = Math.pow(Math.pow(Math.abs(c), p) + Math.pow(Math.abs(s), p), 1 / p) || 1;
+          return { x: (c / norm) * 3.46, z: centerZ + (s / norm) * 2.16 };
+        }
+        const tTheta = rawTheta + 0.20 * Math.sin(2 * rawTheta);
+        return { x: Math.cos(tTheta) * 3.48, z: centerZ + Math.sin(tTheta) * 2.14 };
+      }
+
+      // Extract LevelGenerator from game.js source
+      let LevelGen = null;
+      async function loadLevelGen() {
+        const res = await fetch('game.js?v=96');
+        const code = await res.text();
+        const start = code.indexOf('class LevelGenerator');
+        const end = code.indexOf('class BusFeverGame');
+        const COLORS = { yellow:{}, blue:{}, red:{}, green:{}, purple:{}, brown:{}, cyan:{}, orange:{}, pink:{} };
+        const ALL_COLOR_KEYS = Object.keys(COLORS);
+        const RING_SLOT_COUNT = 32;
+        const ROW_PASSENGERS = 4;
+        LevelGen = eval('(' + code.slice(start, end) + ')');
+        renderPage(1);
+      }
+
+      let currentStart = 1;
+      const PAGE_SIZE = 50;
+
+      function drawLevelCanvas(canvas, lvl) {
+        const W = 340, H = 500;
+        canvas.width = W;
+        canvas.height = H;
+        const ctx = canvas.getContext('2d');
+        const d = LevelGen.generateLevel(lvl);
+        const shape = getTrackShape(lvl);
+
+        // Background zones
+        ctx.fillStyle = '#5c9434';
+        ctx.fillRect(0, 0, W, 168);
+        ctx.fillStyle = '#444c5e';
+        ctx.fillRect(0, 168, W, 50);
+        ctx.fillStyle = '#b6c2d4';
+        ctx.fillRect(0, 218, W, H - 218);
+
+        const scX = W / 14.0;
+        const scZ = (H - 16) / 25.5;
+        const px = (wx) => (wx + 7.0) * scX;
+        const py = (wz) => 12 + (wz + 13.0) * scZ;
+
+        // Track loop
+        ctx.beginPath();
+        for (let i = 0; i <= 64; i++) {
+          const th = (i / 64) * Math.PI * 2;
+          const pt = getTrackPoint(shape, th);
+          if (i === 0) ctx.moveTo(px(pt.x), py(pt.z));
+          else ctx.lineTo(px(pt.x), py(pt.z));
+        }
+        ctx.closePath();
+        ctx.lineWidth = 26;
+        ctx.strokeStyle = '#eef3fb';
+        ctx.stroke();
+        ctx.lineWidth = 22;
+        ctx.strokeStyle = '#404858';
+        ctx.stroke();
+
+        // 32 Passenger rows on track
+        for (let k = 0; k < 32; k++) {
+          const th = (k / 32) * Math.PI * 2;
+          const pt = getTrackPoint(shape, th);
+          const r = d.ovalRingSlots[k];
+          ctx.fillStyle = r ? (COLORS_HEX[r.color] || '#1565d8') : '#64748b';
+          ctx.beginPath();
+          ctx.arc(px(pt.x), py(pt.z), 4.8, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // 8 Boarding slots
+        const slotXs = [-5.85, -4.18, -2.51, -0.84, 0.84, 2.51, 4.18, 5.85];
+        ctx.strokeStyle = 'rgba(226,232,240,0.65)';
+        ctx.lineWidth = 1.5;
+        slotXs.forEach((sx) => {
+          ctx.strokeRect(px(sx) - 10, py(-3.22) - 15, 20, 30);
+        });
+
+        // Vehicles
+        d.vehicles.forEach((v) => {
+          const vx = px(v.x);
+          const vz = py(v.z);
+          const vSc = v.scale || 1.0;
+          const vw = (v.type === 'bus' ? 1.16 : 1.06) * vSc * scX;
+          const vh = (v.type === 'bus' ? 2.44 : 1.76) * vSc * scZ;
+          const rotY = LevelGen.getVehicleRotY(v);
+
+          ctx.save();
+          ctx.translate(vx, vz);
+          ctx.rotate(-rotY);
+          ctx.fillStyle = COLORS_HEX[v.color] || '#1565d8';
+          ctx.beginPath();
+          ctx.roundRect(-vw * 0.5, -vh * 0.5, vw, vh, 4);
+          ctx.fill();
+          ctx.lineWidth = 1.4;
+          ctx.strokeStyle = '#ffffff';
+          ctx.stroke();
+
+          // Arrow
+          const aLen = vh * 0.28;
+          ctx.beginPath();
+          ctx.moveTo(0, aLen);
+          ctx.lineTo(0, -aLen);
+          ctx.moveTo(-4, -aLen + 5);
+          ctx.lineTo(0, -aLen);
+          ctx.lineTo(4, -aLen + 5);
+          ctx.lineWidth = 2.0;
+          ctx.strokeStyle = '#ffffff';
+          ctx.stroke();
+          ctx.restore();
+        });
+
+        return { count: d.vehicles.length, pass: d.vehicles.reduce((a, b) => a + b.cap, 0), shape };
+      }
+
+      function renderPage(startLvl) {
+        currentStart = Math.max(1, Math.min(4951, startLvl));
+        const endLvl = Math.min(5000, currentStart + PAGE_SIZE - 1);
+        document.getElementById('page-label').textContent = `Levels ${currentStart} – ${endLvl}`;
+        const grid = document.getElementById('maps-grid');
+        grid.innerHTML = '';
+
+        for (let lvl = currentStart; lvl <= endLvl; lvl++) {
+          const card = document.createElement('div');
+          card.className = 'card';
+          card.id = 'lvl-card-' + lvl;
+          const hdr = document.createElement('div');
+          hdr.className = 'card-hdr';
+          const numEl = document.createElement('span');
+          numEl.className = 'lvl-num';
+          numEl.textContent = `Level ${lvl}`;
+          const metaEl = document.createElement('span');
+          metaEl.className = 'lvl-meta';
+          hdr.appendChild(numEl);
+          hdr.appendChild(metaEl);
+
+          const canvas = document.createElement('canvas');
+          canvas.className = 'map-canvas';
+          const info = drawLevelCanvas(canvas, lvl);
+          metaEl.textContent = `${info.count} Buses • ${info.pass} Pass • ${info.shape.toUpperCase()}`;
+
+          card.appendChild(hdr);
+          card.appendChild(canvas);
+          grid.appendChild(card);
+        }
+      }
+
+      document.getElementById('btn-prev').addEventListener('click', () => renderPage(currentStart - PAGE_SIZE));
+      document.getElementById('btn-next').addEventListener('click', () => renderPage(currentStart + PAGE_SIZE));
+      document.getElementById('btn-jump').addEventListener('click', () => {
+        const val = parseInt(document.getElementById('jump-input').value, 10);
+        if (val >= 1 && val <= 5000) {
+          const pageStart = Math.floor((val - 1) / PAGE_SIZE) * PAGE_SIZE + 1;
+          renderPage(pageStart);
+          setTimeout(() => {
+            const el = document.getElementById('lvl-card-' + val);
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }, 80);
+        }
+      });
+
+      loadLevelGen();
+    })();
+  </script>
+</body>
+</html>
