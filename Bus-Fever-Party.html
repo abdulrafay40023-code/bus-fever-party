@@ -8356,13 +8356,27 @@ body, #app-wrapper, #game-container {
 
       // Cycle directly through the 10 iconic visual formations from the user's reference screenshots
       // so EVERY level (including Level 31, 32, 33, 34, 35, 36...) has an unmistakable, pure geometric map silhouette!
-      // 15: Giant Butterfly Wings, 12: Square Spiral [@], 13: Concentric Circular Rings (O),
-      // 14: 45° Diagonal Criss-Cross /// \\\, 16: 45° Rotated Diamond Lattice ◇,
-      // 17: Cyber Robot Face / Smiling Mask, 18: Asymmetric Diagonal Island + Highway Convoy,
-      // 6: Iconic Sculpted Heart ♡, 19: 5-Pointed Royal Starburst ☆, 11: Colosseum Double Arena Ring ◎
+      // 15: Giant Butterfly Wings (42v), 12: Triple Square Spiral [@] (42v), 13: Triple Concentric Circular Rings (O) (38v),
+      // 14: 45° Diagonal Criss-Cross /// \\\ (42v), 16: 45° Rotated 6x6 Diamond Lattice ◇ (36v),
+      // 17: Cyber Robot Face / Smiling Mask (36v), 18: Asymmetric Diagonal Island + Highway Convoy (42v),
+      // 6: Iconic Sculpted Heart ♡ (38v), 19: 5-Pointed Royal Starburst ☆ (38v), 11: Colosseum Triple Arena Ring ◎ (40v)
       const archetypeOrder = [15, 12, 13, 14, 16, 17, 18, 6, 19, 11];
       const archetype = archetypeOrder[Math.max(0, levelNum - 1) % archetypeOrder.length];
-      const slots = this.buildDistinctFormationArchetype(archetype, levelNum, rand);
+      let slots = this.buildDistinctFormationArchetype(archetype, levelNum, rand);
+
+      // Progressive vehicle count scaling: starts at 26 on Level 4 and grows every level up to full 36-43 vehicles by Level 20+!
+      const targetMaxVehicles = levelNum < 20
+        ? Math.min(slots.length, 25 + Math.floor((levelNum - 4) * 1.15))
+        : slots.length;
+      if (slots.length > targetMaxVehicles) {
+        slots = slots.slice(0, targetMaxVehicles);
+      }
+
+      // Dynamic parking-lot vehicle scale so 36-43 vehicles fit cleanly inside the iconic formation silhouette with 0 overlap!
+      const lotScale = slots.length >= 34 ? 0.74 : slots.length >= 28 ? 0.81 : 0.88;
+      slots.forEach((s) => {
+        s.scale = lotScale;
+      });
 
       // Horizontal mirror on alternate 10-level cycles so formations feel fresh without ever distorting their geometry
       const cycle = Math.floor(Math.max(0, levelNum - 1) / archetypeOrder.length);
@@ -8376,7 +8390,7 @@ body, #app-wrapper, #game-container {
       }
 
       // Ensure base formation has crisp, open spacing while preserving its exact visual silhouette
-      this.enforceCleanVehicleSpacing(slots, 0.24);
+      this.enforceCleanVehicleSpacing(slots, 0.16);
 
       // Strict Vehicle Capacities requested by User:
       // - Small Bus / Van (type !== 'bus'): strictly 16 passengers (4 full rows of 4)
@@ -8393,7 +8407,7 @@ body, #app-wrapper, #game-container {
 
       let prevCol = null;
       let busIdx = 0;
-      const megaBusMod = levelNum >= 16 ? 3 : 2; // Mix of 24-seat and 40-seat large buses on every level!
+      const megaBusMod = levelNum >= 12 ? 2 : 3; // More 40-seat mega buses on higher levels for longer, intense waves!
       const vehicles = slots.map((s, idx) => {
         let color = colorBag[idx];
         if (color === prevCol && colorPool.length > 1) {
@@ -8415,50 +8429,10 @@ body, #app-wrapper, #game-container {
           subType: s.type === 'bus' ? 'bus' : isVan ? 'van' : 'car',
           color: color,
           cap: cap,
-          tilt: s.tilt || 0
+          tilt: s.tilt || 0,
+          scale: s.scale || lotScale
         };
       });
-
-      this.enforceCleanVehicleSpacing(vehicles, 0.22);
-      this.ensureNoCyclicDeadlock(vehicles);
-
-      // Keep 4-6 outer vehicles unblocked at level start using pure 180-degree flips ONLY
-      // (a 180° flip keeps the exact same 3D OBB footprint & tilt angle so the formation shape is NEVER distorted!)
-      if (levelNum >= 4) {
-        const maxInitialFree = 6;
-        const oppDir = (d) => (d === 'UP' ? 'DOWN' : d === 'DOWN' ? 'UP' : d === 'LEFT' ? 'RIGHT' : 'LEFT');
-        const isFullyPeelable = (vList) => {
-          const rem = vList.slice();
-          let steps = 0;
-          while (rem.length > 0 && steps < 100) {
-            steps++;
-            const free = rem.filter((v) => !this.findBlockingVehicle(v, rem));
-            if (free.length === 0) return false;
-            for (const f of free) {
-              const i = rem.indexOf(f);
-              if (i !== -1) rem.splice(i, 1);
-            }
-          }
-          return rem.length === 0;
-        };
-
-        const initialFree = vehicles.filter((v) => !this.findBlockingVehicle(v, vehicles));
-        let freeCount = initialFree.length;
-        for (let i = 0; i < initialFree.length && freeCount > maxInitialFree; i++) {
-          const candV = initialFree[i];
-          const oldD = candV.dir;
-          candV.dir = oppDir(oldD);
-          if (
-            !this.hasAnyOBBOverlap(candV, vehicles, 0.22) &&
-            this.findBlockingVehicle(candV, vehicles) &&
-            isFullyPeelable(vehicles)
-          ) {
-            freeCount--;
-          } else {
-            candV.dir = oldD;
-          }
-        }
-      }
 
       return this.finalizeWithRevolvingFeederQueues(levelNum, vehicles);
     }
@@ -8649,51 +8623,57 @@ body, #app-wrapper, #game-container {
         list.push({ x: 0.0, z: 10.65, dir: 'UP', type: 'car' });
         list.push({ x: 2.35, z: 10.55, dir: 'LEFT', type: 'bus', tilt: -0.16 });
       } else if (archetype === 6) {
-        // Archetype 6 (Level 6!): ICONIC DIAGONAL HEART FORMATION (Exact Competitor Screenshot!)
-        // Top-left & Top-right heart lobes
-        list.push({ x: -3.9, z: 1.05, dir: 'UP', type: 'car', tilt: -0.65 });
-        list.push({ x: -2.1, z: 0.75, dir: 'UP', type: 'car', subType: 'van', tilt: 0.72 });
-        list.push({ x: 2.1, z: 0.75, dir: 'UP', type: 'car', subType: 'van', tilt: -0.72 });
-        list.push({ x: 3.9, z: 1.05, dir: 'UP', type: 'bus', tilt: 0.65 });
+        // Archetype 6: ICONIC SCULPTED 3D HEART FORMATION (38 Vehicles — Multi-Layer Heart!)
+        // Top-left & Top-right outer heart lobes
+        list.push({ x: -3.85, z: 1.05, dir: 'UP', type: 'car', tilt: -0.65 });
+        list.push({ x: -2.45, z: 0.72, dir: 'UP', type: 'bus', tilt: 0.55 });
+        list.push({ x: -0.95, z: 1.15, dir: 'DOWN', type: 'car', tilt: -0.58 });
+        list.push({ x: 0.95, z: 1.15, dir: 'DOWN', type: 'car', tilt: 0.58 });
+        list.push({ x: 2.45, z: 0.72, dir: 'UP', type: 'bus', tilt: -0.55 });
+        list.push({ x: 3.85, z: 1.05, dir: 'UP', type: 'car', tilt: 0.65 });
 
-        // Upper inner wings
-        list.push({ x: -2.9, z: 2.55, dir: 'UP', type: 'car', subType: 'van', tilt: 0.68 });
-        list.push({ x: -1.1, z: 2.25, dir: 'UP', type: 'car', subType: 'van', tilt: 0.68 });
-        list.push({ x: 0.9, z: 2.25, dir: 'UP', type: 'car', subType: 'van', tilt: 0.68 });
-        list.push({ x: 2.6, z: 2.65, dir: 'DOWN', type: 'car', subType: 'van', tilt: 0.95 });
+        // Upper heart wide shoulders
+        list.push({ x: -4.45, z: 2.55, dir: 'DOWN', type: 'bus', tilt: 0.15 });
+        list.push({ x: -3.10, z: 2.25, dir: 'UP', type: 'car', tilt: 0.68 });
+        list.push({ x: -1.75, z: 2.35, dir: 'DOWN', type: 'car', tilt: 0.68 });
+        list.push({ x: 0.0, z: 2.35, dir: 'DOWN', type: 'car', tilt: 0 });
+        list.push({ x: 1.75, z: 2.35, dir: 'DOWN', type: 'car', tilt: -0.68 });
+        list.push({ x: 3.10, z: 2.25, dir: 'UP', type: 'car', tilt: -0.68 });
+        list.push({ x: 4.45, z: 2.55, dir: 'DOWN', type: 'bus', tilt: -0.15 });
 
-        // Outer left & right vertical/angled flankers
-        list.push({ x: -4.75, z: 3.65, dir: 'DOWN', type: 'bus', tilt: 0.12 });
-        list.push({ x: -3.25, z: 4.35, dir: 'DOWN', type: 'car', tilt: -0.35 });
-        list.push({ x: -1.85, z: 4.15, dir: 'DOWN', type: 'car', tilt: -0.35 });
-        list.push({ x: 0.15, z: 3.65, dir: 'UP', type: 'car', tilt: -0.48 });
-        list.push({ x: 2.05, z: 4.10, dir: 'DOWN', type: 'car', subType: 'van', tilt: 0.95 });
-        list.push({ x: 3.75, z: 4.05, dir: 'UP', type: 'bus', tilt: -0.25 });
-        list.push({ x: 4.95, z: 4.45, dir: 'RIGHT', type: 'car', subType: 'van', tilt: -0.25 });
+        // Mid-upper heart belly
+        list.push({ x: -4.50, z: 4.35, dir: 'DOWN', type: 'bus', tilt: -0.12 });
+        list.push({ x: -3.20, z: 4.10, dir: 'DOWN', type: 'car', tilt: -0.52 });
+        list.push({ x: -1.90, z: 4.00, dir: 'UP', type: 'bus', tilt: 0.62 });
+        list.push({ x: -0.65, z: 3.95, dir: 'DOWN', type: 'car', tilt: 0.62 });
+        list.push({ x: 0.65, z: 3.95, dir: 'DOWN', type: 'car', tilt: -0.62 });
+        list.push({ x: 1.90, z: 4.00, dir: 'UP', type: 'bus', tilt: -0.62 });
+        list.push({ x: 3.20, z: 4.10, dir: 'DOWN', type: 'car', tilt: 0.52 });
+        list.push({ x: 4.50, z: 4.35, dir: 'DOWN', type: 'bus', tilt: 0.12 });
 
-        // Mid heart core
-        list.push({ x: -4.25, z: 6.25, dir: 'DOWN', type: 'car', subType: 'van', tilt: 0.18 });
-        list.push({ x: -2.75, z: 6.05, dir: 'DOWN', type: 'car', tilt: -0.30 });
-        list.push({ x: -0.85, z: 4.95, dir: 'DOWN', type: 'car', tilt: 0.85 });
-        list.push({ x: 0.15, z: 5.85, dir: 'DOWN', type: 'car', subType: 'van', tilt: -0.45 });
-        list.push({ x: 1.85, z: 5.55, dir: 'DOWN', type: 'car', subType: 'van', tilt: 0.95 });
-        list.push({ x: 3.45, z: 6.15, dir: 'UP', type: 'car', subType: 'van', tilt: -0.35 });
-        list.push({ x: 4.75, z: 6.25, dir: 'UP', type: 'car', subType: 'van', tilt: -0.35 });
+        // Mid-lower converging heart ribs
+        list.push({ x: -3.95, z: 6.10, dir: 'DOWN', type: 'car', tilt: -0.45 });
+        list.push({ x: -2.65, z: 5.85, dir: 'DOWN', type: 'bus', tilt: 0.65 });
+        list.push({ x: -1.35, z: 5.75, dir: 'UP', type: 'car', tilt: 0.65 });
+        list.push({ x: 0.0, z: 5.75, dir: 'DOWN', type: 'bus', tilt: 0 });
+        list.push({ x: 1.35, z: 5.75, dir: 'UP', type: 'car', tilt: -0.65 });
+        list.push({ x: 2.65, z: 5.85, dir: 'DOWN', type: 'bus', tilt: -0.65 });
+        list.push({ x: 3.95, z: 6.10, dir: 'DOWN', type: 'car', tilt: 0.45 });
 
-        // Lower converging V-tip of the Heart
-        list.push({ x: -1.25, z: 6.85, dir: 'DOWN', type: 'car', subType: 'van', tilt: 0.82 });
-        list.push({ x: 1.55, z: 6.95, dir: 'RIGHT', type: 'car', tilt: -0.30 });
-        list.push({ x: -2.05, z: 8.15, dir: 'DOWN', type: 'car', tilt: 0.82 });
-        list.push({ x: -0.25, z: 8.35, dir: 'DOWN', type: 'bus', tilt: -0.62 });
-        list.push({ x: 2.35, z: 8.15, dir: 'UP', type: 'car', tilt: -0.42 });
-        list.push({ x: 3.75, z: 8.15, dir: 'UP', type: 'car', subType: 'van', tilt: -0.38 });
+        // Lower V-taper of Heart
+        list.push({ x: -3.05, z: 7.75, dir: 'DOWN', type: 'car', tilt: -0.58 });
+        list.push({ x: -1.75, z: 7.55, dir: 'DOWN', type: 'bus', tilt: 0.65 });
+        list.push({ x: -0.55, z: 7.55, dir: 'UP', type: 'car', tilt: 0.65 });
+        list.push({ x: 0.55, z: 7.55, dir: 'UP', type: 'car', tilt: -0.65 });
+        list.push({ x: 1.75, z: 7.55, dir: 'DOWN', type: 'bus', tilt: -0.65 });
+        list.push({ x: 3.05, z: 7.75, dir: 'DOWN', type: 'car', tilt: 0.58 });
 
-        // Bottom heart point
-        list.push({ x: -2.95, z: 9.45, dir: 'LEFT', type: 'car', subType: 'van', tilt: -0.45 });
-        list.push({ x: 0.35, z: 9.65, dir: 'DOWN', type: 'bus', tilt: -0.62 });
-        list.push({ x: 2.35, z: 9.85, dir: 'UP', type: 'car', subType: 'van', tilt: -0.42 });
-        list.push({ x: -1.45, z: 10.75, dir: 'DOWN', type: 'car', tilt: 0.72 });
-        list.push({ x: 0.45, z: 11.05, dir: 'UP', type: 'car', tilt: -0.68 });
+        // Bottom V-Tip of the Heart
+        list.push({ x: -1.85, z: 9.20, dir: 'DOWN', type: 'car', tilt: -0.62 });
+        list.push({ x: -0.65, z: 9.15, dir: 'DOWN', type: 'car', tilt: 0.65 });
+        list.push({ x: 0.65, z: 9.15, dir: 'DOWN', type: 'car', tilt: -0.65 });
+        list.push({ x: 1.85, z: 9.20, dir: 'DOWN', type: 'car', tilt: 0.62 });
+        list.push({ x: 0.0, z: 10.35, dir: 'DOWN', type: 'bus', tilt: 0 });
       } else if (archetype === 7) {
         // Archetype 7: MEGA HIGHWAY GRIDLOCK (28 vehicles)
         list.push({ x: -2.3, z: 0.5, dir: 'RIGHT', type: 'bus', tilt: -0.1 });
@@ -8834,249 +8814,335 @@ body, #app-wrapper, #game-container {
           });
         });
       } else if (archetype === 11) {
-        // Archetype 11: COLOSSEUM AMPHITHEATER RING (20 spacious concentric arena vehicles — zero core pileup!)
-        const ringCount = 12;
-        for (let i = 0; i < ringCount; i++) {
-          const ang = (i / ringCount) * Math.PI * 2;
-          const rx = Math.sin(ang) * 4.25;
-          const rz = 5.65 - Math.cos(ang) * 4.65;
+        // Archetype 11: COLOSSEUM TRIPLE ARENA RING (40 Vehicles — Outer 18 + Middle 13 + Inner 7 + 2 Center Gladiator Buses!)
+        const outerCount = 18;
+        for (let i = 0; i < outerCount; i++) {
+          const ang = (i / outerCount) * Math.PI * 2;
+          const rx = Math.sin(ang) * 4.35;
+          const rz = 5.60 - Math.cos(ang) * 4.55;
           const isVertical = Math.abs(Math.cos(ang)) > 0.55;
           const dir = isVertical ? (Math.cos(ang) > 0 ? 'DOWN' : 'UP') : (Math.sin(ang) > 0 ? 'LEFT' : 'RIGHT');
           list.push({
             x: Number(rx.toFixed(2)),
             z: Number(rz.toFixed(2)),
             dir,
-            type: i % 4 === 0 ? 'bus' : 'car',
+            type: i % 3 === 0 ? 'bus' : 'car',
             subType: 'van',
-            tilt: Math.sin(ang * 2) * 0.22
+            tilt: Math.sin(ang * 2) * 0.24
           });
         }
-
-        // Inner Arena Ring (6 well-spaced vehicles at radius 2.25)
-        const innerCount = 6;
+        const midCount = 13;
+        for (let i = 0; i < midCount; i++) {
+          const ang = (i / midCount) * Math.PI * 2 + 0.24;
+          const rx = Math.sin(ang) * 2.95;
+          const rz = 5.60 - Math.cos(ang) * 3.10;
+          const isVertical = Math.abs(Math.cos(ang)) > 0.55;
+          const dir = isVertical ? (Math.cos(ang) > 0 ? 'UP' : 'DOWN') : (Math.sin(ang) > 0 ? 'RIGHT' : 'LEFT');
+          list.push({
+            x: Number(rx.toFixed(2)),
+            z: Number(rz.toFixed(2)),
+            dir,
+            type: i % 4 === 0 ? 'bus' : 'car',
+            tilt: -Math.sin(ang * 2) * 0.24
+          });
+        }
+        const innerCount = 7;
         for (let i = 0; i < innerCount; i++) {
           const ang = (i / innerCount) * Math.PI * 2 + 0.52;
-          const rx = Math.sin(ang) * 2.22;
-          const rz = 5.65 - Math.cos(ang) * 2.38;
+          const rx = Math.sin(ang) * 1.68;
+          const rz = 5.60 - Math.cos(ang) * 1.78;
           const dir = i % 2 === 0 ? 'UP' : 'DOWN';
           list.push({
             x: Number(rx.toFixed(2)),
             z: Number(rz.toFixed(2)),
             dir,
             type: 'car',
-            tilt: (i % 2 === 0 ? 1 : -1) * 0.25
+            tilt: (i % 2 === 0 ? 1 : -1) * 0.28
           });
         }
-
-        // Spacious Gladiator Center (1 center bus with wide open clearance all around!)
-        list.push({ x: 0.0, z: 5.65, dir: 'UP', type: 'bus' });
+        list.push({ x: -0.52, z: 5.60, dir: 'UP', type: 'bus' });
+        list.push({ x: 0.52, z: 5.60, dir: 'DOWN', type: 'bus' });
       } else if (archetype === 12) {
-        // Archetype 12: SQUARE SPIRAL MAZE COIL ([ @ ] — Screenshot 1 Level 4 Rectangular Spiral!)
-        // Outer Top Horizontal Bar (pointing LEFT)
-        list.push({ x: -2.35, z: 0.85, dir: 'LEFT', type: 'car' });
-        list.push({ x: -0.15, z: 0.85, dir: 'LEFT', type: 'car' });
-        list.push({ x: 2.25, z: 0.85, dir: 'LEFT', type: 'bus' });
-        // Outer Left Vertical Wall (pointing DOWN)
-        list.push({ x: -4.25, z: 1.75, dir: 'DOWN', type: 'bus' });
-        list.push({ x: -4.25, z: 4.55, dir: 'DOWN', type: 'bus' });
-        list.push({ x: -4.25, z: 7.35, dir: 'DOWN', type: 'bus' });
-        list.push({ x: -4.25, z: 9.80, dir: 'DOWN', type: 'car' });
-        // Outer Bottom Horizontal Bar (pointing RIGHT)
-        list.push({ x: -2.15, z: 10.25, dir: 'RIGHT', type: 'bus' });
-        list.push({ x: 0.25, z: 10.25, dir: 'RIGHT', type: 'car' });
-        list.push({ x: 2.35, z: 10.25, dir: 'RIGHT', type: 'car' });
-        // Outer Right Vertical Wall (pointing UP)
-        list.push({ x: 4.25, z: 9.45, dir: 'UP', type: 'bus' });
-        list.push({ x: 4.25, z: 6.65, dir: 'UP', type: 'bus' });
-        list.push({ x: 4.25, z: 3.85, dir: 'UP', type: 'bus' });
-        list.push({ x: 4.25, z: 1.40, dir: 'UP', type: 'car' });
-        // Middle Spiral Ring
-        list.push({ x: -0.85, z: 2.65, dir: 'LEFT', type: 'car' });
-        list.push({ x: 1.25, z: 2.65, dir: 'LEFT', type: 'car' });
-        list.push({ x: -2.45, z: 4.45, dir: 'DOWN', type: 'car' });
-        list.push({ x: -2.45, z: 6.75, dir: 'DOWN', type: 'bus' });
-        list.push({ x: -0.95, z: 8.45, dir: 'RIGHT', type: 'car' });
-        list.push({ x: 1.15, z: 8.45, dir: 'RIGHT', type: 'car' });
-        list.push({ x: 2.45, z: 6.65, dir: 'UP', type: 'bus' });
-        list.push({ x: 2.45, z: 4.35, dir: 'UP', type: 'car' });
-        // Inner Spiral Core
-        list.push({ x: -0.65, z: 4.65, dir: 'DOWN', type: 'car' });
-        list.push({ x: -0.65, z: 6.65, dir: 'RIGHT', type: 'car' });
-        list.push({ x: 0.75, z: 5.65, dir: 'UP', type: 'car' });
+        // Archetype 12: TRIPLE-COIL SQUARE SPIRAL MAZE ([ @ ] — 42 Vehicles, Screenshot 1 Level 4 Expanded!)
+        // 1. Outer Square Spiral Ring (20 vehicles)
+        [-3.0, -1.5, 0.0, 1.5, 3.0].forEach((cx, i) => {
+          list.push({ x: cx, z: 0.72, dir: 'LEFT', type: i % 2 === 1 ? 'bus' : 'car' });
+        });
+        [1.75, 3.65, 5.55, 7.45, 9.35].forEach((cz, i) => {
+          list.push({ x: -4.40, z: cz, dir: 'DOWN', type: i % 2 === 0 ? 'bus' : 'car' });
+        });
+        [-3.0, -1.5, 0.0, 1.5, 3.0].forEach((cx, i) => {
+          list.push({ x: cx, z: 10.38, dir: 'RIGHT', type: i % 2 === 1 ? 'bus' : 'car' });
+        });
+        [9.35, 7.45, 5.55, 3.65, 1.75].forEach((cz, i) => {
+          list.push({ x: 4.40, z: cz, dir: 'UP', type: i % 2 === 0 ? 'bus' : 'car' });
+        });
+        // 2. Middle Square Spiral Ring (14 vehicles)
+        [-1.45, 0.0, 1.45].forEach((cx, i) => {
+          list.push({ x: cx, z: 2.28, dir: 'LEFT', type: i === 1 ? 'bus' : 'car' });
+        });
+        [3.35, 4.85, 6.35, 7.85].forEach((cz, i) => {
+          list.push({ x: -2.90, z: cz, dir: 'DOWN', type: i === 1 || i === 2 ? 'bus' : 'car' });
+        });
+        [-1.45, 0.0, 1.45].forEach((cx, i) => {
+          list.push({ x: cx, z: 8.85, dir: 'RIGHT', type: i === 1 ? 'bus' : 'car' });
+        });
+        [7.85, 6.35, 4.85, 3.35].forEach((cz, i) => {
+          list.push({ x: 2.90, z: cz, dir: 'UP', type: i === 1 || i === 2 ? 'bus' : 'car' });
+        });
+        // 3. Inner Square Spiral Core (8 vehicles)
+        list.push({ x: -0.65, z: 3.85, dir: 'LEFT', type: 'car' });
+        list.push({ x: 0.75, z: 3.85, dir: 'LEFT', type: 'car' });
+        list.push({ x: -1.40, z: 5.05, dir: 'DOWN', type: 'car' });
+        list.push({ x: -1.40, z: 6.55, dir: 'DOWN', type: 'bus' });
+        list.push({ x: -0.10, z: 7.35, dir: 'RIGHT', type: 'car' });
+        list.push({ x: 1.35, z: 6.55, dir: 'UP', type: 'bus' });
+        list.push({ x: 1.35, z: 5.05, dir: 'UP', type: 'car' });
+        list.push({ x: 0.0, z: 5.55, dir: 'DOWN', type: 'bus' });
       } else if (archetype === 13) {
-        // Archetype 13: CONCENTRIC CIRCULAR WHIRLPOOL RINGS (( O ) — Screenshot 1 Level 18!)
-        const outerN = 12;
+        // Archetype 13: TRIPLE CONCENTRIC CIRCULAR WHIRLPOOL RINGS (( O ) — 38 Vehicles, Screenshot 1 Level 18!)
+        const outerN = 18;
         for (let i = 0; i < outerN; i++) {
           const ang = (i / outerN) * Math.PI * 2;
-          const x = Math.cos(ang) * 4.15;
-          const z = 5.60 + Math.sin(ang) * 4.20;
-          // Exact tangent angle with subtle outward radial peel so every car curves smoothly around the circle!
+          const x = Math.cos(ang) * 4.35;
+          const z = 5.58 + Math.sin(ang) * 4.48;
           const tanRot = Math.atan2(Math.sin(ang), -Math.cos(ang));
           list.push({
             x: Number(x.toFixed(2)),
             z: Number(z.toFixed(2)),
             dir: 'UP',
             type: i % 3 === 0 ? 'bus' : 'car',
-            tilt: Number((tanRot - 0.36).toFixed(3))
+            tilt: Number((tanRot - 0.34).toFixed(3))
           });
         }
-        const innerN = 7;
-        for (let i = 0; i < innerN; i++) {
-          const ang = (i / innerN) * Math.PI * 2 + 0.25;
-          const x = Math.cos(ang) * 2.25;
-          const z = 5.60 + Math.sin(ang) * 2.30;
+        const midN = 13;
+        for (let i = 0; i < midN; i++) {
+          const ang = (i / midN) * Math.PI * 2 + 0.18;
+          const x = Math.cos(ang) * 2.98;
+          const z = 5.58 + Math.sin(ang) * 3.08;
           const tanRot = Math.atan2(Math.sin(ang), -Math.cos(ang));
           list.push({
             x: Number(x.toFixed(2)),
             z: Number(z.toFixed(2)),
             dir: 'DOWN',
             type: i % 3 === 0 ? 'bus' : 'car',
-            tilt: Number((tanRot + 0.38).toFixed(3))
+            tilt: Number((tanRot + 0.36).toFixed(3))
+          });
+        }
+        const innerN = 7;
+        for (let i = 0; i < innerN; i++) {
+          const ang = (i / innerN) * Math.PI * 2 + 0.35;
+          const x = Math.cos(ang) * 1.65;
+          const z = 5.58 + Math.sin(ang) * 1.72;
+          const tanRot = Math.atan2(Math.sin(ang), -Math.cos(ang));
+          list.push({
+            x: Number(x.toFixed(2)),
+            z: Number(z.toFixed(2)),
+            dir: 'UP',
+            type: i % 3 === 0 ? 'bus' : 'car',
+            tilt: Number((tanRot - 0.38).toFixed(3))
           });
         }
       } else if (archetype === 14) {
-        // Archetype 14: 45-DEGREE DIAGONAL CRISS-CROSS WEAVE (/// \\\ — Screenshot 1 Level 13!)
-        for (let row = 0; row < 5; row++) {
-          const count = row === 0 || row === 4 ? 4 : 5;
+        // Archetype 14: 45-DEGREE DIAGONAL CRISS-CROSS WEAVE (/// \\\ — 42 Vehicles, Screenshot 1 Level 13!)
+        for (let row = 0; row < 7; row++) {
+          const count = 6;
           for (let col = 0; col < count; col++) {
-            const bx = (count === 4 ? -2.75 : -3.55) + col * 1.78;
-            const bz = 1.35 + row * 2.15;
+            const bx = -3.95 + col * 1.58 + (row % 2 === 0 ? -0.14 : 0.14);
+            const bz = 1.05 + row * 1.50;
             const isCross = (row + col) % 3 === 0;
             list.push({
               x: Number(bx.toFixed(2)),
               z: Number(bz.toFixed(2)),
               dir: (row + col) % 2 === 0 ? 'UP' : 'DOWN',
-              type: (row + col) % 4 === 1 ? 'bus' : 'car',
-              tilt: isCross ? -0.74 : 0.74
+              type: (row + col) % 3 === 1 ? 'bus' : 'car',
+              tilt: isCross ? -0.76 : 0.76
             });
           }
         }
       } else if (archetype === 15) {
-        // Archetype 15: GIANT MONARCH BUTTERFLY WINGS (Screenshot 2 Level 28 Butterfly!)
-        // Central Butterfly Body Spine
-        [1.55, 4.10, 6.75, 9.35].forEach((cz, idx) => {
+        // Archetype 15: GIANT MONARCH BUTTERFLY WINGS (42 Vehicles — Exact Screenshot 2 Level 28 Butterfly!)
+        // Central 6-Vehicle Butterfly Body Spine
+        [1.15, 2.90, 4.65, 6.45, 8.20, 9.95].forEach((cz, idx) => {
           list.push({
             x: 0.0,
             z: cz,
-            dir: idx < 2 ? 'UP' : 'DOWN',
-            type: idx === 1 || idx === 2 ? 'bus' : 'car'
+            dir: idx < 3 ? 'UP' : 'DOWN',
+            type: idx === 1 || idx === 2 || idx === 4 ? 'bus' : 'car'
           });
         });
-        // Symmetric Left & Right Upper Forewings + Lower Hindwings
+        // Symmetric Left (-1) & Right (+1) 18-Vehicle Wings (6 + 18 + 18 = 42 Vehicles!)
         for (const side of [-1, 1]) {
-          list.push({ x: side * 1.95, z: 1.65, dir: 'UP', type: 'car', tilt: side * -0.45 });
-          list.push({ x: side * 3.85, z: 1.25, dir: 'UP', type: 'bus', tilt: side * -0.55 });
-          list.push({ x: side * 2.15, z: 3.55, dir: 'UP', type: 'car', tilt: side * -0.42 });
-          list.push({ x: side * 4.15, z: 3.45, dir: side < 0 ? 'LEFT' : 'RIGHT', type: 'bus', tilt: side * 0.28 });
-          list.push({ x: side * 3.25, z: 5.35, dir: side < 0 ? 'LEFT' : 'RIGHT', type: 'car', tilt: side * -0.18 });
-          // Lower Rounded Hindwings
-          list.push({ x: side * 1.95, z: 7.05, dir: 'DOWN', type: 'car', tilt: side * 0.38 });
-          list.push({ x: side * 4.05, z: 7.45, dir: 'DOWN', type: 'bus', tilt: side * 0.45 });
-          list.push({ x: side * 1.85, z: 9.35, dir: 'DOWN', type: 'car', tilt: side * 0.32 });
-          list.push({ x: side * 3.65, z: 9.65, dir: 'DOWN', type: 'bus', tilt: side * 0.50 });
+          // Upper Forewing Outer Rim (5 vehicles)
+          list.push({ x: side * 1.65, z: 0.95, dir: 'UP', type: 'car', tilt: side * -0.42 });
+          list.push({ x: side * 3.15, z: 0.82, dir: 'UP', type: 'bus', tilt: side * -0.55 });
+          list.push({ x: side * 4.35, z: 1.55, dir: side < 0 ? 'LEFT' : 'RIGHT', type: 'bus', tilt: side * 0.35 });
+          list.push({ x: side * 4.45, z: 3.10, dir: side < 0 ? 'LEFT' : 'RIGHT', type: 'bus', tilt: side * 0.22 });
+          list.push({ x: side * 4.15, z: 4.65, dir: side < 0 ? 'LEFT' : 'RIGHT', type: 'car', tilt: side * -0.18 });
+          // Upper Forewing Inner Ribs (5 vehicles)
+          list.push({ x: side * 1.55, z: 2.45, dir: 'UP', type: 'car', tilt: side * -0.38 });
+          list.push({ x: side * 2.95, z: 2.25, dir: 'UP', type: 'bus', tilt: side * -0.48 });
+          list.push({ x: side * 1.55, z: 3.95, dir: side < 0 ? 'LEFT' : 'RIGHT', type: 'car', tilt: side * 0.25 });
+          list.push({ x: side * 2.90, z: 3.85, dir: side < 0 ? 'LEFT' : 'RIGHT', type: 'car', tilt: side * 0.25 });
+          list.push({ x: side * 2.45, z: 5.25, dir: side < 0 ? 'RIGHT' : 'LEFT', type: 'car', tilt: side * -0.15 });
+          // Lower Hindwing Outer Rim (4 vehicles)
+          list.push({ x: side * 4.25, z: 6.45, dir: 'DOWN', type: 'bus', tilt: side * 0.38 });
+          list.push({ x: side * 4.25, z: 8.10, dir: 'DOWN', type: 'bus', tilt: side * 0.45 });
+          list.push({ x: side * 3.65, z: 9.70, dir: 'DOWN', type: 'bus', tilt: side * 0.52 });
+          list.push({ x: side * 2.15, z: 10.15, dir: 'DOWN', type: 'car', tilt: side * 0.35 });
+          // Lower Hindwing Inner Fill (4 vehicles)
+          list.push({ x: side * 1.55, z: 6.65, dir: 'DOWN', type: 'car', tilt: side * 0.32 });
+          list.push({ x: side * 2.90, z: 6.85, dir: 'DOWN', type: 'car', tilt: side * 0.38 });
+          list.push({ x: side * 1.55, z: 8.35, dir: 'DOWN', type: 'car', tilt: side * 0.32 });
+          list.push({ x: side * 2.80, z: 8.45, dir: 'DOWN', type: 'car', tilt: side * 0.42 });
         }
       } else if (archetype === 16) {
-        // Archetype 16: 45-DEGREE ROTATED DIAMOND LATTICE (Screenshot 3 Level 20!)
-        const diamondRows = [
-          { z: 1.05, xs: [0.0] },
-          { z: 2.55, xs: [-1.58, 1.58] },
-          { z: 4.10, xs: [-3.15, 0.0, 3.15] },
-          { z: 5.65, xs: [-4.25, -1.58, 1.58, 4.25] },
-          { z: 7.20, xs: [-3.15, 0.0, 3.15] },
-          { z: 8.75, xs: [-1.58, 1.58] },
-          { z: 10.25, xs: [0.0] }
-        ];
-        diamondRows.forEach((r, rIdx) => {
-          r.xs.forEach((cx, cIdx) => {
-            const checker = (rIdx + cIdx) % 2 === 0;
+        // Archetype 16: 45-DEGREE ROTATED 6x6 DIAMOND LATTICE (36 Vehicles — Exact Screenshot 3 Level 20!)
+        for (let uIdx = 0; uIdx < 6; uIdx++) {
+          for (let vIdx = 0; vIdx < 6; vIdx++) {
+            const u = uIdx - 2.5;
+            const v = vIdx - 2.5;
+            const x = Number(((u - v) * 0.87).toFixed(2));
+            const z = Number((5.58 + (u + v) * 0.91).toFixed(2));
+            const checker = (uIdx + vIdx) % 2 === 0;
             list.push({
-              x: cx,
-              z: r.z,
-              dir: rIdx <= 3 ? 'UP' : 'DOWN',
-              type: (rIdx + cIdx) % 3 === 1 ? 'bus' : 'car',
-              tilt: checker ? 0.75 : -0.75
+              x,
+              z,
+              dir: u + v <= 0 ? 'UP' : 'DOWN',
+              type: (uIdx + vIdx) % 3 === 1 ? 'bus' : 'car',
+              tilt: checker ? 0.77 : -0.77
+            });
+          }
+        }
+      } else if (archetype === 17) {
+        // Archetype 17: CYBER ROBOT MASK / SMILING FACE (36 Vehicles — Screenshot 3 Bottom-Middle Expanded!)
+        // Double Curved Eyebrow Arch (10 vehicles)
+        [-3.85, -2.35, -0.85, 0.85, 2.35, 3.85].forEach((cx, i) => {
+          list.push({
+            x: cx,
+            z: Number((0.95 + Math.abs(cx) * 0.22).toFixed(2)),
+            dir: cx < 0 ? 'LEFT' : 'RIGHT',
+            type: i === 1 || i === 4 ? 'bus' : 'car',
+            tilt: cx * -0.10
+          });
+        });
+        [-3.15, -1.55, 1.55, 3.15].forEach((cx) => {
+          list.push({
+            x: cx,
+            z: Number((2.25 + Math.abs(cx) * 0.14).toFixed(2)),
+            dir: cx < 0 ? 'LEFT' : 'RIGHT',
+            type: 'car',
+            tilt: cx * -0.09
+          });
+        });
+        // Twin Multi-Car Vertical Eye Pillars, Nose Bridge & Cheek Frames (14 vehicles)
+        for (const side of [-1, 1]) {
+          list.push({ x: side * 1.25, z: 3.65, dir: 'UP', type: 'bus' });
+          list.push({ x: side * 1.25, z: 5.35, dir: 'DOWN', type: 'bus' });
+          list.push({ x: side * 2.55, z: 4.15, dir: 'UP', type: 'car' });
+          list.push({ x: side * 2.55, z: 5.75, dir: 'DOWN', type: 'car' });
+          list.push({ x: side * 4.15, z: 3.55, dir: side < 0 ? 'LEFT' : 'RIGHT', type: 'car', tilt: side * 0.25 });
+          list.push({ x: side * 4.25, z: 5.15, dir: 'DOWN', type: 'bus', tilt: side * 0.16 });
+          list.push({ x: side * 4.15, z: 6.85, dir: 'DOWN', type: 'car', tilt: side * -0.22 });
+        }
+        list.push({ x: 0.0, z: 4.35, dir: 'UP', type: 'car' });
+        list.push({ x: 0.0, z: 5.95, dir: 'DOWN', type: 'car' });
+        // Double-Row Wide U-Shaped Smiling Mouth & Chin Guard (10 vehicles)
+        [-3.55, -2.15, -0.75, 0.75, 2.15, 3.55].forEach((cx, i) => {
+          const mz = 7.75 + (1 - Math.abs(cx) / 4.2) * 0.95;
+          list.push({
+            x: cx,
+            z: Number(mz.toFixed(2)),
+            dir: i % 2 === 0 ? 'DOWN' : 'UP',
+            type: i === 1 || i === 4 ? 'bus' : 'car',
+            tilt: cx * 0.13
+          });
+        });
+        [-2.85, -0.95, 0.95, 2.85].forEach((cx, i) => {
+          list.push({
+            x: cx,
+            z: Number((9.95 + (1 - Math.abs(cx) / 3.5) * 0.40).toFixed(2)),
+            dir: cx < 0 ? 'LEFT' : 'RIGHT',
+            type: i === 1 || i === 2 ? 'bus' : 'car',
+            tilt: cx * -0.09
+          });
+        });
+      } else if (archetype === 18) {
+        // Archetype 18: ASYMMETRIC DIAGONAL ISLAND + VERTICAL HIGHWAY CONVOY (42 Vehicles — Exact Screenshot 2 Level 15!)
+        // Upper-Left 4x4 -45° Diagonal Island (16 vehicles)
+        [-3.95, -2.65, -1.35, -0.05].forEach((cx, cIdx) => {
+          [1.15, 2.75, 4.35, 5.95].forEach((cz, rIdx) => {
+            list.push({
+              x: Number((cx + (rIdx % 2 === 0 ? -0.12 : 0.12)).toFixed(2)),
+              z: Number((cz + (3 - cIdx) * 0.22).toFixed(2)),
+              dir: (cIdx + rIdx) % 2 === 0 ? 'UP' : 'DOWN',
+              type: (cIdx + rIdx) % 3 === 1 ? 'bus' : 'car',
+              tilt: 0.72
             });
           });
         });
-      } else if (archetype === 17) {
-        // Archetype 17: CYBER ROBOT MASK / SMILING FACE (Screenshot 3 Bottom-Middle!)
-        // Curved Eyebrow Arch
-        list.push({ x: -3.65, z: 1.75, dir: 'LEFT', type: 'car', tilt: 0.38 });
-        list.push({ x: -1.85, z: 0.95, dir: 'LEFT', type: 'bus', tilt: 0.14 });
-        list.push({ x: 1.85, z: 0.95, dir: 'RIGHT', type: 'bus', tilt: -0.14 });
-        list.push({ x: 3.65, z: 1.75, dir: 'RIGHT', type: 'car', tilt: -0.38 });
-        // Twin Vertical Eye Pillars & Cheek Guards
-        for (const side of [-1, 1]) {
-          list.push({ x: side * 1.25, z: 3.35, dir: 'UP', type: 'car' });
-          list.push({ x: side * 1.25, z: 5.65, dir: 'DOWN', type: 'bus' });
-          list.push({ x: side * 3.85, z: 3.85, dir: side < 0 ? 'LEFT' : 'RIGHT', type: 'car', tilt: side * 0.25 });
-          list.push({ x: side * 4.10, z: 6.05, dir: 'DOWN', type: 'bus', tilt: side * 0.16 });
-        }
-        // Wide U-Shaped Smiling Mouth Arc
-        list.push({ x: -3.55, z: 8.35, dir: 'DOWN', type: 'car', tilt: 0.32 });
-        list.push({ x: -1.95, z: 9.75, dir: 'LEFT', type: 'bus', tilt: -0.22 });
-        list.push({ x: 0.0, z: 10.15, dir: 'DOWN', type: 'car', tilt: 0 });
-        list.push({ x: 1.95, z: 9.75, dir: 'RIGHT', type: 'bus', tilt: 0.22 });
-        list.push({ x: 3.55, z: 8.35, dir: 'DOWN', type: 'car', tilt: -0.32 });
-      } else if (archetype === 18) {
-        // Archetype 18: ASYMMETRIC DIAGONAL ISLAND + VERTICAL HIGHWAY CONVOY (Screenshot 2 Level 15!)
-        // Upper-Left -45° Diagonal Island
-        [-3.65, -2.05, -0.45].forEach((cx, i) => {
-          list.push({ x: cx, z: 1.45 + (2 - i) * 0.35, dir: 'UP', type: i === 1 ? 'bus' : 'car', tilt: 0.70 });
-          list.push({ x: cx, z: 3.75 + (2 - i) * 0.35, dir: 'UP', type: 'car', tilt: 0.70 });
-          list.push({ x: cx, z: 6.05 + (2 - i) * 0.35, dir: 'DOWN', type: i === 0 ? 'bus' : 'car', tilt: 0.70 });
-        });
-        // Right-side 2-Column Vertical Highway Convoy
-        [1.95, 3.85].forEach((cx, cIdx) => {
-          [1.55, 4.15, 6.75].forEach((cz, rIdx) => {
+        // Right-side 2-Column Vertical/Horizontal Highway Convoy (14 vehicles)
+        [1.85, 3.20, 4.40].forEach((cx, cIdx) => {
+          [1.20, 2.85, 4.50, 6.15, 7.80].forEach((cz, rIdx) => {
+            if (cIdx === 1 && rIdx === 4) return;
             list.push({
               x: cx,
               z: cz,
               dir: (cIdx + rIdx) % 2 === 0 ? 'UP' : 'DOWN',
-              type: rIdx === 1 ? 'bus' : 'car'
+              type: (cIdx + rIdx) % 3 === 0 ? 'bus' : 'car'
             });
           });
         });
-        // Bottom Vertical Guard Row
-        [-3.75, -2.15, -0.55, 1.35, 3.35].forEach((cx, idx) => {
+        // Bottom 2-Tier Vertical Guard Rows (12 vehicles)
+        [-4.10, -2.75, -1.40, -0.05, 1.35, 2.85].forEach((cx, idx) => {
           list.push({
             x: cx,
-            z: 9.55,
+            z: 8.35,
             dir: idx % 2 === 0 ? 'DOWN' : 'UP',
-            type: idx === 4 ? 'bus' : 'car'
+            type: idx % 3 === 0 ? 'bus' : 'car'
+          });
+          list.push({
+            x: cx,
+            z: 10.10,
+            dir: idx % 2 === 1 ? 'DOWN' : 'UP',
+            type: idx % 3 === 1 ? 'bus' : 'car'
           });
         });
       } else {
-        // Archetype 19: 5-POINTED ROYAL STARBURST ARENA
+        // Archetype 19: 5-POINTED ROYAL STARBURST ARENA (38 Vehicles!)
         for (let arm = 0; arm < 5; arm++) {
           const ang = (arm / 5) * Math.PI * 2 - Math.PI * 0.5;
           const tanRot = Math.atan2(-Math.cos(ang), -Math.sin(ang));
-          for (let step = 1; step <= 2; step++) {
-            const rad = 1.95 + (step - 1) * 2.15;
+          for (let step = 1; step <= 4; step++) {
+            const rad = 1.25 + (step - 1) * 1.05;
             const x = Math.cos(ang) * rad;
-            const z = 5.65 + Math.sin(ang) * rad;
+            const z = 5.60 + Math.sin(ang) * rad;
             list.push({
               x: Number(x.toFixed(2)),
               z: Number(z.toFixed(2)),
-              dir: 'UP',
-              type: step === 2 ? 'bus' : 'car',
+              dir: step % 2 === 0 ? 'UP' : 'DOWN',
+              type: step === 3 ? 'bus' : 'car',
               tilt: Number(tanRot.toFixed(3))
             });
           }
-          // Inter-arm jewel lock vehicles
+          // Inter-arm valley wedge vehicles (3 per valley = 15 vehicles)
           const midAng = ang + Math.PI / 5;
-          const mx = Math.cos(midAng) * 3.15;
-          const mz = 5.65 + Math.sin(midAng) * 3.25;
           const midRot = Math.atan2(-Math.cos(midAng), -Math.sin(midAng));
-          list.push({
-            x: Number(mx.toFixed(2)),
-            z: Number(mz.toFixed(2)),
-            dir: 'UP',
-            type: arm % 2 === 0 ? 'bus' : 'car',
-            tilt: Number(midRot.toFixed(3))
+          [2.15, 3.25, 4.25].forEach((rad, rIdx) => {
+            const mx = Math.cos(midAng) * rad;
+            const mz = 5.60 + Math.sin(midAng) * rad;
+            list.push({
+              x: Number(mx.toFixed(2)),
+              z: Number(mz.toFixed(2)),
+              dir: rIdx % 2 === 0 ? 'UP' : 'DOWN',
+              type: rIdx === 1 ? 'bus' : 'car',
+              tilt: Number(midRot.toFixed(3))
+            });
           });
         }
-        list.push({ x: 0.0, z: 5.65, dir: 'UP', type: 'car' });
+        list.push({ x: 0.0, z: 5.60, dir: 'UP', type: 'bus' });
+        list.push({ x: -4.15, z: 1.15, dir: 'LEFT', type: 'car', tilt: 0.35 });
+        list.push({ x: 4.15, z: 1.15, dir: 'RIGHT', type: 'car', tilt: -0.35 });
       }
 
       if (shouldFlip && archetype !== 6 && archetype !== 13 && archetype !== 19) {
@@ -9119,12 +9185,14 @@ body, #app-wrapper, #game-container {
       const vec1 = this.getVehicleForward(v1);
       const vec2 = this.getVehicleForward(v2);
 
-      // Exact physical 3D mesh half-extents (including tires/bumpers) + half of required open gap
+      // Exact physical 3D mesh half-extents (scaled by v.scale || 1.0) + half of required open gap
+      const s1 = v1.scale || 1.0;
+      const s2 = v2.scale || 1.0;
       const pad = minGap * 0.5;
-      const hL1 = (v1.type === 'bus' ? 1.245 : 0.895) + pad;
-      const hW1 = (v1.type === 'bus' ? 0.595 : 0.550) + pad;
-      const hL2 = (v2.type === 'bus' ? 1.245 : 0.895) + pad;
-      const hW2 = (v2.type === 'bus' ? 0.595 : 0.550) + pad;
+      const hL1 = (v1.type === 'bus' ? 1.245 : 0.895) * s1 + pad;
+      const hW1 = (v1.type === 'bus' ? 0.595 : 0.550) * s1 + pad;
+      const hL2 = (v2.type === 'bus' ? 1.245 : 0.895) * s2 + pad;
+      const hW2 = (v2.type === 'bus' ? 0.595 : 0.550) * s2 + pad;
 
       const axes = [
         { x: vec1.fx, z: vec1.fz },
@@ -9183,9 +9251,10 @@ body, #app-wrapper, #game-container {
       const lotMinX = -5.25, lotMaxX = 5.25;
       const lotMinZ = 0.22,  lotMaxZ = 11.10;
       const clampToLot = (v) => {
+        const s = v.scale || 1.0;
         const vec = this.getVehicleForward(v);
-        const hL = v.type === 'bus' ? 1.25 : 0.90;
-        const hW = v.type === 'bus' ? 0.60 : 0.55;
+        const hL = (v.type === 'bus' ? 1.25 : 0.90) * s;
+        const hW = (v.type === 'bus' ? 0.60 : 0.55) * s;
         const extX = hL * Math.abs(vec.fx) + hW * Math.abs(vec.rx);
         const extZ = hL * Math.abs(vec.fz) + hW * Math.abs(vec.rz);
         v.x = Math.max(lotMinX + extX, Math.min(lotMaxX - extX, v.x));
@@ -9194,6 +9263,9 @@ body, #app-wrapper, #game-container {
 
       vehicles.forEach(clampToLot);
       if (vehicles.length <= 1) return vehicles;
+
+      const avgScale = vehicles[0]?.scale || 1.0;
+      const effGap = minGap * avgScale;
 
       const relax = (iters, gap) => {
         for (let iter = 0; iter < iters; iter++) {
@@ -9219,12 +9291,12 @@ body, #app-wrapper, #game-container {
         }
       };
 
-      relax(95, minGap);
+      relax(130, effGap);
 
-      // If any cluster is still tighter than strictGap, prune the single most-crowded vehicle and re-relax
-      const strictGap = Math.max(0.16, minGap - 0.05);
+      // Prune if any physical overlap or tight cluster remains
+      const strictGap = Math.max(0.08, effGap * 0.75);
       let pruneGuard = 0;
-      while (vehicles.length > 10 && pruneGuard < 14) {
+      while (vehicles.length > 14 && pruneGuard < 10) {
         pruneGuard++;
         let worstIdx = -1;
         let worstOverlapSum = 0;
@@ -9242,11 +9314,11 @@ body, #app-wrapper, #game-container {
           }
         }
 
-        if (worstIdx === -1 || worstOverlapSum <= 0.01) {
+        if (worstIdx === -1 || worstOverlapSum <= 0.005) {
           break;
         }
         vehicles.splice(worstIdx, 1);
-        relax(45, minGap);
+        relax(65, effGap);
       }
 
       vehicles.forEach((v) => {
@@ -9266,8 +9338,9 @@ body, #app-wrapper, #game-container {
     static findBlockingVehicle(target, allVehicles) {
       if (!allVehicles || allVehicles.length <= 1) return null;
       const { fx, fz, rx, rz } = this.getVehicleForward(target);
-      const hL1 = target.type === 'bus' ? 1.245 : 0.895;
-      const hW1 = (target.type === 'bus' ? 0.595 : 0.550) + 0.055;
+      const s1 = target.scale || 1.0;
+      const hL1 = (target.type === 'bus' ? 1.245 : 0.895) * s1;
+      const hW1 = (target.type === 'bus' ? 0.595 : 0.550) * s1 + 0.048 * s1;
 
       let closestBlocker = null;
       let minDist = Infinity;
@@ -9275,8 +9348,9 @@ body, #app-wrapper, #game-container {
       for (const other of allVehicles) {
         if (!other || other === target || (target.id && other.id === target.id)) continue;
         const oVec = this.getVehicleForward(other);
-        const hL2 = (other.type === 'bus' ? 1.245 : 0.895) + 0.05;
-        const hW2 = (other.type === 'bus' ? 0.595 : 0.550) + 0.055;
+        const s2 = other.scale || 1.0;
+        const hL2 = (other.type === 'bus' ? 1.245 : 0.895) * s2 + 0.042 * s2;
+        const hW2 = (other.type === 'bus' ? 0.595 : 0.550) * s2 + 0.048 * s2;
 
         const dx = other.x - target.x;
         const dz = other.z - target.z;
@@ -9317,12 +9391,22 @@ body, #app-wrapper, #game-container {
         }
 
         let fixed = false;
+        const isWithinLot = (v) => {
+          const s = v.scale || 1.0;
+          const vec = this.getVehicleForward(v);
+          const hL = (v.type === 'bus' ? 1.25 : 0.90) * s;
+          const hW = (v.type === 'bus' ? 0.60 : 0.55) * s;
+          const extX = hL * Math.abs(vec.fx) + hW * Math.abs(vec.rx);
+          const extZ = hL * Math.abs(vec.fz) + hW * Math.abs(vec.rz);
+          return v.x - extX >= -5.28 && v.x + extX <= 5.28 && v.z - extZ >= 0.20 && v.z + extZ <= 11.12;
+        };
+
         // 1. Always prefer a 180-degree reversal keeping exact tilt (preserves 100% of the visual formation & OBB footprint!)
         remaining.sort((a, b) => Math.hypot(b.x, b.z - 5.6) - Math.hypot(a.x, a.z - 5.6));
         for (const v of remaining) {
           const origDir = v.dir;
           v.dir = oppositeDir(origDir);
-          if (!this.findBlockingVehicle(v, remaining) && !this.hasAnyOBBOverlap(v, vehicles, 0.20)) {
+          if (!this.findBlockingVehicle(v, remaining) && !this.hasAnyOBBOverlap(v, vehicles, 0.08)) {
             fixed = true;
             break;
           }
@@ -9348,7 +9432,11 @@ body, #app-wrapper, #game-container {
             for (const st of candStates) {
               v.dir = st.dir;
               v.tilt = st.tilt;
-              if (!this.findBlockingVehicle(v, remaining) && !this.hasAnyOBBOverlap(v, vehicles, 0.18)) {
+              if (
+                isWithinLot(v) &&
+                !this.findBlockingVehicle(v, remaining) &&
+                !this.hasAnyOBBOverlap(v, vehicles, 0.08)
+              ) {
                 fixed = true;
                 break;
               }
@@ -9365,7 +9453,7 @@ body, #app-wrapper, #game-container {
           const radialRot = Math.atan2(-outer.x, -(outer.z - 5.6));
           outer.dir = 'UP';
           outer.tilt = Number(radialRot.toFixed(3));
-          this.enforceCleanVehicleSpacing(vehicles, 0.20);
+          this.enforceCleanVehicleSpacing(vehicles, 0.16);
           if (this.findBlockingVehicle(outer, remaining)) {
             remaining.shift();
           }
@@ -9394,9 +9482,85 @@ body, #app-wrapper, #game-container {
         }
       });
 
-      this.enforceCleanVehicleSpacing(vehicles, 0.20);
+      this.enforceCleanVehicleSpacing(vehicles, 0.18);
       this.ensureNoCyclicDeadlock(vehicles);
-      this.enforceCleanVehicleSpacing(vehicles, 0.20);
+
+      // Tighten outer puzzle locks AFTER final spacing so 88%-92% of vehicles start locked inside multi-layer knots!
+      // On Level 14+, strictly at most 4 outer vehicles are unblocked at level start (and 2 of those 4 are decoy trap colors!).
+      if (levelNum >= 4) {
+        const maxInitialFree = levelNum >= 14 ? 4 : 5;
+        const oppDir = (d) => (d === 'UP' ? 'DOWN' : d === 'DOWN' ? 'UP' : d === 'LEFT' ? 'RIGHT' : 'LEFT');
+        const isFullyPeelable = (vList) => {
+          const rem = vList.slice();
+          let steps = 0;
+          while (rem.length > 0 && steps < 120) {
+            steps++;
+            const free = rem.filter((v) => !this.findBlockingVehicle(v, rem));
+            if (free.length === 0) return false;
+            for (const f of free) {
+              const i = rem.indexOf(f);
+              if (i !== -1) rem.splice(i, 1);
+            }
+          }
+          return rem.length === 0;
+        };
+
+        const initialFree = vehicles.filter((v) => !this.findBlockingVehicle(v, vehicles));
+        // Lock inner-most free vehicles first, keeping only maxInitialFree outer keys unblocked!
+        initialFree.sort((a, b) => Math.hypot(a.x, a.z - 5.58) - Math.hypot(b.x, b.z - 5.58));
+        let freeCount = initialFree.length;
+        for (let i = 0; i < initialFree.length && freeCount > maxInitialFree; i++) {
+          const candV = initialFree[i];
+          const oldD = candV.dir;
+          const oldTilt = candV.tilt || 0;
+          const candStates = [
+            { dir: oppDir(oldD), tilt: oldTilt },
+            { dir: oppDir(oldD), tilt: Number((oldTilt + 0.18).toFixed(3)) },
+            { dir: oppDir(oldD), tilt: Number((oldTilt - 0.18).toFixed(3)) },
+            { dir: oppDir(oldD), tilt: Number((oldTilt + 0.35).toFixed(3)) },
+            { dir: oppDir(oldD), tilt: Number((oldTilt - 0.35).toFixed(3)) }
+          ];
+          // Also add direct aim angles toward the 4 nearest neighbors so outer wing/ring cars reliably lock onto their neighbors!
+          const nearNeighbors = vehicles
+            .filter((o) => o.id !== candV.id)
+            .sort((a, b) => Math.hypot(a.x - candV.x, a.z - candV.z) - Math.hypot(b.x - candV.x, b.z - candV.z))
+            .slice(0, 4);
+          for (const nb of nearNeighbors) {
+            const aimRot = Math.atan2(-(nb.x - candV.x), -(nb.z - candV.z));
+            candStates.push({ dir: 'UP', tilt: Number(aimRot.toFixed(3)) });
+          }
+
+          const isWithinLot = (v) => {
+            const s = v.scale || 1.0;
+            const vec = this.getVehicleForward(v);
+            const hL = (v.type === 'bus' ? 1.25 : 0.90) * s;
+            const hW = (v.type === 'bus' ? 0.60 : 0.55) * s;
+            const extX = hL * Math.abs(vec.fx) + hW * Math.abs(vec.rx);
+            const extZ = hL * Math.abs(vec.fz) + hW * Math.abs(vec.rz);
+            return v.x - extX >= -5.28 && v.x + extX <= 5.28 && v.z - extZ >= 0.20 && v.z + extZ <= 11.12;
+          };
+
+          let locked = false;
+          for (const st of candStates) {
+            candV.dir = st.dir;
+            candV.tilt = st.tilt;
+            if (
+              isWithinLot(candV) &&
+              !this.hasAnyOBBOverlap(candV, vehicles, 0.08) &&
+              this.findBlockingVehicle(candV, vehicles) &&
+              isFullyPeelable(vehicles)
+            ) {
+              freeCount--;
+              locked = true;
+              break;
+            }
+          }
+          if (!locked) {
+            candV.dir = oldD;
+            candV.tilt = oldTilt;
+          }
+        }
+      }
 
       // USER RULE: "passengers jo move kr rey hotey hian usi mn srey colors ni dldia kro 1 2 colors ni dala kro
       // takey hard tu ho thora k bheii user dekhey k yr yeh color ha yeh ni ha jo ha vo dalun"
@@ -9406,7 +9570,8 @@ body, #app-wrapper, #game-container {
       for (const v of vehicles) {
         if (!levelColors.includes(v.color)) levelColors.push(v.color);
       }
-      const activeCount = levelColors.length <= 3 ? 2 : (levelColors.length <= 6 ? 3 : 4);
+      // Strictly limit the initial 32-slot circle to 2-3 active colors so 3-5 vehicle colors are withheld as strategic decoy traps!
+      const activeCount = levelColors.length <= 3 ? 2 : 3;
       const activeCircleColors = levelColors.slice(0, activeCount);
       const withheldColors = levelColors.slice(activeCount);
 
@@ -9421,8 +9586,11 @@ body, #app-wrapper, #game-container {
       if (withheldColors.length > 0 && initialFreeVehicles.length >= 2) {
         const countBlockedBy = (cand) => vehicles.filter((other) => other.id !== cand.id && this.findBlockingVehicle(other, vehicles)?.id === cand.id).length;
         const sortedFree = [...initialFreeVehicles].sort((a, b) => countBlockedBy(b) - countBlockedBy(a));
-        const numDecoys = Math.min(2, Math.max(1, Math.floor(sortedFree.length * 0.38)));
-        const numWinners = sortedFree.length - numDecoys;
+        // Strictly allow ONLY 2 winning unblocked vehicles on Level 10+ (3 on Levels 4-9);
+        // EVERY other initially unblocked outer vehicle becomes a decoy trap color that is 100% MISSING from the initial circle!
+        const targetWinners = levelNum >= 10 ? 2 : 3;
+        const numWinners = Math.min(sortedFree.length - 1, Math.max(1, targetWinners));
+        const numDecoys = Math.max(1, sortedFree.length - numWinners);
         for (let i = 0; i < sortedFree.length; i++) {
           if (i < numWinners) {
             sortedFree[i].color = activeCircleColors[i % activeCircleColors.length];
@@ -9499,10 +9667,9 @@ body, #app-wrapper, #game-container {
       }
 
       // Convert Wave 1 and Wave 2 into 4-passenger rows.
-      // Because capacities are 16 (4 rows), 24 (6 rows), and 40 (10 rows), using waveSize = 2 interleaves pairs of
-      // simultaneously-unblocked vehicles in 2-row chunks while keeping every single vehicle's rows within <= 20 slots (< 32 circle slots)!
+      // Interleave 3 vehicles per wave on Level 10+ so the player must actively read the circle color mix before tapping a 24/40-seat bus!
       const allRows = [];
-      const waveSize = 2;
+      const waveSize = levelNum >= 10 ? 3 : 2;
       const maxChunkRows = 2;
 
       const appendRowsForGroup = (vehGroup) => {
@@ -14003,6 +14170,8 @@ body, #app-wrapper, #game-container {
         group.add(arrow);
       }
 
+      const vScale = vehicleData.scale || 1.0;
+      group.scale.set(vScale, vScale, vScale);
       group.rotation.y = LevelGenerator.getVehicleRotY(vehicleData);
       group.position.set(vehicleData.x, 0, vehicleData.z);
       group.userData.vehicleId = vehicleData.id;
@@ -14385,20 +14554,24 @@ body, #app-wrapper, #game-container {
           }
         }
 
-        // FIFO feeder queue pull during normal gameplay, with automatic completion priority for partially-boarded 16/24/40-seat buses
-        // (vehicles that already matched the circle and boarded their first rows, so a 24 or 40-seat bus NEVER gets stranded mid-boarding!).
-        const hasAnyPartiallyBoarded = Object.keys(partiallyBoardedNeedByColor).some(
-          (col) => (partiallyBoardedNeedByColor[col] || 0) > (ringCountByColor[col] || 0)
+        // Strategic FIFO feeder queue pull: only peeks 3 rows ahead at the feeder entrance when a bus is nearly full (<= 8 seats left),
+        // so tapping a premature/wrong 24 or 40-seat bus occupies a boarding slot until its wave actually arrives!
+        const hasNearlyFullBoarded = Object.keys(partiallyBoardedNeedByColor).some(
+          (col) => {
+            const need = partiallyBoardedNeedByColor[col] || 0;
+            return need > 0 && need <= 8 && need > (ringCountByColor[col] || 0);
+          }
         );
+        const hasAnyPartiallyBoarded = hasNearlyFullBoarded;
         const pullFromFeederQueue = (queue) => {
           if (!queue || queue.length === 0) return null;
-          if (hasAnyPartiallyBoarded) {
-            const scanLim = Math.min(queue.length, 18);
+          if (hasNearlyFullBoarded) {
+            const scanLim = Math.min(queue.length, 3);
             for (let i = 0; i < scanLim; i++) {
               const col = queue[i].color;
               const partNeed = partiallyBoardedNeedByColor[col] || 0;
               const inRing = ringCountByColor[col] || 0;
-              if (partNeed > inRing) {
+              if (partNeed > 0 && partNeed <= 8 && partNeed > inRing) {
                 const pulled = queue.splice(i, 1)[0];
                 ringCountByColor[col] = inRing + pulled.count;
                 return pulled;
@@ -14412,12 +14585,12 @@ body, #app-wrapper, #game-container {
 
         const swapNeededFromFeederQueue = (queue, existingRow) => {
           if (!queue || queue.length === 0 || !existingRow) return null;
-          const scanLim = Math.min(queue.length, 18);
+          const scanLim = Math.min(queue.length, 3);
           for (let i = 0; i < scanLim; i++) {
             const col = queue[i].color;
             const partNeed = partiallyBoardedNeedByColor[col] || 0;
             const inRing = ringCountByColor[col] || 0;
-            if (partNeed > inRing) {
+            if (partNeed > 0 && partNeed <= 8 && partNeed > inRing) {
               const pulled = queue.splice(i, 1)[0];
               queue.unshift({ color: existingRow.color, count: existingRow.count });
               ringCountByColor[existingRow.color] = Math.max(0, (ringCountByColor[existingRow.color] || 0) - existingRow.count);
@@ -15269,6 +15442,7 @@ body, #app-wrapper, #game-container {
         origZ: vehicle.z,
         origDir: vehicle.dir,
         origTilt: vehicle.tilt || 0,
+        origScale: vehicle.scale || 1.0,
         origCap: vehicle.maxCap || vehicle.cap,
         origType: vehicle.type,
         origSubType: vehicle.subType,
@@ -15393,6 +15567,7 @@ body, #app-wrapper, #game-container {
         z: rec.origZ,
         dir: rec.origDir,
         tilt: rec.origTilt,
+        scale: rec.origScale || 1.0,
         type: rec.origType,
         subType: rec.origSubType,
         color: rec.origColor,
@@ -17174,6 +17349,7 @@ body, #app-wrapper, #game-container {
           if (mv.wpIndex >= mv.waypoints.length) {
             mv.mesh.position.set(mv.targetSlot.x, 0, mv.targetSlot.z);
             mv.mesh.rotation.set(0, mv.targetSlot.tilt, 0);
+            mv.mesh.scale.set(0.95, 0.95, 0.95);
             mv.targetSlot.vehicle = mv;
             mv.targetSlot.reserved = false;
             if (mv.trackRecord) {
