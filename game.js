@@ -703,9 +703,6 @@
 
     static generateLevel(levelNum) {
       const clampedLvl = Math.max(1, Math.min(5000, levelNum));
-      if (clampedLvl === 1) return this.buildLevel1();
-      if (clampedLvl === 2) return this.buildLevel2();
-      if (clampedLvl === 3) return this.buildExactVideoLevel3();
       return this.buildProgressiveHardLevel(clampedLvl);
     }
 
@@ -819,13 +816,13 @@
       const rand = this.createSeededRandom(levelNum * 12983 + 409);
       const colorPool = this.getColorsForLevel(levelNum, rand);
 
-      // Order the 20 distinct map archetypes so the most visually iconic screenshot formations appear right from Level 4+ and change every single level!
+      // Order the 20 distinct map archetypes so the most visually iconic screenshot formations appear right from Level 1+ and change every single level!
       const archetypeOrder = [12, 13, 6, 14, 15, 16, 17, 18, 19, 9, 10, 11, 2, 5, 8, 4, 0, 1, 3, 7];
-      const archetype = archetypeOrder[(levelNum - 4) % archetypeOrder.length];
+      const archetype = archetypeOrder[Math.max(0, levelNum - 1) % archetypeOrder.length];
       const slots = this.buildDistinctFormationArchetype(archetype, levelNum, rand);
 
       // Apply multi-axis geometric variation per 20-level cycle so all 5000 levels NEVER feel like repetitive copies!
-      const cycle = Math.floor((levelNum - 4) / 20);
+      const cycle = Math.floor(Math.max(0, levelNum - 1) / 20);
       if (cycle > 0 && archetype !== 6) {
         const mirrorX = (cycle % 2 === 1);
         const mirrorZ = (cycle % 3 === 1);
@@ -2546,6 +2543,22 @@
         }
         if (this.profile.customPhotoDataUrl) {
           this._loadCustomPhotoCanvasImg(this.profile.customPhotoDataUrl);
+        }
+
+        // Restore Level 30 (Silver Rank, 4.1K passengers) if save was reset to Level 1 when user uninstalled & reinstalled the APK!
+        if (!this.profile._restoredLevel30AfterReinstallV85) {
+          this.profile._restoredLevel30AfterReinstallV85 = true;
+          if ((this.profile.currentLevel || 1) < 30) {
+            this.profile.currentLevel = 30;
+            this.profile.highestLevel = 30;
+          }
+          if ((this.profile.passengersHelped || 0) < 4100) {
+            this.profile.passengersHelped = 4100;
+          }
+          if ((this.profile.coins || 0) < 1950) {
+            this.profile.coins = 1950;
+          }
+          this.profile.claimedRanks = { ...(this.profile.claimedRanks || {}), bronze: true, silver: true };
         }
 
         // Ensure coin balance is never below earned progression and never capped over milestone/rank prizes

@@ -16,7 +16,7 @@
     html, body { margin: 0; padding: 0; width: 100%; height: 100%; background: #2e0559; overflow: hidden; }
     #app-wrapper { width: 100%; height: 100%; background: #2e0559; }
   </style>
-  <link rel="stylesheet" href="styles.css?v=83" />
+  <link rel="stylesheet" href="styles.css?v=85" />
 </head>
 <body>
   <div id="app-wrapper">
@@ -233,7 +233,7 @@
 
               var isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
               var a = document.createElement('a');
-              a.href = isMobile ? 'Bus-Fever-Party.apk' : 'Bus-Fever-Party.exe';
+              a.href = isMobile ? 'Bus-Rush-Party.apk?v=85' : 'Bus-Fever-Party.exe?v=85';
               a.download = isMobile ? 'Bus Rush Party.apk' : 'Bus Rush Party.exe';
               document.body.appendChild(a);
               a.click();
@@ -1219,6 +1219,6 @@
   <!-- Local Bundled Three.js -->
   <script src="three.min.js"></script>
   <!-- Main Bus Rush Party 3D Engine -->
-  <script src="game.js?v=83"></script>
+  <script src="game.js?v=85"></script>
 </body>
 </html>
