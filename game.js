@@ -822,7 +822,7 @@
       // 14: 45° Diagonal Criss-Cross /// \\\ (42v), 16: 45° Rotated 6x6 Diamond Lattice ◇ (36v),
       // 17: Cyber Robot Face / Smiling Mask (36v), 18: Asymmetric Diagonal Island + Highway Convoy (42v),
       // 6: Iconic Sculpted Heart ♡ (38v), 19: 5-Pointed Royal Starburst ☆ (38v), 11: Colosseum Triple Arena Ring ◎ (40v)
-      const archetypeOrder = [15, 12, 13, 14, 16, 17, 18, 6, 19, 11];
+      const archetypeOrder = [18, 17, 6, 19, 11, 15, 12, 13, 14, 16];
       const archetype = archetypeOrder[Math.max(0, levelNum - 1) % archetypeOrder.length];
       let slots = this.buildDistinctFormationArchetype(archetype, levelNum, rand);
 
@@ -2319,6 +2319,27 @@
         if (loadingSplash) {
           loadingSplash.style.backgroundImage = "url('loading_bg.jpg?v=83')";
         }
+        // Auto-upgrade live webview if an older HTML shell was served from Android disk cache
+        const CLIENT_BUILD_TAG = 'bus-rush-party-v95';
+        const checkServerBuild = () => {
+          if (location.protocol !== 'http:' && location.protocol !== 'https:') return;
+          fetch('/sw.js?t=' + Date.now(), { cache: 'no-store' })
+            .then((r) => (r && r.ok ? r.text() : ''))
+            .then((txt) => {
+              const m = txt && txt.match(/bus-rush-party-v\d+/);
+              if (m && m[0] && m[0] !== CLIENT_BUILD_TAG) {
+                const u = new URL(location.href);
+                u.searchParams.set('play', '1');
+                u.searchParams.set('_v', m[0]);
+                location.replace(u.toString());
+              }
+            })
+            .catch(() => {});
+        };
+        checkServerBuild();
+        document.addEventListener('visibilitychange', () => {
+          if (!document.hidden) checkServerBuild();
+        });
       } catch (e) {}
       this.loadSaveData();
       this.initThreeScene();
@@ -5139,13 +5160,12 @@
     getTrackShapeForLevel(levelNum = 1) {
       const lvl = Math.max(1, levelNum || 1);
       // Pair top revolving passenger track shapes with the 10 iconic formations from user's screenshots!
-      // [15: Butterfly -> star, 12: Spiral -> oval, 13: Circle -> diamond, 14: Diagonal -> diamond,
-      //  16: Diamond Lattice -> diamond, 17: Robot Face -> infinity, 18: Asymmetric Island -> heart,
-      //  6: Heart -> heart, 19: Starburst -> star, 11: Colosseum -> octagon]
+      // [18: Island -> heart, 17: Robot -> infinity, 6: Heart -> heart, 19: Starburst -> hexagon, 11: Colosseum -> octagon,
+      //  15: Butterfly (Lv36!) -> star, 12: Spiral (Lv37!) -> oval, 13: Circle (Lv38!) -> diamond, 14: Diagonal (Lv39!) -> clover, 16: Diamond (Lv40!) -> diamond]
       if (lvl === 1) return 'oval';
       if (lvl === 2) return 'diamond';
       if (lvl === 3) return 'heart';
-      const pairedTrackShapes = ['star', 'oval', 'diamond', 'clover', 'diamond', 'infinity', 'heart', 'heart', 'hexagon', 'octagon'];
+      const pairedTrackShapes = ['heart', 'infinity', 'heart', 'hexagon', 'octagon', 'star', 'oval', 'diamond', 'clover', 'diamond'];
       return pairedTrackShapes[(lvl - 1) % pairedTrackShapes.length];
     }
 
