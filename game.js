@@ -812,47 +812,101 @@
     /**
      * Generates distinct, progressively harder formations for Levels 4..1000!
      */
+    static getWorldEraForLevel(levelNum) {
+      const lvl = Math.max(1, levelNum || 1);
+      if (lvl <= 100) return 1; // World 1 (Lv 1-100): Classic Emerald & Sakura Plaza
+      const block = Math.floor((lvl - 1) / 500);
+      if (block === 0) return 2; // World 2 (Lv 101-500): Statue of Liberty Harbor Pier & Countryside Cottage Hills (Images 2, 3, 4)
+      if (block === 1) return 3; // World 3 (Lv 501-1000): Seaside Gazebo Lighthouse, Pagoda Waterfall & Dutch Windmill Farm (Images 7, 8, 9)
+      if (block === 2) return 4; // World 4 (Lv 1001-1500): Haunted Horror Graveyard, Dark Carnival, Gothic Crypt & Biohazard Lab (Images 10-15)
+      return ((block - 1) % 4) + 1;
+    }
+
+    static getArchetypePoolForLevel(levelNum) {
+      const era = this.getWorldEraForLevel(levelNum);
+      if (era === 1) {
+        // Levels 1-100: Image 1, 5, 6 formations + Butterfly, Circle, Spiral, Diagonal, Diamond, Robot, Heart, Starburst (48-56 buses!)
+        return [12, 1, 13, 14, 4, 15, 16, 17, 6, 19];
+      }
+      if (era === 2) {
+        // Levels 101-500: Images 2, 3, 4, 5, 6 (Character Boy Figure, 10x6 Harbor Fortress, Giant Crab, Swirl Highway, Kaleidoscope Star) + all classics!
+        return [0, 2, 3, 1, 4, 15, 12, 13, 14, 6, 16, 17, 19];
+      }
+      if (era === 3) {
+        // Levels 501-1000: Images 7, 8, 9 (Central Fountain Courtyard, 4-Corner Lotus Pond Arena, Windmill Diamond Courtyard) + all figures & shapes!
+        return [5, 7, 8, 0, 3, 4, 2, 1, 15, 12, 13, 14, 6, 16, 17, 19];
+      }
+      // Levels 1001-1500+: Images 10-15 Horror & Monster Boss Formations (Haunted Gargoyle Octagon, Giant Fire Dragon, Giant Skull, Giant Tarantula Spider, Giant Scorpion, Horned Mecha Monster Titan) + varied formations!
+      return [9, 10, 18, 20, 21, 11, 4, 3, 0, 5, 7, 8, 15, 12, 13, 14, 6, 16];
+    }
+
+    static getArchetypeForLevel(levelNum) {
+      const lvl = Math.max(1, levelNum || 1);
+      const pool = this.getArchetypePoolForLevel(lvl);
+      const era = this.getWorldEraForLevel(lvl);
+      const offsetInEra = era === 1 ? (lvl - 1) : era === 2 ? (lvl - 101) : ((lvl - 1) % 500);
+      return pool[offsetInEra % pool.length];
+    }
+
     static buildProgressiveHardLevel(levelNum) {
       const rand = this.createSeededRandom(levelNum * 12983 + 409);
       const colorPool = this.getColorsForLevel(levelNum, rand);
 
-      // Cycle directly through the 10 iconic visual formations from the user's reference screenshots
-      // so EVERY level (including Level 31, 32, 33, 34, 35, 36...) has an unmistakable, pure geometric map silhouette!
-      // 15: Giant Butterfly Wings (42v), 12: Triple Square Spiral [@] (42v), 13: Triple Concentric Circular Rings (O) (38v),
-      // 14: 45° Diagonal Criss-Cross /// \\\ (42v), 16: 45° Rotated 6x6 Diamond Lattice ◇ (36v),
-      // 17: Cyber Robot Face / Smiling Mask (36v), 18: Asymmetric Diagonal Island + Highway Convoy (42v),
-      // 6: Iconic Sculpted Heart ♡ (38v), 19: 5-Pointed Royal Starburst ☆ (38v), 11: Colosseum Triple Arena Ring ◎ (40v)
-      const archetypeOrder = [18, 17, 6, 19, 11, 15, 12, 13, 14, 16];
-      const archetype = archetypeOrder[Math.max(0, levelNum - 1) % archetypeOrder.length];
+      const pool = this.getArchetypePoolForLevel(levelNum);
+      const era = this.getWorldEraForLevel(levelNum);
+      const offsetInEra = era === 1 ? (levelNum - 1) : era === 2 ? (levelNum - 101) : ((levelNum - 1) % 500);
+      const archetype = pool[offsetInEra % pool.length];
+      const subCycle = Math.floor(offsetInEra / pool.length);
+
       let slots = this.buildDistinctFormationArchetype(archetype, levelNum, rand);
 
-      // Progressive vehicle count scaling: starts at 26 on Level 4 and grows every level up to full 36-43 vehicles by Level 20+!
-      const targetMaxVehicles = levelNum < 20
-        ? Math.min(slots.length, 25 + Math.floor((levelNum - 4) * 1.15))
-        : slots.length;
-      if (slots.length > targetMaxVehicles) {
-        slots = slots.slice(0, targetMaxVehicles);
-      }
-
-      // Dynamic parking-lot vehicle scale so 36-43 vehicles fit cleanly inside the iconic formation silhouette with 0 overlap!
-      const lotScale = slots.length >= 34 ? 0.74 : slots.length >= 28 ? 0.81 : 0.88;
+      // Dynamic parking-lot vehicle scale so all 48-58 vehicles fit cleanly inside the formation silhouette with 0 overlap!
+      const lotScale = slots.length >= 52 ? 0.65 : slots.length >= 46 ? 0.68 : 0.72;
       slots.forEach((s) => {
         s.scale = lotScale;
       });
 
-      // Horizontal mirror on alternate 10-level cycles so formations feel fresh without ever distorting their geometry
-      const cycle = Math.floor(Math.max(0, levelNum - 1) / archetypeOrder.length);
-      if (cycle % 2 === 1 && archetype !== 6) {
+      // Continuous per-level positional & directional mutation ("buses ki assign location change krtey rehna koj alg alg hee")
+      // so every single level across 1..5000 has a unique arrangement while preserving recognizable figure silhouettes!
+      const isUprightFigure = (archetype === 0 || archetype === 3 || archetype === 6 || archetype === 10 || archetype === 11 || archetype === 17 || archetype === 18 || archetype === 20 || archetype === 21);
+      if (subCycle > 0) {
+        const mirrorX = (subCycle % 2 === 1);
+        const mirrorZ = !isUprightFigure && (subCycle % 4 >= 2);
+        const transposeXZ = !isUprightFigure && (subCycle % 5 === 3);
+        const shearX = ((subCycle % 3) - 1) * 0.055;
+        const scalePulseX = 1.0 + (((subCycle + levelNum) % 3) - 1) * 0.03;
+        const scalePulseZ = 1.0 + (((subCycle * 2 + levelNum) % 3) - 1) * 0.03;
+
         slots.forEach((s) => {
-          s.x = -s.x;
-          if (s.dir === 'LEFT') s.dir = 'RIGHT';
-          else if (s.dir === 'RIGHT') s.dir = 'LEFT';
-          if (s.tilt) s.tilt = -s.tilt;
+          if (transposeXZ) {
+            const relZ = s.z - 5.58;
+            const oldX = s.x;
+            s.x = Number((relZ * 0.92).toFixed(2));
+            s.z = Number((5.58 + oldX * 1.04).toFixed(2));
+            if (s.dir === 'UP') s.dir = 'LEFT';
+            else if (s.dir === 'LEFT') s.dir = 'DOWN';
+            else if (s.dir === 'DOWN') s.dir = 'RIGHT';
+            else if (s.dir === 'RIGHT') s.dir = 'UP';
+          }
+          if (mirrorX) {
+            s.x = -s.x;
+            if (s.dir === 'LEFT') s.dir = 'RIGHT';
+            else if (s.dir === 'RIGHT') s.dir = 'LEFT';
+            if (s.tilt) s.tilt = -s.tilt;
+          }
+          if (mirrorZ) {
+            s.z = Number((11.16 - s.z).toFixed(2));
+            if (s.dir === 'UP') s.dir = 'DOWN';
+            else if (s.dir === 'DOWN') s.dir = 'UP';
+            if (s.tilt) s.tilt = -s.tilt;
+          }
+          s.x = Number((s.x * scalePulseX + (s.z - 5.58) * shearX).toFixed(2));
+          s.z = Number((5.58 + (s.z - 5.58) * scalePulseZ).toFixed(2));
         });
       }
 
       // Ensure base formation has crisp, open spacing while preserving its exact visual silhouette
-      this.enforceCleanVehicleSpacing(slots, 0.16);
+      this.enforceCleanVehicleSpacing(slots, 0.14);
 
       // Strict Vehicle Capacities requested by User:
       // - Small Bus / Van (type !== 'bus'): strictly 16 passengers (4 full rows of 4)
@@ -869,7 +923,7 @@
 
       let prevCol = null;
       let busIdx = 0;
-      const megaBusMod = levelNum >= 12 ? 2 : 3; // More 40-seat mega buses on higher levels for longer, intense waves!
+      const megaBusMod = levelNum >= 10 ? 2 : 3;
       const vehicles = slots.map((s, idx) => {
         let color = colorBag[idx];
         if (color === prevCol && colorPool.length > 1) {
@@ -905,469 +959,564 @@
       const shouldFlip = levelNum % 2 === 1;
 
       if (archetype === 0) {
-        // Archetype 0: PINWHEEL FORTRESS (22 vehicles)
-        list.push({ x: -2.2, z: 0.45, dir: 'RIGHT', type: 'bus', tilt: -0.1 });
-        list.push({ x: 2.2, z: 0.45, dir: 'LEFT', type: 'bus', tilt: 0.1 });
-
-        [-3.6, -1.8, 0.0, 1.8, 3.6].forEach((cx, i) => {
-          list.push({
-            x: cx,
-            z: 2.45,
-            dir: i % 2 === 0 ? 'DOWN' : 'UP',
-            type: i === 2 ? 'bus' : 'car'
-          });
+        // Archetype 0 (Image 2!): GIANT FULL-BODY CHARACTER / BOY FIGURE + 4 CORNER FLOWER CLUSTERS (56 Vehicles!)
+        // 1. Cap & Hair Top (7 vehicles)
+        [-1.35, -0.15, 1.05].forEach((cx, i) => {
+          list.push({ x: cx, z: 0.72, dir: 'LEFT', type: i === 1 ? 'bus' : 'car' });
         });
-
-        list.push({ x: -3.3, z: 4.55, dir: 'RIGHT', type: 'car' });
-        list.push({ x: 0.0, z: 4.55, dir: shouldFlip ? 'RIGHT' : 'LEFT', type: 'bus' });
-        list.push({ x: 3.3, z: 4.55, dir: 'RIGHT', type: 'car' });
-
-        [-3.8, -2.2, -0.7, 0.7, 2.2, 3.8].forEach((cx, i) => {
-          list.push({
-            x: cx,
-            z: 6.55,
-            dir: i < 3 ? 'UP' : 'DOWN',
-            type: 'car'
-          });
+        [-2.05, -0.75, 0.55, 1.85].forEach((cx, i) => {
+          list.push({ x: cx, z: 1.55, dir: i % 2 === 0 ? 'LEFT' : 'RIGHT', type: 'car' });
         });
-
-        list.push({ x: -3.3, z: 8.6, dir: 'LEFT', type: 'car' });
-        list.push({ x: 0.0, z: 8.6, dir: 'RIGHT', type: 'bus' });
-        list.push({ x: 3.3, z: 8.6, dir: 'RIGHT', type: 'car' });
-
-        list.push({ x: -2.2, z: 10.5, dir: 'LEFT', type: 'bus' });
-        list.push({ x: 0.0, z: 10.5, dir: 'DOWN', type: 'car' });
-        list.push({ x: 2.2, z: 10.5, dir: 'RIGHT', type: 'bus' });
+        // 2. Head, Eyes & Smiling Mouth (10 vehicles)
+        [-2.15, -0.85, 0.45, 1.75].forEach((cx, i) => {
+          list.push({ x: cx, z: 2.38, dir: i < 2 ? 'LEFT' : 'RIGHT', type: 'car' });
+        });
+        [-1.95, -0.75, 0.55, 1.75].forEach((cx, i) => {
+          list.push({ x: cx, z: 3.22, dir: i % 2 === 0 ? 'UP' : 'DOWN', type: 'car' });
+        });
+        list.push({ x: -0.75, z: 4.05, dir: 'LEFT', type: 'car' });
+        list.push({ x: 0.65, z: 4.05, dir: 'RIGHT', type: 'car' });
+        // 3. Shoulders, Torso & Outstretched Left/Right Arms (17 vehicles)
+        [-1.45, 0.0, 1.45].forEach((cx, i) => {
+          list.push({ x: cx, z: 4.90, dir: i === 1 ? 'UP' : 'LEFT', type: i === 1 ? 'bus' : 'car' });
+        });
+        // Left Arm extending outward-down
+        list.push({ x: -2.65, z: 5.35, dir: 'DOWN', type: 'car', tilt: 0.58 });
+        list.push({ x: -3.55, z: 6.15, dir: 'DOWN', type: 'bus', tilt: 0.62 });
+        list.push({ x: -2.45, z: 6.45, dir: 'UP', type: 'car', tilt: 0.55 });
+        // Right Arm extending outward-down
+        list.push({ x: 2.55, z: 5.25, dir: 'DOWN', type: 'car', tilt: -0.58 });
+        list.push({ x: 3.45, z: 6.00, dir: 'DOWN', type: 'bus', tilt: -0.62 });
+        list.push({ x: 4.25, z: 6.80, dir: 'DOWN', type: 'car', tilt: -0.62 });
+        list.push({ x: 2.45, z: 6.35, dir: 'UP', type: 'car', tilt: -0.55 });
+        // Torso Core & Waist
+        [-1.15, 0.0, 1.15].forEach((cx, i) => {
+          list.push({ x: cx, z: 5.85, dir: i % 2 === 0 ? 'LEFT' : 'RIGHT', type: 'car' });
+          list.push({ x: cx, z: 6.85, dir: i % 2 === 0 ? 'DOWN' : 'UP', type: 'car' });
+        });
+        // 4. Left & Right Legs + Blue Shoes (10 vehicles)
+        [-1.35, -0.45, 0.45, 1.35].forEach((cx, i) => {
+          list.push({ x: cx, z: 7.95, dir: i % 2 === 0 ? 'DOWN' : 'UP', type: 'car' });
+        });
+        [-1.65, -0.55, 0.65, 1.75].forEach((cx, i) => {
+          list.push({ x: cx, z: 9.10, dir: i < 2 ? 'LEFT' : 'RIGHT', type: 'car' });
+        });
+        list.push({ x: -1.35, z: 10.25, dir: 'LEFT', type: 'bus' });
+        list.push({ x: 1.45, z: 10.25, dir: 'RIGHT', type: 'bus' });
+        // 5. Four Corner 3-Bus Flower Clusters (12 vehicles — exact Image 2!)
+        for (const side of [-1, 1]) {
+          for (const cz of [3.25, 9.25]) {
+            list.push({ x: side * 4.05, z: cz - 0.65, dir: side < 0 ? 'LEFT' : 'RIGHT', type: 'car' });
+            list.push({ x: side * 4.45, z: cz + 0.35, dir: 'UP', type: 'car', tilt: side * 0.32 });
+            list.push({ x: side * 3.55, z: cz + 0.35, dir: 'DOWN', type: 'car', tilt: side * -0.32 });
+          }
+        }
       } else if (archetype === 1) {
-        // Archetype 1: TWIN TOWERS CITADEL (25 vehicles)
-        list.push({ x: -3.2, z: 0.55, dir: 'LEFT', type: 'car' });
-        list.push({ x: 0.0, z: 0.55, dir: 'RIGHT', type: 'bus' });
-        list.push({ x: 3.2, z: 0.55, dir: 'RIGHT', type: 'car' });
-
-        [-3.8, -2.4, 2.4, 3.8].forEach((cx) => {
-          list.push({ x: cx, z: 2.6, dir: 'UP', type: 'bus' });
-          list.push({ x: cx, z: 5.2, dir: 'DOWN', type: 'car' });
-          list.push({ x: cx, z: 7.4, dir: 'DOWN', type: 'bus' });
+        // Archetype 1 (Image 1 Panel 2 & Image 5!): DENSE SWIRLING VORTEX + RIGHT 3-COLUMN HIGHWAY + OUTER U-WALL (54 Vehicles!)
+        // 1. Left Outer Vertical Wall (7 vehicles)
+        [1.15, 2.50, 3.85, 5.20, 6.55, 7.90, 9.25].forEach((cz, i) => {
+          list.push({ x: -4.45, z: cz, dir: 'DOWN', type: i % 2 === 0 ? 'bus' : 'car' });
         });
-
-        list.push({ x: 0.0, z: 2.3, dir: 'LEFT', type: 'car' });
-        list.push({ x: 0.0, z: 3.8, dir: 'RIGHT', type: 'car' });
-        list.push({ x: 0.0, z: 5.3, dir: 'LEFT', type: 'bus' });
-        list.push({ x: 0.0, z: 6.8, dir: 'RIGHT', type: 'car' });
-        list.push({ x: 0.0, z: 8.3, dir: 'DOWN', type: 'car' });
-
-        list.push({ x: -3.2, z: 10.2, dir: 'LEFT', type: 'bus' });
-        list.push({ x: 0.0, z: 10.2, dir: 'DOWN', type: 'car' });
-        list.push({ x: 3.2, z: 10.2, dir: 'RIGHT', type: 'bus' });
-      } else if (archetype === 2) {
-        // Archetype 2: DIAGONAL DIAMOND CONVOY (24 angled & straight vehicles!)
-        list.push({ x: -2.2, z: 0.65, dir: 'UP', type: 'car', tilt: 0.68 });
-        list.push({ x: 2.2, z: 0.65, dir: 'UP', type: 'car', tilt: -0.68 });
-        list.push({ x: -3.9, z: 1.85, dir: 'UP', type: 'bus', tilt: 0.68 });
-        list.push({ x: 0.0, z: 1.95, dir: 'DOWN', type: 'car', subType: 'van' });
-        list.push({ x: 3.9, z: 1.85, dir: 'UP', type: 'bus', tilt: -0.68 });
-
-        list.push({ x: -2.1, z: 3.3, dir: 'DOWN', type: 'car', subType: 'van', tilt: 0.68 });
-        list.push({ x: 2.1, z: 3.3, dir: 'DOWN', type: 'car', subType: 'van', tilt: -0.68 });
-
-        [-3.8, -1.9, 0.0, 1.9, 3.8].forEach((cx, i) => {
-          list.push({
-            x: cx,
-            z: 5.2,
-            dir: i % 2 === 0 ? 'UP' : 'DOWN',
-            type: i === 2 ? 'bus' : 'car'
+        // 2. Right 3-Column Vertical Highway Convoy (15 vehicles)
+        [1.95, 3.15, 4.35].forEach((cx, cIdx) => {
+          [1.20, 2.85, 4.50, 6.15, 7.80].forEach((cz, rIdx) => {
+            list.push({
+              x: cx,
+              z: cz,
+              dir: cIdx === 2 ? 'UP' : ((cIdx + rIdx) % 2 === 0 ? 'UP' : 'DOWN'),
+              type: rIdx % 2 === 1 ? 'bus' : 'car'
+            });
           });
         });
-
-        list.push({ x: -3.8, z: 7.3, dir: 'DOWN', type: 'car', tilt: -0.68 });
-        list.push({ x: -1.8, z: 7.3, dir: 'UP', type: 'car', subType: 'van', tilt: -0.68 });
-        list.push({ x: 1.8, z: 7.3, dir: 'UP', type: 'car', subType: 'van', tilt: 0.68 });
-        list.push({ x: 3.8, z: 7.3, dir: 'DOWN', type: 'car', tilt: 0.68 });
-
-        list.push({ x: -2.5, z: 9.1, dir: 'DOWN', type: 'bus', tilt: -0.68 });
-        list.push({ x: 0.0, z: 8.9, dir: 'DOWN', type: 'car' });
-        list.push({ x: 2.5, z: 9.1, dir: 'DOWN', type: 'bus', tilt: 0.68 });
-
-        list.push({ x: -1.6, z: 10.7, dir: 'LEFT', type: 'car', subType: 'van' });
-        list.push({ x: 1.6, z: 10.7, dir: 'RIGHT', type: 'car', subType: 'van' });
+        // 3. Upper-Left Swirling Knot (12 vehicles)
+        [-3.15, -1.85, -0.55, 0.65].forEach((cx, i) => {
+          list.push({ x: cx, z: 0.95, dir: i % 2 === 0 ? 'LEFT' : 'RIGHT', type: i === 1 ? 'bus' : 'car' });
+          list.push({ x: cx, z: 2.25, dir: i % 2 === 0 ? 'UP' : 'LEFT', type: 'car', tilt: (i - 1.5) * 0.22 });
+          list.push({ x: cx, z: 3.60, dir: 'LEFT', type: i === 2 ? 'bus' : 'car', tilt: 0.25 });
+        });
+        // 4. Lower Swirling Bowl & Cyan Bottom Rim (20 vehicles)
+        [-3.15, -1.95, -0.75, 0.55].forEach((cx, i) => {
+          list.push({ x: cx, z: 5.15, dir: 'RIGHT', type: 'car', tilt: (i - 1.5) * -0.22 });
+          list.push({ x: cx, z: 6.45, dir: i % 2 === 0 ? 'RIGHT' : 'LEFT', type: i === 1 ? 'bus' : 'car' });
+          list.push({ x: cx, z: 7.75, dir: 'RIGHT', type: 'car', tilt: (i - 1.5) * 0.24 });
+          list.push({ x: cx, z: 9.05, dir: 'RIGHT', type: 'car', tilt: (i - 1.5) * 0.28 });
+        });
+        [-3.45, -1.95, -0.45, 1.15, 2.75, 4.15].slice(0, 4).forEach((cx, i) => {
+          list.push({ x: cx, z: 10.25, dir: i < 2 ? 'LEFT' : 'RIGHT', type: i % 2 === 0 ? 'bus' : 'car' });
+        });
+      } else if (archetype === 2) {
+        // Archetype 2 (Image 3!): 10x6 HARBOR STATUE OF LIBERTY FORTRESS COLUMNS + CENTER INWARD CROSS (56 Vehicles!)
+        // 1. Top & Bottom Horizontal 6-Bus Bars (12 vehicles)
+        [-3.95, -2.37, -0.79, 0.79, 2.37, 3.95].forEach((cx, i) => {
+          list.push({ x: cx, z: 0.72, dir: 'RIGHT', type: i % 2 === 0 ? 'bus' : 'car' });
+          list.push({ x: cx, z: 10.38, dir: 'LEFT', type: i % 2 === 1 ? 'bus' : 'car' });
+        });
+        // 2. Left & Right Outer 6-Vehicle Vertical Columns (12 vehicles)
+        [1.95, 3.35, 4.75, 6.15, 7.55, 8.95].forEach((cz, i) => {
+          list.push({ x: -4.45, z: cz, dir: 'UP', type: i % 2 === 0 ? 'bus' : 'car' });
+          list.push({ x: 4.45, z: cz, dir: 'DOWN', type: i % 2 === 0 ? 'bus' : 'car' });
+        });
+        // 3. Six Interior Vertical Columns (Upper & Lower Halves = 24 vehicles)
+        [-3.20, -2.05, -0.95, 0.95, 2.05, 3.20].forEach((cx, cIdx) => {
+          list.push({ x: cx, z: 2.15, dir: 'UP', type: 'car' });
+          list.push({ x: cx, z: 3.55, dir: 'UP', type: cIdx % 2 === 0 ? 'bus' : 'car' });
+          list.push({ x: cx, z: 7.55, dir: 'DOWN', type: cIdx % 2 === 1 ? 'bus' : 'car' });
+          list.push({ x: cx, z: 8.95, dir: 'DOWN', type: 'car' });
+        });
+        // 4. Center Inward Cross & Flankers (8 vehicles — exact Image 3!)
+        list.push({ x: 0.0, z: 2.35, dir: 'UP', type: 'car' });
+        list.push({ x: 0.0, z: 4.05, dir: 'DOWN', type: 'bus' });
+        list.push({ x: -1.45, z: 5.55, dir: 'RIGHT', type: 'bus' });
+        list.push({ x: 1.45, z: 5.55, dir: 'LEFT', type: 'bus' });
+        list.push({ x: -3.20, z: 5.55, dir: 'LEFT', type: 'car' });
+        list.push({ x: 3.20, z: 5.55, dir: 'RIGHT', type: 'car' });
+        list.push({ x: 0.0, z: 7.05, dir: 'UP', type: 'bus' });
+        list.push({ x: 0.0, z: 8.75, dir: 'DOWN', type: 'car' });
       } else if (archetype === 3) {
-        // Archetype 3: CROSSROADS LABYRINTH (26 vehicles)
-        [-3.2, 0.0, 3.2].forEach((cx, idx) => {
-          list.push({ x: cx, z: 0.6, dir: idx === 1 ? 'UP' : idx === 0 ? 'LEFT' : 'RIGHT', type: 'bus' });
+        // Archetype 3 (Image 4!): GIANT RED/ORANGE CRAB 🦀 + BOTTOM OCEAN WAVE (56 Vehicles!)
+        // 1. Twin Upper Red Pincer Claws (14 vehicles)
+        for (const side of [-1, 1]) {
+          list.push({ x: side * 1.95, z: 1.15, dir: side < 0 ? 'RIGHT' : 'LEFT', type: 'car', tilt: side * -0.25 });
+          list.push({ x: side * 3.15, z: 1.35, dir: side < 0 ? 'RIGHT' : 'LEFT', type: 'car', tilt: side * 0.25 });
+          list.push({ x: side * 3.95, z: 2.20, dir: 'UP', type: 'car', tilt: side * 0.42 });
+          list.push({ x: side * 2.85, z: 2.30, dir: 'UP', type: 'car', tilt: side * -0.25 });
+          list.push({ x: side * 1.85, z: 2.25, dir: 'UP', type: 'car', tilt: side * -0.35 });
+          list.push({ x: side * 3.85, z: 3.30, dir: 'UP', type: 'car', tilt: side * -0.35 });
+          list.push({ x: side * 2.55, z: 3.35, dir: side < 0 ? 'RIGHT' : 'LEFT', type: 'car', tilt: side * 0.35 });
+        }
+        // 2. Twin Crab Eyes + Central Orange Crab Carapace Shell (18 vehicles)
+        list.push({ x: -0.55, z: 2.75, dir: 'UP', type: 'car' });
+        list.push({ x: 0.55, z: 2.75, dir: 'UP', type: 'car' });
+        [4.15, 5.20, 6.25, 7.30].forEach((cz, rIdx) => {
+          [-1.95, -0.98, 0.0, 0.98, 1.95].forEach((cx, cIdx) => {
+            if (rIdx === 0 && (cIdx === 0 || cIdx === 4)) return;
+            list.push({
+              x: cx,
+              z: cz,
+              dir: cIdx === 2 ? 'UP' : (cIdx < 2 ? 'LEFT' : 'RIGHT'),
+              type: cIdx === 2 ? 'bus' : 'car'
+            });
+          });
         });
-
-        [-3.9, -2.5, -1.1, 1.1, 2.5, 3.9].forEach((cx) => {
-          list.push({ x: cx, z: 2.7, dir: 'UP', type: 'car' });
+        // 3. Six Angled Crab Walking Legs (3 Left + 3 Right = 12 vehicles)
+        for (const side of [-1, 1]) {
+          list.push({ x: side * 3.15, z: 4.55, dir: 'UP', type: 'bus', tilt: side * -0.55 });
+          list.push({ x: side * 4.30, z: 5.35, dir: side < 0 ? 'LEFT' : 'RIGHT', type: 'car', tilt: side * 0.35 });
+          list.push({ x: side * 3.15, z: 5.95, dir: 'DOWN', type: 'bus', tilt: side * 0.52 });
+          list.push({ x: side * 4.35, z: 6.65, dir: 'DOWN', type: 'car', tilt: side * 0.55 });
+          list.push({ x: side * 3.15, z: 7.35, dir: 'DOWN', type: 'bus', tilt: side * 0.58 });
+          list.push({ x: side * 4.25, z: 8.10, dir: 'DOWN', type: 'car', tilt: side * 0.45 });
+        }
+        // 4. Two Bottom Rows of Cyan/Blue Ocean Wave Buses (12 vehicles)
+        [-3.95, -2.37, -0.79, 0.79, 2.37, 3.95].forEach((cx, i) => {
+          list.push({ x: cx, z: 9.25, dir: 'RIGHT', type: 'car', tilt: (i % 2 === 0 ? 0.12 : -0.12) });
+          list.push({ x: cx, z: 10.35, dir: 'RIGHT', type: i % 2 === 0 ? 'bus' : 'car', tilt: (i % 2 === 0 ? -0.10 : 0.10) });
         });
-
-        list.push({ x: -3.3, z: 4.7, dir: 'LEFT', type: 'bus' });
-        list.push({ x: 0.0, z: 4.7, dir: 'LEFT', type: 'car' });
-        list.push({ x: 3.3, z: 4.7, dir: 'RIGHT', type: 'bus' });
-
-        [-3.9, -2.5, -1.1, 1.1, 2.5, 3.9].forEach((cx) => {
-          list.push({ x: cx, z: 6.8, dir: 'DOWN', type: 'car' });
-        });
-
-        list.push({ x: -3.2, z: 8.8, dir: 'LEFT', type: 'car' });
-        list.push({ x: 0.0, z: 8.8, dir: 'DOWN', type: 'bus' });
-        list.push({ x: 3.2, z: 8.8, dir: 'RIGHT', type: 'car' });
-
-        list.push({ x: -2.2, z: 10.4, dir: 'LEFT', type: 'bus' });
-        list.push({ x: 2.2, z: 10.4, dir: 'RIGHT', type: 'bus' });
       } else if (archetype === 4) {
-        // Archetype 4: SPIRAL VORTEX (24 vehicles)
-        list.push({ x: -2.4, z: 0.55, dir: 'LEFT', type: 'bus', tilt: -0.08 });
-        list.push({ x: 2.4, z: 0.55, dir: 'RIGHT', type: 'bus', tilt: 0.08 });
-
-        [-3.8, -1.9, 0.0, 1.9, 3.8].forEach((cx, i) => {
+        // Archetype 4 (Image 6!): GIANT 5-POINTED KALEIDOSCOPE STAR PINWHEEL (56 Vehicles!)
+        // 1. Center Pentagon Star Ring (6 vehicles)
+        for (let k = 0; k < 5; k++) {
+          const ang = (k / 5) * Math.PI * 2 - Math.PI * 0.5;
+          const x = Math.cos(ang) * 1.15;
+          const z = 5.58 + Math.sin(ang) * 1.15;
+          const tanRot = Math.atan2(Math.sin(ang), -Math.cos(ang));
+          list.push({ x: Number(x.toFixed(2)), z: Number(z.toFixed(2)), dir: 'UP', type: 'car', tilt: Number(tanRot.toFixed(3)) });
+        }
+        list.push({ x: 0.0, z: 5.58, dir: 'UP', type: 'car' });
+        // 2. Five Radial Star Spoke Arms (3 buses per arm = 15 vehicles)
+        for (let arm = 0; arm < 5; arm++) {
+          const ang = (arm / 5) * Math.PI * 2 - Math.PI * 0.5;
+          const radRot = Math.atan2(-Math.cos(ang), -Math.sin(ang));
+          [2.15, 3.25, 4.35].forEach((rad, sIdx) => {
+            const x = Math.cos(ang) * rad;
+            const z = 5.58 + Math.sin(ang) * rad;
+            list.push({
+              x: Number(x.toFixed(2)),
+              z: Number(z.toFixed(2)),
+              dir: sIdx % 2 === 0 ? 'UP' : 'DOWN',
+              type: sIdx === 1 ? 'bus' : 'car',
+              tilt: Number(radRot.toFixed(3))
+            });
+          });
+          // 3. Five Dense Triangular Wedge Petals between Spokes (7 vehicles per petal = 35 vehicles!)
+          const midAng = ang + Math.PI / 5;
+          const pRot = Math.atan2(Math.sin(midAng), -Math.cos(midAng));
+          const ux = Math.cos(midAng), uz = Math.sin(midAng);
+          const tx = -Math.sin(midAng), tz = Math.cos(midAng);
+          const petalOffsets = [
+            [2.15, 0.0],
+            [3.05, -0.58], [3.05, 0.58],
+            [3.95, -1.05], [3.95, 0.0], [3.95, 1.05],
+            [4.55, 0.0]
+          ];
+          petalOffsets.forEach(([rOff, tOff], pIdx) => {
+            const px = ux * rOff + tx * tOff;
+            const pz = 5.58 + uz * rOff + tz * tOff;
+            list.push({
+              x: Number(px.toFixed(2)),
+              z: Number(pz.toFixed(2)),
+              dir: pIdx % 2 === 0 ? 'UP' : 'DOWN',
+              type: pIdx === 4 ? 'bus' : 'car',
+              tilt: Number(pRot.toFixed(3))
+            });
+          });
+        }
+      } else if (archetype === 5) {
+        // Archetype 5 (Image 7!): SEASIDE GAZEBO CENTRAL FOUNTAIN TRIPLE RECTANGULAR COURTYARD (52 Vehicles!)
+        // Leaves center fountain plaza [x in (-1.05, 1.05), z in (4.55, 6.55)] open!
+        // 1. Outer Rectangular Ring (24 vehicles)
+        [-3.95, -2.37, -0.79, 0.79, 2.37, 3.95].forEach((cx, i) => {
+          list.push({ x: cx, z: 0.72, dir: 'RIGHT', type: i % 2 === 0 ? 'bus' : 'car' });
+          list.push({ x: cx, z: 10.38, dir: 'LEFT', type: i % 2 === 1 ? 'bus' : 'car' });
+        });
+        [1.95, 3.38, 4.82, 6.26, 7.70, 9.15].forEach((cz, i) => {
+          list.push({ x: -4.45, z: cz, dir: 'UP', type: i % 2 === 0 ? 'bus' : 'car' });
+          list.push({ x: 4.45, z: cz, dir: 'DOWN', type: i % 2 === 1 ? 'bus' : 'car' });
+        });
+        // 2. Middle Rectangular Ring (16 vehicles)
+        [-2.75, -0.95, 0.95, 2.75].forEach((cx, i) => {
+          list.push({ x: cx, z: 1.95, dir: i < 2 ? 'LEFT' : 'RIGHT', type: 'bus' });
+          list.push({ x: cx, z: 9.15, dir: i < 2 ? 'LEFT' : 'RIGHT', type: 'bus' });
+        });
+        [3.25, 4.75, 6.35, 7.85].forEach((cz, i) => {
+          list.push({ x: -3.20, z: cz, dir: 'UP', type: 'car' });
+          list.push({ x: 3.20, z: cz, dir: 'DOWN', type: 'car' });
+        });
+        // 3. Inner Courtyard Ring around the Central Fountain (12 vehicles)
+        [-1.65, 1.65].forEach((cx) => {
+          list.push({ x: cx, z: 3.25, dir: cx < 0 ? 'LEFT' : 'RIGHT', type: 'bus' });
+          list.push({ x: cx, z: 7.85, dir: cx < 0 ? 'LEFT' : 'RIGHT', type: 'bus' });
+        });
+        [-0.75, 0.75].forEach((cx) => {
+          list.push({ x: cx, z: 3.75, dir: cx < 0 ? 'RIGHT' : 'LEFT', type: 'car' });
+          list.push({ x: cx, z: 7.35, dir: cx < 0 ? 'RIGHT' : 'LEFT', type: 'car' });
+        });
+        [4.85, 6.25].forEach((cz) => {
+          list.push({ x: -1.95, z: cz, dir: 'UP', type: 'car' });
+          list.push({ x: 1.95, z: cz, dir: 'UP', type: 'car' });
+        });
+      } else if (archetype === 6) {
+        // Archetype 6: ICONIC SCULPTED 3D MULTI-LAYER HEART FORMATION (50 Vehicles!)
+        // Top-left & Top-right outer heart lobes (8 vehicles)
+        [-4.15, -2.95, -1.75, -0.65, 0.65, 1.75, 2.95, 4.15].forEach((cx, i) => {
+          const lobeZ = Math.abs(cx) > 2.2 ? (Math.abs(cx) > 3.5 ? 1.35 : 0.75) : 1.35;
+          list.push({
+            x: cx,
+            z: lobeZ,
+            dir: 'UP',
+            type: i % 3 === 1 ? 'bus' : 'car',
+            tilt: cx < 0 ? (cx < -2.5 ? -0.55 : 0.55) : (cx > 2.5 ? 0.55 : -0.55)
+          });
+        });
+        // Upper heart wide shoulders (9 vehicles)
+        [-4.45, -3.35, -2.25, -1.15, 0.0, 1.15, 2.25, 3.35, 4.45].forEach((cx, i) => {
           list.push({
             x: cx,
             z: 2.55,
-            dir: i < 2 ? 'UP' : i === 2 ? 'DOWN' : 'UP',
-            type: i % 2 === 1 ? 'bus' : 'car'
-          });
-        });
-
-        list.push({ x: -3.5, z: 4.75, dir: 'LEFT', type: 'car' });
-        list.push({ x: -1.2, z: 4.75, dir: 'LEFT', type: 'car' });
-        list.push({ x: 1.2, z: 4.75, dir: 'RIGHT', type: 'car' });
-        list.push({ x: 3.5, z: 4.75, dir: 'RIGHT', type: 'car' });
-
-        [-3.8, -1.9, 0.0, 1.9, 3.8].forEach((cx, i) => {
-          list.push({
-            x: cx,
-            z: 6.85,
             dir: i % 2 === 0 ? 'DOWN' : 'UP',
-            type: i === 2 ? 'bus' : 'car'
+            type: i % 3 === 0 ? 'bus' : 'car',
+            tilt: cx < 0 ? 0.52 : cx > 0 ? -0.52 : 0
           });
         });
-
-        list.push({ x: -3.3, z: 8.9, dir: 'LEFT', type: 'bus' });
-        list.push({ x: 0.0, z: 8.9, dir: 'DOWN', type: 'car' });
-        list.push({ x: 3.3, z: 8.9, dir: 'RIGHT', type: 'bus' });
-
-        list.push({ x: -2.2, z: 10.55, dir: 'LEFT', type: 'car' });
-        list.push({ x: 0.0, z: 10.55, dir: 'DOWN', type: 'car' });
-        list.push({ x: 2.2, z: 10.55, dir: 'RIGHT', type: 'car' });
-      } else if (archetype === 5) {
-        // Archetype 5: INTERLOCKING CHEVRON GAUNTLET (28 angled & cross-locked vehicles!)
-        list.push({ x: -3.3, z: 0.65, dir: 'RIGHT', type: 'bus', tilt: -0.18 });
-        list.push({ x: 0.0, z: 0.75, dir: 'DOWN', type: 'car', subType: 'van' });
-        list.push({ x: 3.3, z: 0.65, dir: 'LEFT', type: 'bus', tilt: 0.18 });
-
-        [-3.85, -2.35, -0.95, 0.95, 2.35, 3.85].forEach((cx, i) => {
-          const sideTilt = cx < 0 ? 0.42 : -0.42;
+        // Mid-upper heart belly (9 vehicles)
+        [-4.45, -3.35, -2.25, -1.15, 0.0, 1.15, 2.25, 3.35, 4.45].forEach((cx, i) => {
           list.push({
             x: cx,
-            z: 2.65,
+            z: 4.15,
+            dir: i % 2 === 1 ? 'DOWN' : 'UP',
+            type: i % 2 === 0 ? 'bus' : 'car',
+            tilt: cx < 0 ? -0.48 : cx > 0 ? 0.48 : 0
+          });
+        });
+        // Mid-lower converging heart ribs (9 vehicles)
+        [-4.05, -3.05, -2.05, -1.05, 0.0, 1.05, 2.05, 3.05, 4.05].forEach((cx, i) => {
+          list.push({
+            x: cx,
+            z: 5.75,
+            dir: 'DOWN',
+            type: i % 3 === 1 ? 'bus' : 'car',
+            tilt: cx < 0 ? -0.55 : cx > 0 ? 0.55 : 0
+          });
+        });
+        // Lower V-taper of Heart (8 vehicles)
+        [-3.35, -2.35, -1.40, -0.48, 0.48, 1.40, 2.35, 3.35].forEach((cx, i) => {
+          list.push({
+            x: cx,
+            z: 7.35,
             dir: i % 2 === 0 ? 'DOWN' : 'UP',
-            type: 'car',
-            subType: i % 2 === 0 ? 'van' : 'car',
-            tilt: Math.abs(cx) > 2.0 ? sideTilt : 0
+            type: i === 2 || i === 5 ? 'bus' : 'car',
+            tilt: cx < 0 ? -0.60 : 0.60
           });
+        });
+        // Bottom V-Tip of the Heart (7 vehicles)
+        [-2.25, -1.15, 0.0, 1.15, 2.25].forEach((cx, i) => {
           list.push({
             x: cx,
-            z: 5.05,
-            dir: i % 2 === 0 ? 'UP' : 'DOWN',
-            type: 'car',
-            tilt: Math.abs(cx) > 2.0 ? -sideTilt : 0
+            z: 8.85,
+            dir: 'DOWN',
+            type: i === 2 ? 'bus' : 'car',
+            tilt: cx < 0 ? -0.62 : cx > 0 ? 0.62 : 0
           });
         });
-
-        list.push({ x: 0.0, z: 3.85, dir: 'DOWN', type: 'bus' });
-
-        [-3.45, 0.0, 3.45].forEach((cx, idx) => {
-          list.push({ x: cx, z: 7.25, dir: idx === 0 ? 'RIGHT' : idx === 2 ? 'LEFT' : 'LEFT', type: 'bus' });
-          list.push({ x: cx, z: 8.85, dir: idx === 0 ? 'RIGHT' : idx === 2 ? 'LEFT' : 'UP', type: 'car', subType: 'van' });
-        });
-
-        list.push({ x: -2.35, z: 10.55, dir: 'RIGHT', type: 'bus', tilt: 0.16 });
-        list.push({ x: 0.0, z: 10.65, dir: 'UP', type: 'car' });
-        list.push({ x: 2.35, z: 10.55, dir: 'LEFT', type: 'bus', tilt: -0.16 });
-      } else if (archetype === 6) {
-        // Archetype 6: ICONIC SCULPTED 3D HEART FORMATION (38 Vehicles — Multi-Layer Heart!)
-        // Top-left & Top-right outer heart lobes
-        list.push({ x: -3.85, z: 1.05, dir: 'UP', type: 'car', tilt: -0.65 });
-        list.push({ x: -2.45, z: 0.72, dir: 'UP', type: 'bus', tilt: 0.55 });
-        list.push({ x: -0.95, z: 1.15, dir: 'DOWN', type: 'car', tilt: -0.58 });
-        list.push({ x: 0.95, z: 1.15, dir: 'DOWN', type: 'car', tilt: 0.58 });
-        list.push({ x: 2.45, z: 0.72, dir: 'UP', type: 'bus', tilt: -0.55 });
-        list.push({ x: 3.85, z: 1.05, dir: 'UP', type: 'car', tilt: 0.65 });
-
-        // Upper heart wide shoulders
-        list.push({ x: -4.45, z: 2.55, dir: 'DOWN', type: 'bus', tilt: 0.15 });
-        list.push({ x: -3.10, z: 2.25, dir: 'UP', type: 'car', tilt: 0.68 });
-        list.push({ x: -1.75, z: 2.35, dir: 'DOWN', type: 'car', tilt: 0.68 });
-        list.push({ x: 0.0, z: 2.35, dir: 'DOWN', type: 'car', tilt: 0 });
-        list.push({ x: 1.75, z: 2.35, dir: 'DOWN', type: 'car', tilt: -0.68 });
-        list.push({ x: 3.10, z: 2.25, dir: 'UP', type: 'car', tilt: -0.68 });
-        list.push({ x: 4.45, z: 2.55, dir: 'DOWN', type: 'bus', tilt: -0.15 });
-
-        // Mid-upper heart belly
-        list.push({ x: -4.50, z: 4.35, dir: 'DOWN', type: 'bus', tilt: -0.12 });
-        list.push({ x: -3.20, z: 4.10, dir: 'DOWN', type: 'car', tilt: -0.52 });
-        list.push({ x: -1.90, z: 4.00, dir: 'UP', type: 'bus', tilt: 0.62 });
-        list.push({ x: -0.65, z: 3.95, dir: 'DOWN', type: 'car', tilt: 0.62 });
-        list.push({ x: 0.65, z: 3.95, dir: 'DOWN', type: 'car', tilt: -0.62 });
-        list.push({ x: 1.90, z: 4.00, dir: 'UP', type: 'bus', tilt: -0.62 });
-        list.push({ x: 3.20, z: 4.10, dir: 'DOWN', type: 'car', tilt: 0.52 });
-        list.push({ x: 4.50, z: 4.35, dir: 'DOWN', type: 'bus', tilt: 0.12 });
-
-        // Mid-lower converging heart ribs
-        list.push({ x: -3.95, z: 6.10, dir: 'DOWN', type: 'car', tilt: -0.45 });
-        list.push({ x: -2.65, z: 5.85, dir: 'DOWN', type: 'bus', tilt: 0.65 });
-        list.push({ x: -1.35, z: 5.75, dir: 'UP', type: 'car', tilt: 0.65 });
-        list.push({ x: 0.0, z: 5.75, dir: 'DOWN', type: 'bus', tilt: 0 });
-        list.push({ x: 1.35, z: 5.75, dir: 'UP', type: 'car', tilt: -0.65 });
-        list.push({ x: 2.65, z: 5.85, dir: 'DOWN', type: 'bus', tilt: -0.65 });
-        list.push({ x: 3.95, z: 6.10, dir: 'DOWN', type: 'car', tilt: 0.45 });
-
-        // Lower V-taper of Heart
-        list.push({ x: -3.05, z: 7.75, dir: 'DOWN', type: 'car', tilt: -0.58 });
-        list.push({ x: -1.75, z: 7.55, dir: 'DOWN', type: 'bus', tilt: 0.65 });
-        list.push({ x: -0.55, z: 7.55, dir: 'UP', type: 'car', tilt: 0.65 });
-        list.push({ x: 0.55, z: 7.55, dir: 'UP', type: 'car', tilt: -0.65 });
-        list.push({ x: 1.75, z: 7.55, dir: 'DOWN', type: 'bus', tilt: -0.65 });
-        list.push({ x: 3.05, z: 7.75, dir: 'DOWN', type: 'car', tilt: 0.58 });
-
-        // Bottom V-Tip of the Heart
-        list.push({ x: -1.85, z: 9.20, dir: 'DOWN', type: 'car', tilt: -0.62 });
-        list.push({ x: -0.65, z: 9.15, dir: 'DOWN', type: 'car', tilt: 0.65 });
-        list.push({ x: 0.65, z: 9.15, dir: 'DOWN', type: 'car', tilt: -0.65 });
-        list.push({ x: 1.85, z: 9.20, dir: 'DOWN', type: 'car', tilt: 0.62 });
-        list.push({ x: 0.0, z: 10.35, dir: 'DOWN', type: 'bus', tilt: 0 });
+        list.push({ x: -0.65, z: 10.15, dir: 'DOWN', type: 'car', tilt: -0.55 });
+        list.push({ x: 0.65, z: 10.15, dir: 'DOWN', type: 'car', tilt: 0.55 });
       } else if (archetype === 7) {
-        // Archetype 7: MEGA HIGHWAY GRIDLOCK (28 vehicles)
-        list.push({ x: -2.3, z: 0.5, dir: 'RIGHT', type: 'bus', tilt: -0.1 });
-        list.push({ x: 2.3, z: 0.5, dir: 'LEFT', type: 'bus', tilt: 0.1 });
-
-        [-3.9, -2.6, -1.3, 0.0, 1.3, 2.6, 3.9].forEach((cx, i) => {
-          list.push({
-            x: cx,
-            z: 2.65,
-            dir: i % 2 === 0 ? 'UP' : 'DOWN',
-            type: i === 3 ? 'bus' : 'car'
-          });
+        // Archetype 7 (Image 8!): JAPANESE PAGODA 4-CORNER LOTUS POND ARENA + CENTER CROSS (50 Vehicles!)
+        // Leaves 4 corner lotus pond bays [(±2.8, 2.2) & (±2.8, 8.8)] open!
+        // 1. Top & Bottom Outer Horizontal Bars (12 vehicles)
+        [-3.95, -2.35, -0.78, 0.78, 2.35, 3.95].forEach((cx, i) => {
+          list.push({ x: cx, z: 0.72, dir: i < 3 ? 'RIGHT' : 'LEFT', type: i % 2 === 0 ? 'bus' : 'car' });
+          list.push({ x: cx, z: 10.38, dir: i < 3 ? 'RIGHT' : 'LEFT', type: i % 2 === 0 ? 'bus' : 'car' });
         });
-
-        list.push({ x: -3.4, z: 4.8, dir: 'LEFT', type: 'car' });
-        list.push({ x: 0.0, z: 4.8, dir: rand() > 0.5 ? 'LEFT' : 'RIGHT', type: 'bus' });
-        list.push({ x: 3.4, z: 4.8, dir: 'RIGHT', type: 'car' });
-
-        [-4.1, -2.0, 2.0, 4.1].forEach((cx, i) => {
-          list.push({ x: cx, z: 6.4, dir: i < 2 ? 'LEFT' : 'RIGHT', type: 'car' });
-          list.push({ x: cx, z: 7.8, dir: i < 2 ? 'LEFT' : 'RIGHT', type: 'car' });
-          list.push({ x: cx, z: 9.2, dir: i < 2 ? 'LEFT' : 'RIGHT', type: 'car' });
+        // 2. Left & Right Outer Vertical Walls (12 vehicles)
+        [1.95, 3.38, 4.82, 6.26, 7.70, 9.15].forEach((cz, i) => {
+          list.push({ x: -4.45, z: cz, dir: 'UP', type: i % 2 === 0 ? 'bus' : 'car' });
+          list.push({ x: 4.45, z: cz, dir: 'UP', type: i % 2 === 0 ? 'bus' : 'car' });
         });
-
-        list.push({ x: 0.0, z: 6.9, dir: 'DOWN', type: 'bus' });
-        list.push({ x: 0.0, z: 9.4, dir: 'DOWN', type: 'car' });
-
-        list.push({ x: -2.2, z: 10.8, dir: 'LEFT', type: 'bus' });
-        list.push({ x: 2.2, z: 10.8, dir: 'RIGHT', type: 'bus' });
+        // 3. Inner Red & Purple Side Columns between Ponds (8 vehicles)
+        for (const side of [-1, 1]) {
+          list.push({ x: side * 3.35, z: 4.45, dir: 'UP', type: 'car' });
+          list.push({ x: side * 3.35, z: 6.65, dir: 'UP', type: 'car' });
+          list.push({ x: side * 2.25, z: 4.45, dir: 'UP', type: 'bus' });
+          list.push({ x: side * 2.25, z: 6.65, dir: 'DOWN', type: 'bus' });
+        }
+        // 4. Upper & Lower Yellow/Red Guard Blocks (10 vehicles)
+        for (const side of [-1, 1]) {
+          list.push({ x: side * 1.85, z: 2.55, dir: 'UP', type: 'car' });
+          list.push({ x: side * 0.75, z: 2.35, dir: 'LEFT', type: 'bus' });
+          list.push({ x: side * 1.85, z: 8.55, dir: 'UP', type: 'car' });
+          list.push({ x: side * 0.75, z: 8.75, dir: 'LEFT', type: 'bus' });
+        }
+        list.push({ x: 0.0, z: 3.65, dir: 'UP', type: 'car' });
+        list.push({ x: 0.0, z: 7.45, dir: 'UP', type: 'car' });
+        // 5. Center Green/Orange Inward Cross (8 vehicles)
+        [-1.15, 1.15].forEach((cx) => {
+          list.push({ x: cx, z: 4.55, dir: 'RIGHT', type: 'car' });
+          list.push({ x: cx, z: 5.55, dir: cx < 0 ? 'LEFT' : 'RIGHT', type: 'bus' });
+          list.push({ x: cx, z: 6.55, dir: 'RIGHT', type: 'car' });
+        });
+        list.push({ x: 0.0, z: 4.85, dir: 'UP', type: 'car' });
+        list.push({ x: 0.0, z: 6.25, dir: 'DOWN', type: 'car' });
       } else if (archetype === 8) {
-        // Archetype 8: ROYAL CROWN CITADEL (27 angled spire & jewel vehicles)
-        list.push({ x: -3.6, z: 0.75, dir: 'UP', type: 'bus', tilt: -0.35 });
-        list.push({ x: 0.0, z: 0.55, dir: 'DOWN', type: 'bus' });
-        list.push({ x: 3.6, z: 0.75, dir: 'UP', type: 'bus', tilt: 0.35 });
-
-        [-3.9, -2.2, -0.8, 0.8, 2.2, 3.9].forEach((cx, i) => {
-          list.push({
-            x: cx,
-            z: 2.65,
-            dir: i % 2 === 0 ? 'DOWN' : 'UP',
-            type: 'car',
-            subType: i % 2 === 0 ? 'van' : 'car',
-            tilt: cx < 0 ? 0.28 : -0.28
+        // Archetype 8 (Image 9!): DUTCH WINDMILL OUTER DOUBLE COLUMNS + INNER 45° DIAMOND + CENTER CROSS (52 Vehicles!)
+        // 1. Left & Right Double Vertical Columns (22 vehicles)
+        for (const side of [-1, 1]) {
+          [1.45, 2.85, 4.25, 5.65, 7.05, 8.45, 9.85].forEach((cz, i) => {
+            list.push({ x: side * 3.85, z: cz, dir: 'UP', type: i % 2 === 0 ? 'bus' : 'car' });
           });
-        });
-
-        list.push({ x: -3.3, z: 4.55, dir: 'RIGHT', type: 'bus', tilt: 0.18 });
-        list.push({ x: 0.0, z: 4.55, dir: 'DOWN', type: 'car', subType: 'van' });
-        list.push({ x: 3.3, z: 4.55, dir: 'LEFT', type: 'bus', tilt: -0.18 });
-
-        [-4.1, -2.5, -1.0, 1.0, 2.5, 4.1].forEach((cx, i) => {
-          list.push({
-            x: cx,
-            z: 6.45,
-            dir: i < 3 ? 'RIGHT' : 'LEFT',
-            type: 'car',
-            tilt: cx < 0 ? -0.32 : 0.32
+          [2.15, 3.65, 5.15, 6.65, 8.15].forEach((cz, i) => {
+            list.push({ x: side * 2.75, z: cz, dir: 'UP', type: i % 2 === 1 ? 'bus' : 'car' });
           });
+        }
+        // 2. Top & Bottom Double Horizontal Bars (14 vehicles)
+        [-1.95, -0.75, 0.75, 1.95].forEach((cx) => {
+          list.push({ x: cx, z: 0.78, dir: 'LEFT', type: 'car' });
+          list.push({ x: cx, z: 1.85, dir: 'RIGHT', type: 'car' });
+          list.push({ x: cx, z: 10.28, dir: 'RIGHT', type: 'bus' });
         });
-
-        [-3.4, -1.2, 1.2, 3.4].forEach((cx, i) => {
-          list.push({
-            x: cx,
-            z: 8.55,
-            dir: i % 2 === 0 ? 'UP' : 'DOWN',
-            type: i === 1 || i === 2 ? 'bus' : 'car'
-          });
-        });
-
-        list.push({ x: -2.4, z: 10.55, dir: 'LEFT', type: 'bus', tilt: 0.14 });
-        list.push({ x: 0.0, z: 10.65, dir: 'UP', type: 'car', subType: 'van' });
-        list.push({ x: 2.4, z: 10.55, dir: 'RIGHT', type: 'bus', tilt: -0.14 });
+        list.push({ x: -1.35, z: 9.05, dir: 'LEFT', type: 'car' });
+        list.push({ x: 1.35, z: 9.05, dir: 'LEFT', type: 'car' });
+        // 3. Inner 45° Diamond Ring (8 vehicles)
+        for (const side of [-1, 1]) {
+          list.push({ x: side * 1.55, z: 3.25, dir: 'UP', type: 'car', tilt: side * -0.76 });
+          list.push({ x: side * 0.95, z: 4.10, dir: 'UP', type: 'car', tilt: side * -0.76 });
+          list.push({ x: side * 1.55, z: 7.75, dir: 'DOWN', type: 'car', tilt: side * 0.76 });
+          list.push({ x: side * 0.95, z: 6.90, dir: 'DOWN', type: 'car', tilt: side * 0.76 });
+        }
+        // 4. Central Vertical & Horizontal Cross around Flower Centerpiece (8 vehicles)
+        list.push({ x: 0.0, z: 1.65, dir: 'UP', type: 'car' });
+        list.push({ x: 0.0, z: 3.10, dir: 'DOWN', type: 'car' });
+        list.push({ x: 0.0, z: 7.90, dir: 'UP', type: 'car' });
+        list.push({ x: 0.0, z: 9.35, dir: 'UP', type: 'bus' });
+        list.push({ x: -1.45, z: 5.05, dir: 'RIGHT', type: 'car' });
+        list.push({ x: -1.45, z: 5.95, dir: 'RIGHT', type: 'car' });
+        list.push({ x: 1.45, z: 5.05, dir: 'LEFT', type: 'car' });
+        list.push({ x: 1.45, z: 5.95, dir: 'LEFT', type: 'car' });
       } else if (archetype === 9) {
-        // Archetype 9: DOUBLE X-WING STARFIGHTER (26 diagonal cross-wing vehicles)
-        [0, 1, 2].forEach((k) => {
-          const d = 1.45 + k * 1.35;
-          list.push({ x: -d, z: 1.0 + k * 1.25, dir: 'UP', type: k === 1 ? 'bus' : 'car', tilt: 0.65 });
-          list.push({ x: d, z: 1.0 + k * 1.25, dir: 'UP', type: k === 1 ? 'bus' : 'car', tilt: -0.65 });
-          list.push({ x: -d, z: 9.8 - k * 1.25, dir: 'DOWN', type: k === 1 ? 'bus' : 'car', tilt: -0.65 });
-          list.push({ x: d, z: 9.8 - k * 1.25, dir: 'DOWN', type: k === 1 ? 'bus' : 'car', tilt: 0.65 });
+        // Archetype 9 (Image 10!): HAUNTED BARN CHAMFERED OCTAGON RING + INNER 45° DIAMOND + GARGOYLE CROSS (52 Vehicles!)
+        // 1. Chamfered Octagon Outer Ring with 4 Diagonal Corner Buses (24 vehicles)
+        [-2.45, -0.85, 0.85, 2.45].forEach((cx, i) => {
+          list.push({ x: cx, z: 0.75, dir: 'LEFT', type: i % 2 === 0 ? 'bus' : 'car' });
+          list.push({ x: cx, z: 10.35, dir: i === 1 || i === 2 ? 'RIGHT' : 'LEFT', type: 'bus' });
         });
-
-        // Central Command Spine
-        [1.1, 2.8, 4.6, 6.4, 8.2, 10.0].forEach((cz, idx) => {
-          list.push({
-            x: 0.0,
-            z: cz,
-            dir: idx % 2 === 0 ? 'DOWN' : 'UP',
-            type: idx === 2 || idx === 3 ? 'bus' : 'car',
-            subType: 'van'
-          });
+        [2.85, 4.25, 5.65, 7.05, 8.45].forEach((cz, i) => {
+          list.push({ x: -4.35, z: cz, dir: 'UP', type: i % 2 === 0 ? 'bus' : 'car' });
+          list.push({ x: 4.35, z: cz, dir: 'UP', type: i % 2 === 0 ? 'bus' : 'car' });
         });
-
-        // Left & Right Equatorial Wing Locks
-        list.push({ x: -4.2, z: 5.4, dir: 'RIGHT', type: 'bus' });
-        list.push({ x: -2.1, z: 5.4, dir: 'LEFT', type: 'car' });
-        list.push({ x: 2.1, z: 5.4, dir: 'RIGHT', type: 'car' });
-        list.push({ x: 4.2, z: 5.4, dir: 'LEFT', type: 'bus' });
-
-        list.push({ x: -2.2, z: 10.8, dir: 'LEFT', type: 'car', subType: 'van' });
-        list.push({ x: 2.2, z: 10.8, dir: 'RIGHT', type: 'car', subType: 'van' });
+        // 4 Chamfered 45° Corner Buses
+        list.push({ x: -3.75, z: 1.55, dir: 'UP', type: 'bus', tilt: -0.75 });
+        list.push({ x: 3.75, z: 1.55, dir: 'UP', type: 'bus', tilt: 0.75 });
+        list.push({ x: -3.75, z: 9.55, dir: 'UP', type: 'bus', tilt: 0.75 });
+        list.push({ x: 3.75, z: 9.55, dir: 'UP', type: 'bus', tilt: -0.75 });
+        // 2. Second Inner Ring (14 vehicles)
+        [3.15, 4.55, 5.95, 7.35, 8.75].forEach((cz) => {
+          list.push({ x: -3.25, z: cz, dir: 'UP', type: 'car' });
+          list.push({ x: 3.25, z: cz, dir: 'UP', type: 'car' });
+        });
+        [-1.95, 1.95].forEach((cx) => {
+          list.push({ x: cx, z: 1.85, dir: cx < 0 ? 'LEFT' : 'RIGHT', type: 'bus' });
+          list.push({ x: cx, z: 9.25, dir: cx < 0 ? 'LEFT' : 'RIGHT', type: 'bus' });
+        });
+        // 3. Inner 45° Diamond + Gargoyle Cross (14 vehicles)
+        for (const side of [-1, 1]) {
+          list.push({ x: side * 1.45, z: 3.35, dir: 'UP', type: 'car', tilt: side * -0.75 });
+          list.push({ x: side * 0.95, z: 4.25, dir: 'UP', type: 'car', tilt: side * -0.75 });
+          list.push({ x: side * 1.45, z: 7.75, dir: 'DOWN', type: 'car', tilt: side * 0.75 });
+          list.push({ x: side * 0.95, z: 6.85, dir: 'DOWN', type: 'car', tilt: side * 0.75 });
+          list.push({ x: side * 1.85, z: 5.15, dir: side < 0 ? 'LEFT' : 'RIGHT', type: 'car' });
+          list.push({ x: side * 1.85, z: 6.00, dir: side < 0 ? 'RIGHT' : 'LEFT', type: 'car' });
+        }
+        list.push({ x: 0.0, z: 2.35, dir: 'DOWN', type: 'car' });
+        list.push({ x: 0.0, z: 8.75, dir: 'DOWN', type: 'car' });
       } else if (archetype === 10) {
-        // Archetype 10: HOURGLASS VORTEX (27 pinched-waist puzzle vehicles)
-        [-3.6, -1.8, 0.0, 1.8, 3.6].forEach((cx, i) => {
-          list.push({
-            x: cx,
-            z: 0.85,
-            dir: i % 2 === 0 ? 'DOWN' : 'UP',
-            type: i === 0 || i === 4 ? 'bus' : 'car',
-            tilt: cx * -0.08
-          });
+        // Archetype 10 (Image 11!): GIANT FIRE-BREATHING DRAGON 🐉 (56 Normal Rounded Vehicles — Zero Spiky Buses!)
+        // 1. Dragon Head, Snout & Horns at Upper-Left (10 vehicles)
+        list.push({ x: -3.95, z: 2.35, dir: 'LEFT', type: 'car', tilt: 0.22 });
+        list.push({ x: -2.85, z: 1.95, dir: 'LEFT', type: 'car', tilt: 0.35 });
+        list.push({ x: -1.85, z: 1.25, dir: 'RIGHT', type: 'car', tilt: -0.45 });
+        list.push({ x: -0.75, z: 0.95, dir: 'RIGHT', type: 'car', tilt: -0.35 });
+        list.push({ x: -3.25, z: 2.95, dir: 'LEFT', type: 'car', tilt: -0.35 });
+        list.push({ x: -2.05, z: 2.35, dir: 'UP', type: 'car', tilt: -0.42 });
+        list.push({ x: -1.05, z: 1.95, dir: 'LEFT', type: 'car', tilt: 0.18 });
+        list.push({ x: -1.65, z: 3.15, dir: 'UP', type: 'car', tilt: 0.45 });
+        list.push({ x: -0.75, z: 3.05, dir: 'UP', type: 'car', tilt: 0.15 });
+        list.push({ x: -2.45, z: 3.95, dir: 'UP', type: 'car', tilt: -0.45 });
+        // 2. Spread Dragon Wing at Upper-Right (16 vehicles)
+        [-0.05, 1.15, 2.35, 3.65].forEach((cx, i) => {
+          list.push({ x: cx, z: 1.15 + i * 0.25, dir: 'RIGHT', type: 'car', tilt: -0.25 + i * 0.15 });
         });
-
-        [-2.8, -1.0, 1.0, 2.8].forEach((cx, i) => {
-          list.push({ x: cx, z: 2.85, dir: i < 2 ? 'RIGHT' : 'LEFT', type: 'car', subType: 'van', tilt: cx * 0.12 });
+        [0.45, 1.55, 2.65, 3.75].forEach((cx, i) => {
+          list.push({ x: cx, z: 2.25 + i * 0.40, dir: 'DOWN', type: i === 2 ? 'bus' : 'car', tilt: -0.58 });
         });
-
-        // Tight Hourglass Waist
-        list.push({ x: -1.8, z: 4.65, dir: 'RIGHT', type: 'bus', tilt: 0.35 });
-        list.push({ x: 0.0, z: 4.65, dir: 'DOWN', type: 'car' });
-        list.push({ x: 1.8, z: 4.65, dir: 'LEFT', type: 'bus', tilt: -0.35 });
-
-        list.push({ x: -1.8, z: 6.45, dir: 'RIGHT', type: 'bus', tilt: -0.35 });
-        list.push({ x: 0.0, z: 6.45, dir: 'UP', type: 'car' });
-        list.push({ x: 1.8, z: 6.45, dir: 'LEFT', type: 'bus', tilt: 0.35 });
-
-        [-2.8, -1.0, 1.0, 2.8].forEach((cx, i) => {
-          list.push({ x: cx, z: 8.35, dir: i < 2 ? 'RIGHT' : 'LEFT', type: 'car', subType: 'van', tilt: cx * -0.12 });
+        [0.35, 1.35, 2.35, 3.35].forEach((cx, i) => {
+          list.push({ x: cx, z: 3.35 + i * 0.45, dir: 'UP', type: 'car', tilt: -0.52 });
         });
-
-        [-3.6, -1.8, 0.0, 1.8, 3.6].forEach((cx, i) => {
-          list.push({
-            x: cx,
-            z: 10.35,
-            dir: i % 2 === 0 ? 'UP' : 'DOWN',
-            type: i === 0 || i === 4 ? 'bus' : 'car',
-            tilt: cx * 0.08
-          });
+        [0.25, 1.15, 2.05, 2.95].forEach((cx, i) => {
+          list.push({ x: cx, z: 4.45 + i * 0.45, dir: 'DOWN', type: 'car', tilt: -0.45 });
+        });
+        // 3. S-Curved Dragon Neck, Chest & Belly Spine + Front Claws (16 vehicles)
+        list.push({ x: -3.35, z: 4.85, dir: 'DOWN', type: 'car', tilt: 0.25 });
+        list.push({ x: -2.35, z: 5.05, dir: 'UP', type: 'car', tilt: -0.35 });
+        list.push({ x: -1.35, z: 4.85, dir: 'UP', type: 'car', tilt: -0.25 });
+        list.push({ x: -3.55, z: 6.10, dir: 'DOWN', type: 'car', tilt: -0.25 });
+        list.push({ x: -2.55, z: 6.20, dir: 'UP', type: 'car', tilt: 0.25 });
+        list.push({ x: -1.55, z: 5.95, dir: 'UP', type: 'bus' });
+        list.push({ x: -0.45, z: 5.65, dir: 'LEFT', type: 'car' });
+        list.push({ x: 0.75, z: 5.65, dir: 'RIGHT', type: 'car' });
+        list.push({ x: -0.45, z: 6.60, dir: 'RIGHT', type: 'car' });
+        list.push({ x: 0.75, z: 6.60, dir: 'RIGHT', type: 'car' });
+        // Front Claws at lower-left
+        list.push({ x: -4.15, z: 7.45, dir: 'LEFT', type: 'car', tilt: 0.35 });
+        list.push({ x: -3.15, z: 7.35, dir: 'UP', type: 'car', tilt: -0.45 });
+        list.push({ x: -2.15, z: 7.25, dir: 'UP', type: 'car', tilt: -0.35 });
+        list.push({ x: -2.65, z: 8.25, dir: 'LEFT', type: 'car', tilt: 0.35 });
+        list.push({ x: 1.95, z: 6.45, dir: 'RIGHT', type: 'car', tilt: 0.45 });
+        list.push({ x: 3.05, z: 6.85, dir: 'DOWN', type: 'car', tilt: -0.35 });
+        // 4. Coiled Spiral Dragon Tail at Bottom (14 vehicles)
+        const tailPts = [
+          [2.15, 7.65, 'UP'], [3.25, 7.95, 'UP'],
+          [2.05, 8.85, 'UP'], [3.15, 9.05, 'UP'],
+          [1.15, 9.75, 'RIGHT'], [2.25, 10.05, 'RIGHT'],
+          [0.0, 9.95, 'RIGHT'], [1.05, 10.40, 'RIGHT'],
+          [-1.15, 9.75, 'RIGHT'], [-0.15, 10.45, 'RIGHT'],
+          [-1.85, 8.95, 'DOWN'], [-1.15, 10.25, 'DOWN'],
+          [-0.85, 8.35, 'RIGHT'], [0.25, 8.35, 'RIGHT']
+        ];
+        tailPts.forEach(([tx, tz, tdir]) => {
+          list.push({ x: tx, z: tz, dir: tdir, type: 'car' });
         });
       } else if (archetype === 11) {
-        // Archetype 11: COLOSSEUM TRIPLE ARENA RING (40 Vehicles — Outer 18 + Middle 13 + Inner 7 + 2 Center Gladiator Buses!)
-        const outerCount = 18;
-        for (let i = 0; i < outerCount; i++) {
-          const ang = (i / outerCount) * Math.PI * 2;
-          const rx = Math.sin(ang) * 4.35;
-          const rz = 5.60 - Math.cos(ang) * 4.55;
-          const isVertical = Math.abs(Math.cos(ang)) > 0.55;
-          const dir = isVertical ? (Math.cos(ang) > 0 ? 'DOWN' : 'UP') : (Math.sin(ang) > 0 ? 'LEFT' : 'RIGHT');
-          list.push({
-            x: Number(rx.toFixed(2)),
-            z: Number(rz.toFixed(2)),
-            dir,
-            type: i % 3 === 0 ? 'bus' : 'car',
-            subType: 'van',
-            tilt: Math.sin(ang * 2) * 0.24
-          });
+        // Archetype 11: IMAGE 15 — GIANT HORNED MECHA MONSTER TITAN (👹 — 58 Normal Rounded Vehicles!)
+        // 1. Horned Head, Crown & Glowing Eyes (10 vehicles)
+        list.push({ x: -1.95, z: 0.72, dir: 'LEFT', type: 'bus', tilt: 0.48 });
+        list.push({ x: -1.35, z: 1.35, dir: 'UP', type: 'car', tilt: 0.35 });
+        list.push({ x: 1.35, z: 1.35, dir: 'UP', type: 'car', tilt: -0.35 });
+        list.push({ x: 1.95, z: 0.72, dir: 'RIGHT', type: 'bus', tilt: -0.48 });
+        list.push({ x: -0.55, z: 0.85, dir: 'LEFT', type: 'car' });
+        list.push({ x: 0.55, z: 0.85, dir: 'RIGHT', type: 'car' });
+        list.push({ x: -0.85, z: 2.05, dir: 'UP', type: 'car' });
+        list.push({ x: 0.85, z: 2.05, dir: 'UP', type: 'car' });
+        list.push({ x: -0.48, z: 2.85, dir: 'LEFT', type: 'car' });
+        list.push({ x: 0.48, z: 2.85, dir: 'RIGHT', type: 'car' });
+        // 2. Wide Armored Shoulders & Articulated Left/Right Arms with Pincer Claws (20 vehicles)
+        for (const side of [-1, 1]) {
+          list.push({ x: side * 2.15, z: 2.85, dir: side < 0 ? 'LEFT' : 'RIGHT', type: 'bus', tilt: side * 0.25 });
+          list.push({ x: side * 3.25, z: 3.15, dir: side < 0 ? 'LEFT' : 'RIGHT', type: 'bus', tilt: side * 0.35 });
+          list.push({ x: side * 3.85, z: 4.25, dir: 'DOWN', type: 'bus', tilt: side * 0.20 });
+          list.push({ x: side * 4.45, z: 4.95, dir: 'DOWN', type: 'car', tilt: side * 0.28 });
+          list.push({ x: side * 3.55, z: 5.55, dir: 'DOWN', type: 'car', tilt: side * -0.15 });
+          list.push({ x: side * 4.35, z: 6.35, dir: 'DOWN', type: 'bus', tilt: side * -0.25 });
+          list.push({ x: side * 3.45, z: 6.85, dir: 'DOWN', type: 'car', tilt: side * -0.35 });
+          list.push({ x: side * 4.45, z: 7.65, dir: 'DOWN', type: 'car', tilt: side * 0.35 });
+          list.push({ x: side * 3.65, z: 8.15, dir: side < 0 ? 'RIGHT' : 'LEFT', type: 'car', tilt: side * -0.45 });
+          list.push({ x: side * 2.75, z: 7.55, dir: 'UP', type: 'car', tilt: side * 0.35 });
         }
-        const midCount = 13;
-        for (let i = 0; i < midCount; i++) {
-          const ang = (i / midCount) * Math.PI * 2 + 0.24;
-          const rx = Math.sin(ang) * 2.95;
-          const rz = 5.60 - Math.cos(ang) * 3.10;
-          const isVertical = Math.abs(Math.cos(ang)) > 0.55;
-          const dir = isVertical ? (Math.cos(ang) > 0 ? 'UP' : 'DOWN') : (Math.sin(ang) > 0 ? 'RIGHT' : 'LEFT');
-          list.push({
-            x: Number(rx.toFixed(2)),
-            z: Number(rz.toFixed(2)),
-            dir,
-            type: i % 4 === 0 ? 'bus' : 'car',
-            tilt: -Math.sin(ang * 2) * 0.24
+        // 3. 4-Column Armored Monster Torso & Chest Core (16 vehicles)
+        [-1.55, -0.52, 0.52, 1.55].forEach((cx, cIdx) => {
+          [3.95, 5.05, 6.15, 7.25].forEach((cz, rIdx) => {
+            list.push({
+              x: cx,
+              z: cz,
+              dir: (cIdx + rIdx) % 2 === 0 ? 'UP' : 'DOWN',
+              type: (cIdx + rIdx) % 3 === 0 ? 'bus' : 'car'
+            });
           });
+        });
+        // 4. Twin Multi-Bus Legs & Armored Feet at Bottom (12 vehicles)
+        for (const side of [-1, 1]) {
+          list.push({ x: side * 1.15, z: 8.35, dir: 'DOWN', type: 'bus' });
+          list.push({ x: side * 2.15, z: 8.55, dir: 'DOWN', type: 'car', tilt: side * -0.18 });
+          list.push({ x: side * 1.35, z: 9.45, dir: 'DOWN', type: 'bus' });
+          list.push({ x: side * 2.35, z: 9.55, dir: 'DOWN', type: 'car', tilt: side * -0.18 });
+          list.push({ x: side * 1.05, z: 10.45, dir: side < 0 ? 'LEFT' : 'RIGHT', type: 'car' });
+          list.push({ x: side * 2.35, z: 10.45, dir: side < 0 ? 'LEFT' : 'RIGHT', type: 'bus' });
         }
-        const innerCount = 7;
-        for (let i = 0; i < innerCount; i++) {
-          const ang = (i / innerCount) * Math.PI * 2 + 0.52;
-          const rx = Math.sin(ang) * 1.68;
-          const rz = 5.60 - Math.cos(ang) * 1.78;
-          const dir = i % 2 === 0 ? 'UP' : 'DOWN';
-          list.push({
-            x: Number(rx.toFixed(2)),
-            z: Number(rz.toFixed(2)),
-            dir,
-            type: 'car',
-            tilt: (i % 2 === 0 ? 1 : -1) * 0.28
-          });
-        }
-        list.push({ x: -0.52, z: 5.60, dir: 'UP', type: 'bus' });
-        list.push({ x: 0.52, z: 5.60, dir: 'DOWN', type: 'bus' });
       } else if (archetype === 12) {
-        // Archetype 12: TRIPLE-COIL SQUARE SPIRAL MAZE ([ @ ] — 42 Vehicles, Screenshot 1 Level 4 Expanded!)
-        // 1. Outer Square Spiral Ring (20 vehicles)
-        [-3.0, -1.5, 0.0, 1.5, 3.0].forEach((cx, i) => {
+        // Archetype 12: IMAGE 1 PANEL 1 — TRIPLE-COIL SQUARE SPIRAL MAZE ([ @ ] — 50 Vehicles!)
+        // 1. Outer Square Spiral Ring (24 vehicles)
+        [-3.5, -2.1, -0.7, 0.7, 2.1, 3.5].forEach((cx, i) => {
           list.push({ x: cx, z: 0.72, dir: 'LEFT', type: i % 2 === 1 ? 'bus' : 'car' });
         });
-        [1.75, 3.65, 5.55, 7.45, 9.35].forEach((cz, i) => {
-          list.push({ x: -4.40, z: cz, dir: 'DOWN', type: i % 2 === 0 ? 'bus' : 'car' });
+        [1.65, 3.15, 4.65, 6.15, 7.65, 9.15].forEach((cz, i) => {
+          list.push({ x: -4.45, z: cz, dir: 'DOWN', type: i % 2 === 0 ? 'bus' : 'car' });
         });
-        [-3.0, -1.5, 0.0, 1.5, 3.0].forEach((cx, i) => {
+        [-3.5, -2.1, -0.7, 0.7, 2.1, 3.5].forEach((cx, i) => {
           list.push({ x: cx, z: 10.38, dir: 'RIGHT', type: i % 2 === 1 ? 'bus' : 'car' });
         });
-        [9.35, 7.45, 5.55, 3.65, 1.75].forEach((cz, i) => {
-          list.push({ x: 4.40, z: cz, dir: 'UP', type: i % 2 === 0 ? 'bus' : 'car' });
+        [9.15, 7.65, 6.15, 4.65, 3.15, 1.65].forEach((cz, i) => {
+          list.push({ x: 4.45, z: cz, dir: 'UP', type: i % 2 === 0 ? 'bus' : 'car' });
         });
-        // 2. Middle Square Spiral Ring (14 vehicles)
-        [-1.45, 0.0, 1.45].forEach((cx, i) => {
-          list.push({ x: cx, z: 2.28, dir: 'LEFT', type: i === 1 ? 'bus' : 'car' });
+        // 2. Middle Square Spiral Ring (16 vehicles)
+        [-2.05, -0.70, 0.70, 2.05].forEach((cx, i) => {
+          list.push({ x: cx, z: 2.18, dir: 'LEFT', type: i % 2 === 0 ? 'bus' : 'car' });
         });
         [3.35, 4.85, 6.35, 7.85].forEach((cz, i) => {
-          list.push({ x: -2.90, z: cz, dir: 'DOWN', type: i === 1 || i === 2 ? 'bus' : 'car' });
+          list.push({ x: -3.05, z: cz, dir: 'DOWN', type: i === 1 || i === 2 ? 'bus' : 'car' });
         });
-        [-1.45, 0.0, 1.45].forEach((cx, i) => {
-          list.push({ x: cx, z: 8.85, dir: 'RIGHT', type: i === 1 ? 'bus' : 'car' });
+        [-2.05, -0.70, 0.70, 2.05].forEach((cx, i) => {
+          list.push({ x: cx, z: 8.95, dir: 'RIGHT', type: i % 2 === 1 ? 'bus' : 'car' });
         });
         [7.85, 6.35, 4.85, 3.35].forEach((cz, i) => {
-          list.push({ x: 2.90, z: cz, dir: 'UP', type: i === 1 || i === 2 ? 'bus' : 'car' });
+          list.push({ x: 3.05, z: cz, dir: 'UP', type: i === 1 || i === 2 ? 'bus' : 'car' });
         });
-        // 3. Inner Square Spiral Core (8 vehicles)
-        list.push({ x: -0.65, z: 3.85, dir: 'LEFT', type: 'car' });
-        list.push({ x: 0.75, z: 3.85, dir: 'LEFT', type: 'car' });
-        list.push({ x: -1.40, z: 5.05, dir: 'DOWN', type: 'car' });
-        list.push({ x: -1.40, z: 6.55, dir: 'DOWN', type: 'bus' });
-        list.push({ x: -0.10, z: 7.35, dir: 'RIGHT', type: 'car' });
-        list.push({ x: 1.35, z: 6.55, dir: 'UP', type: 'bus' });
-        list.push({ x: 1.35, z: 5.05, dir: 'UP', type: 'car' });
-        list.push({ x: 0.0, z: 5.55, dir: 'DOWN', type: 'bus' });
+        // 3. Inner Square Spiral Core (10 vehicles)
+        list.push({ x: -0.75, z: 3.65, dir: 'LEFT', type: 'car' });
+        list.push({ x: 0.75, z: 3.65, dir: 'LEFT', type: 'car' });
+        list.push({ x: -1.65, z: 4.85, dir: 'DOWN', type: 'car' });
+        list.push({ x: -1.65, z: 6.35, dir: 'DOWN', type: 'bus' });
+        list.push({ x: -0.75, z: 7.45, dir: 'RIGHT', type: 'car' });
+        list.push({ x: 0.75, z: 7.45, dir: 'RIGHT', type: 'car' });
+        list.push({ x: 1.65, z: 6.35, dir: 'UP', type: 'bus' });
+        list.push({ x: 1.65, z: 4.85, dir: 'UP', type: 'car' });
+        list.push({ x: -0.45, z: 5.55, dir: 'DOWN', type: 'bus' });
+        list.push({ x: 0.45, z: 5.55, dir: 'UP', type: 'bus' });
       } else if (archetype === 13) {
-        // Archetype 13: TRIPLE CONCENTRIC CIRCULAR WHIRLPOOL RINGS (( O ) — 38 Vehicles, Screenshot 1 Level 18!)
-        const outerN = 18;
+        // Archetype 13: IMAGE 1 PANEL 3 — TRIPLE CONCENTRIC CIRCULAR WHIRLPOOL RINGS (( O ) — 48 Vehicles!)
+        const outerN = 22;
         for (let i = 0; i < outerN; i++) {
           const ang = (i / outerN) * Math.PI * 2;
-          const x = Math.cos(ang) * 4.35;
-          const z = 5.58 + Math.sin(ang) * 4.48;
+          const x = Math.cos(ang) * 4.45;
+          const z = 5.58 + Math.sin(ang) * 4.58;
           const tanRot = Math.atan2(Math.sin(ang), -Math.cos(ang));
           list.push({
             x: Number(x.toFixed(2)),
@@ -1377,11 +1526,11 @@
             tilt: Number((tanRot - 0.34).toFixed(3))
           });
         }
-        const midN = 13;
+        const midN = 16;
         for (let i = 0; i < midN; i++) {
           const ang = (i / midN) * Math.PI * 2 + 0.18;
-          const x = Math.cos(ang) * 2.98;
-          const z = 5.58 + Math.sin(ang) * 3.08;
+          const x = Math.cos(ang) * 3.12;
+          const z = 5.58 + Math.sin(ang) * 3.22;
           const tanRot = Math.atan2(Math.sin(ang), -Math.cos(ang));
           list.push({
             x: Number(x.toFixed(2)),
@@ -1391,11 +1540,11 @@
             tilt: Number((tanRot + 0.36).toFixed(3))
           });
         }
-        const innerN = 7;
+        const innerN = 10;
         for (let i = 0; i < innerN; i++) {
           const ang = (i / innerN) * Math.PI * 2 + 0.35;
-          const x = Math.cos(ang) * 1.65;
-          const z = 5.58 + Math.sin(ang) * 1.72;
+          const x = Math.cos(ang) * 1.75;
+          const z = 5.58 + Math.sin(ang) * 1.82;
           const tanRot = Math.atan2(Math.sin(ang), -Math.cos(ang));
           list.push({
             x: Number(x.toFixed(2)),
@@ -1406,12 +1555,13 @@
           });
         }
       } else if (archetype === 14) {
-        // Archetype 14: 45-DEGREE DIAGONAL CRISS-CROSS WEAVE (/// \\\ — 42 Vehicles, Screenshot 1 Level 13!)
-        for (let row = 0; row < 7; row++) {
-          const count = 6;
+        // Archetype 14: IMAGE 1 PANEL 4 — 45-DEGREE DIAGONAL CRISS-CROSS WEAVE (/// \\\ — 52 Vehicles!)
+        for (let row = 0; row < 8; row++) {
+          const count = row % 2 === 0 ? 7 : 6;
+          const startX = count === 7 ? -4.20 : -3.50;
           for (let col = 0; col < count; col++) {
-            const bx = -3.95 + col * 1.58 + (row % 2 === 0 ? -0.14 : 0.14);
-            const bz = 1.05 + row * 1.50;
+            const bx = startX + col * 1.40;
+            const bz = 0.85 + row * 1.34;
             const isCross = (row + col) % 3 === 0;
             list.push({
               x: Number(bx.toFixed(2)),
@@ -1423,8 +1573,7 @@
           }
         }
       } else if (archetype === 15) {
-        // Archetype 15: GIANT MONARCH BUTTERFLY WINGS (42 Vehicles — Exact Screenshot 2 Level 28 Butterfly!)
-        // Central 6-Vehicle Butterfly Body Spine
+        // Archetype 15: GIANT MONARCH BUTTERFLY WINGS (🦋 — 50 Vehicles: 6 Spine + 22 Left Wing + 22 Right Wing!)
         [1.15, 2.90, 4.65, 6.45, 8.20, 9.95].forEach((cz, idx) => {
           list.push({
             x: 0.0,
@@ -1433,39 +1582,42 @@
             type: idx === 1 || idx === 2 || idx === 4 ? 'bus' : 'car'
           });
         });
-        // Symmetric Left (-1) & Right (+1) 18-Vehicle Wings (6 + 18 + 18 = 42 Vehicles!)
         for (const side of [-1, 1]) {
-          // Upper Forewing Outer Rim (5 vehicles)
-          list.push({ x: side * 1.65, z: 0.95, dir: 'UP', type: 'car', tilt: side * -0.42 });
-          list.push({ x: side * 3.15, z: 0.82, dir: 'UP', type: 'bus', tilt: side * -0.55 });
-          list.push({ x: side * 4.35, z: 1.55, dir: side < 0 ? 'LEFT' : 'RIGHT', type: 'bus', tilt: side * 0.35 });
-          list.push({ x: side * 4.45, z: 3.10, dir: side < 0 ? 'LEFT' : 'RIGHT', type: 'bus', tilt: side * 0.22 });
+          // Upper Forewing Outer Rim (6 vehicles)
+          list.push({ x: side * 1.45, z: 0.85, dir: 'UP', type: 'car', tilt: side * -0.42 });
+          list.push({ x: side * 2.65, z: 0.75, dir: 'UP', type: 'bus', tilt: side * -0.52 });
+          list.push({ x: side * 3.85, z: 1.05, dir: 'UP', type: 'bus', tilt: side * -0.58 });
+          list.push({ x: side * 4.45, z: 2.05, dir: side < 0 ? 'LEFT' : 'RIGHT', type: 'bus', tilt: side * 0.35 });
+          list.push({ x: side * 4.45, z: 3.35, dir: side < 0 ? 'LEFT' : 'RIGHT', type: 'bus', tilt: side * 0.22 });
           list.push({ x: side * 4.15, z: 4.65, dir: side < 0 ? 'LEFT' : 'RIGHT', type: 'car', tilt: side * -0.18 });
-          // Upper Forewing Inner Ribs (5 vehicles)
-          list.push({ x: side * 1.55, z: 2.45, dir: 'UP', type: 'car', tilt: side * -0.38 });
-          list.push({ x: side * 2.95, z: 2.25, dir: 'UP', type: 'bus', tilt: side * -0.48 });
-          list.push({ x: side * 1.55, z: 3.95, dir: side < 0 ? 'LEFT' : 'RIGHT', type: 'car', tilt: side * 0.25 });
-          list.push({ x: side * 2.90, z: 3.85, dir: side < 0 ? 'LEFT' : 'RIGHT', type: 'car', tilt: side * 0.25 });
-          list.push({ x: side * 2.45, z: 5.25, dir: side < 0 ? 'RIGHT' : 'LEFT', type: 'car', tilt: side * -0.15 });
-          // Lower Hindwing Outer Rim (4 vehicles)
-          list.push({ x: side * 4.25, z: 6.45, dir: 'DOWN', type: 'bus', tilt: side * 0.38 });
-          list.push({ x: side * 4.25, z: 8.10, dir: 'DOWN', type: 'bus', tilt: side * 0.45 });
-          list.push({ x: side * 3.65, z: 9.70, dir: 'DOWN', type: 'bus', tilt: side * 0.52 });
-          list.push({ x: side * 2.15, z: 10.15, dir: 'DOWN', type: 'car', tilt: side * 0.35 });
-          // Lower Hindwing Inner Fill (4 vehicles)
-          list.push({ x: side * 1.55, z: 6.65, dir: 'DOWN', type: 'car', tilt: side * 0.32 });
-          list.push({ x: side * 2.90, z: 6.85, dir: 'DOWN', type: 'car', tilt: side * 0.38 });
-          list.push({ x: side * 1.55, z: 8.35, dir: 'DOWN', type: 'car', tilt: side * 0.32 });
-          list.push({ x: side * 2.80, z: 8.45, dir: 'DOWN', type: 'car', tilt: side * 0.42 });
+          // Upper Forewing Inner Ribs (6 vehicles)
+          list.push({ x: side * 1.45, z: 2.25, dir: 'UP', type: 'car', tilt: side * -0.38 });
+          list.push({ x: side * 2.65, z: 2.15, dir: 'UP', type: 'bus', tilt: side * -0.48 });
+          list.push({ x: side * 3.45, z: 2.85, dir: 'UP', type: 'car', tilt: side * -0.38 });
+          list.push({ x: side * 1.45, z: 3.75, dir: side < 0 ? 'LEFT' : 'RIGHT', type: 'car', tilt: side * 0.25 });
+          list.push({ x: side * 2.75, z: 3.95, dir: side < 0 ? 'LEFT' : 'RIGHT', type: 'car', tilt: side * 0.25 });
+          list.push({ x: side * 2.35, z: 5.15, dir: side < 0 ? 'RIGHT' : 'LEFT', type: 'car', tilt: side * -0.15 });
+          // Lower Hindwing Outer Rim (5 vehicles)
+          list.push({ x: side * 4.35, z: 6.15, dir: 'DOWN', type: 'bus', tilt: side * 0.38 });
+          list.push({ x: side * 4.35, z: 7.45, dir: 'DOWN', type: 'bus', tilt: side * 0.45 });
+          list.push({ x: side * 4.05, z: 8.75, dir: 'DOWN', type: 'bus', tilt: side * 0.50 });
+          list.push({ x: side * 3.25, z: 9.85, dir: 'DOWN', type: 'bus', tilt: side * 0.52 });
+          list.push({ x: side * 1.95, z: 10.25, dir: 'DOWN', type: 'car', tilt: side * 0.35 });
+          // Lower Hindwing Inner Fill (5 vehicles)
+          list.push({ x: side * 1.45, z: 6.45, dir: 'DOWN', type: 'car', tilt: side * 0.32 });
+          list.push({ x: side * 2.75, z: 6.55, dir: 'DOWN', type: 'car', tilt: side * 0.38 });
+          list.push({ x: side * 1.45, z: 7.85, dir: 'DOWN', type: 'car', tilt: side * 0.32 });
+          list.push({ x: side * 2.75, z: 8.05, dir: 'DOWN', type: 'car', tilt: side * 0.42 });
+          list.push({ x: side * 1.55, z: 9.15, dir: 'DOWN', type: 'car', tilt: side * 0.35 });
         }
       } else if (archetype === 16) {
-        // Archetype 16: 45-DEGREE ROTATED 6x6 DIAMOND LATTICE (36 Vehicles — Exact Screenshot 3 Level 20!)
-        for (let uIdx = 0; uIdx < 6; uIdx++) {
-          for (let vIdx = 0; vIdx < 6; vIdx++) {
-            const u = uIdx - 2.5;
-            const v = vIdx - 2.5;
-            const x = Number(((u - v) * 0.87).toFixed(2));
-            const z = Number((5.58 + (u + v) * 0.91).toFixed(2));
+        // Archetype 16: 45-DEGREE ROTATED 7x7 DIAMOND LATTICE (◇ — 49 Vehicles!)
+        for (let uIdx = 0; uIdx < 7; uIdx++) {
+          for (let vIdx = 0; vIdx < 7; vIdx++) {
+            const u = uIdx - 3.0;
+            const v = vIdx - 3.0;
+            const x = Number(((u - v) * 0.74).toFixed(2));
+            const z = Number((5.58 + (u + v) * 0.78).toFixed(2));
             const checker = (uIdx + vIdx) % 2 === 0;
             list.push({
               x,
@@ -1477,137 +1629,234 @@
           }
         }
       } else if (archetype === 17) {
-        // Archetype 17: CYBER ROBOT MASK / SMILING FACE (36 Vehicles — Screenshot 3 Bottom-Middle Expanded!)
-        // Double Curved Eyebrow Arch (10 vehicles)
-        [-3.85, -2.35, -0.85, 0.85, 2.35, 3.85].forEach((cx, i) => {
+        // Archetype 17: CYBER ROBOT MASK / SMILING FACE (🤖 — 48 Vehicles!)
+        // Double Curved Eyebrow Arch (14 vehicles)
+        [-4.20, -3.00, -1.80, -0.60, 0.60, 1.80, 3.00, 4.20].forEach((cx, i) => {
           list.push({
             x: cx,
-            z: Number((0.95 + Math.abs(cx) * 0.22).toFixed(2)),
+            z: Number((0.85 + Math.abs(cx) * 0.20).toFixed(2)),
             dir: cx < 0 ? 'LEFT' : 'RIGHT',
-            type: i === 1 || i === 4 ? 'bus' : 'car',
+            type: i % 2 === 1 ? 'bus' : 'car',
             tilt: cx * -0.10
           });
         });
-        [-3.15, -1.55, 1.55, 3.15].forEach((cx) => {
+        [-3.45, -2.15, -0.85, 0.85, 2.15, 3.45].forEach((cx) => {
           list.push({
             x: cx,
-            z: Number((2.25 + Math.abs(cx) * 0.14).toFixed(2)),
+            z: Number((2.10 + Math.abs(cx) * 0.14).toFixed(2)),
             dir: cx < 0 ? 'LEFT' : 'RIGHT',
             type: 'car',
             tilt: cx * -0.09
           });
         });
-        // Twin Multi-Car Vertical Eye Pillars, Nose Bridge & Cheek Frames (14 vehicles)
+        // Twin Multi-Car Vertical Eye Pillars, Nose Bridge & Cheek Frames (20 vehicles)
         for (const side of [-1, 1]) {
-          list.push({ x: side * 1.25, z: 3.65, dir: 'UP', type: 'bus' });
-          list.push({ x: side * 1.25, z: 5.35, dir: 'DOWN', type: 'bus' });
-          list.push({ x: side * 2.55, z: 4.15, dir: 'UP', type: 'car' });
-          list.push({ x: side * 2.55, z: 5.75, dir: 'DOWN', type: 'car' });
-          list.push({ x: side * 4.15, z: 3.55, dir: side < 0 ? 'LEFT' : 'RIGHT', type: 'car', tilt: side * 0.25 });
-          list.push({ x: side * 4.25, z: 5.15, dir: 'DOWN', type: 'bus', tilt: side * 0.16 });
-          list.push({ x: side * 4.15, z: 6.85, dir: 'DOWN', type: 'car', tilt: side * -0.22 });
+          list.push({ x: side * 1.15, z: 3.45, dir: 'UP', type: 'bus' });
+          list.push({ x: side * 1.15, z: 4.85, dir: 'DOWN', type: 'bus' });
+          list.push({ x: side * 1.15, z: 6.25, dir: 'DOWN', type: 'car' });
+          list.push({ x: side * 2.35, z: 3.65, dir: 'UP', type: 'car' });
+          list.push({ x: side * 2.35, z: 5.05, dir: 'DOWN', type: 'car' });
+          list.push({ x: side * 2.35, z: 6.35, dir: 'DOWN', type: 'car' });
+          list.push({ x: side * 3.85, z: 3.45, dir: side < 0 ? 'LEFT' : 'RIGHT', type: 'car', tilt: side * 0.25 });
+          list.push({ x: side * 4.15, z: 4.95, dir: 'DOWN', type: 'bus', tilt: side * 0.16 });
+          list.push({ x: side * 3.95, z: 6.45, dir: 'DOWN', type: 'car', tilt: side * -0.22 });
         }
-        list.push({ x: 0.0, z: 4.35, dir: 'UP', type: 'car' });
-        list.push({ x: 0.0, z: 5.95, dir: 'DOWN', type: 'car' });
-        // Double-Row Wide U-Shaped Smiling Mouth & Chin Guard (10 vehicles)
-        [-3.55, -2.15, -0.75, 0.75, 2.15, 3.55].forEach((cx, i) => {
-          const mz = 7.75 + (1 - Math.abs(cx) / 4.2) * 0.95;
+        list.push({ x: 0.0, z: 4.15, dir: 'UP', type: 'car' });
+        list.push({ x: 0.0, z: 5.75, dir: 'DOWN', type: 'car' });
+        // Double-Row Wide U-Shaped Smiling Mouth & Chin Guard (14 vehicles)
+        [-4.05, -2.90, -1.75, -0.60, 0.60, 1.75, 2.90, 4.05].forEach((cx, i) => {
+          const mz = 7.75 + (1 - Math.abs(cx) / 4.4) * 0.95;
           list.push({
             x: cx,
             z: Number(mz.toFixed(2)),
             dir: i % 2 === 0 ? 'DOWN' : 'UP',
-            type: i === 1 || i === 4 ? 'bus' : 'car',
+            type: i === 2 || i === 5 ? 'bus' : 'car',
             tilt: cx * 0.13
           });
         });
-        [-2.85, -0.95, 0.95, 2.85].forEach((cx, i) => {
+        [-3.25, -1.95, -0.65, 0.65, 1.95, 3.25].forEach((cx, i) => {
           list.push({
             x: cx,
-            z: Number((9.95 + (1 - Math.abs(cx) / 3.5) * 0.40).toFixed(2)),
+            z: Number((9.85 + (1 - Math.abs(cx) / 3.8) * 0.45).toFixed(2)),
             dir: cx < 0 ? 'LEFT' : 'RIGHT',
-            type: i === 1 || i === 2 ? 'bus' : 'car',
+            type: i === 1 || i === 4 ? 'bus' : 'car',
             tilt: cx * -0.09
           });
         });
       } else if (archetype === 18) {
-        // Archetype 18: ASYMMETRIC DIAGONAL ISLAND + VERTICAL HIGHWAY CONVOY (42 Vehicles — Exact Screenshot 2 Level 15!)
-        // Upper-Left 4x4 -45° Diagonal Island (16 vehicles)
-        [-3.95, -2.65, -1.35, -0.05].forEach((cx, cIdx) => {
-          [1.15, 2.75, 4.35, 5.95].forEach((cz, rIdx) => {
-            list.push({
-              x: Number((cx + (rIdx % 2 === 0 ? -0.12 : 0.12)).toFixed(2)),
-              z: Number((cz + (3 - cIdx) * 0.22).toFixed(2)),
-              dir: (cIdx + rIdx) % 2 === 0 ? 'UP' : 'DOWN',
-              type: (cIdx + rIdx) % 3 === 1 ? 'bus' : 'car',
-              tilt: 0.72
-            });
-          });
+        // Archetype 18: IMAGE 12 — GIANT HAUNTED SKULL (💀 — 54 Normal Rounded Vehicles!)
+        // 1. Upper Rounded Cranium Dome (18 vehicles)
+        [[-2.85, 1.25, -0.35], [-1.75, 0.85, -0.22], [-0.60, 0.68, -0.08], [0.60, 0.68, 0.08], [1.75, 0.85, 0.22], [2.85, 1.25, 0.35]].forEach(([cx, cz, ct]) => {
+          list.push({ x: cx, z: cz, dir: cx < 0 ? 'LEFT' : 'RIGHT', type: 'bus', tilt: ct });
         });
-        // Right-side 2-Column Vertical/Horizontal Highway Convoy (14 vehicles)
-        [1.85, 3.20, 4.40].forEach((cx, cIdx) => {
-          [1.20, 2.85, 4.50, 6.15, 7.80].forEach((cz, rIdx) => {
-            if (cIdx === 1 && rIdx === 4) return;
-            list.push({
-              x: cx,
-              z: cz,
-              dir: (cIdx + rIdx) % 2 === 0 ? 'UP' : 'DOWN',
-              type: (cIdx + rIdx) % 3 === 0 ? 'bus' : 'car'
-            });
-          });
+        [[-3.85, 2.25, -0.45], [-2.75, 1.95, -0.28], [-1.65, 1.78, -0.15], [-0.55, 1.72, -0.05], [0.55, 1.72, 0.05], [1.65, 1.78, 0.15], [2.75, 1.95, 0.28], [3.85, 2.25, 0.45]].forEach(([cx, cz, ct]) => {
+          list.push({ x: cx, z: cz, dir: cx < 0 ? 'LEFT' : 'RIGHT', type: 'car', tilt: ct });
         });
-        // Bottom 2-Tier Vertical Guard Rows (12 vehicles)
-        [-4.10, -2.75, -1.40, -0.05, 1.35, 2.85].forEach((cx, idx) => {
-          list.push({
-            x: cx,
-            z: 8.35,
-            dir: idx % 2 === 0 ? 'DOWN' : 'UP',
-            type: idx % 3 === 0 ? 'bus' : 'car'
-          });
-          list.push({
-            x: cx,
-            z: 10.10,
-            dir: idx % 2 === 1 ? 'DOWN' : 'UP',
-            type: idx % 3 === 1 ? 'bus' : 'car'
-          });
+        list.push({ x: -4.25, z: 3.15, dir: 'DOWN', type: 'car', tilt: 0.35 });
+        list.push({ x: -0.55, z: 2.85, dir: 'UP', type: 'car' });
+        list.push({ x: 0.55, z: 2.85, dir: 'UP', type: 'car' });
+        list.push({ x: 4.25, z: 3.15, dir: 'DOWN', type: 'car', tilt: -0.35 });
+        // 2. Twin Hollow Eye Sockets Framed by Angled Rim Buses + Nasal Cavity (18 vehicles)
+        for (const side of [-1, 1]) {
+          list.push({ x: side * 3.15, z: 3.15, dir: side < 0 ? 'LEFT' : 'RIGHT', type: 'car', tilt: side * 0.28 });
+          list.push({ x: side * 1.85, z: 3.15, dir: side < 0 ? 'RIGHT' : 'LEFT', type: 'car', tilt: side * -0.28 });
+          list.push({ x: side * 4.35, z: 4.35, dir: 'DOWN', type: 'bus', tilt: side * 0.15 });
+          list.push({ x: side * 3.45, z: 4.45, dir: 'UP', type: 'car', tilt: side * 0.18 });
+          list.push({ x: side * 1.35, z: 4.45, dir: 'UP', type: 'car', tilt: side * -0.18 });
+          list.push({ x: side * 3.15, z: 5.75, dir: side < 0 ? 'LEFT' : 'RIGHT', type: 'car', tilt: side * -0.28 });
+          list.push({ x: side * 1.95, z: 5.75, dir: side < 0 ? 'RIGHT' : 'LEFT', type: 'car', tilt: side * 0.28 });
+        }
+        list.push({ x: 0.0, z: 3.95, dir: 'UP', type: 'car' });
+        list.push({ x: 0.0, z: 5.25, dir: 'DOWN', type: 'car' });
+        list.push({ x: -0.65, z: 6.25, dir: 'DOWN', type: 'car', tilt: 0.35 });
+        list.push({ x: 0.65, z: 6.25, dir: 'DOWN', type: 'car', tilt: -0.35 });
+        // 3. Zygomatic Cheekbones & Upper Maxilla (8 vehicles)
+        [[-4.15, 5.85, -0.38], [-3.35, 6.85, -0.35], [-2.25, 7.05, -0.18], [-1.15, 7.20, -0.08], [1.15, 7.20, 0.08], [2.25, 7.05, 0.18], [3.35, 6.85, 0.35], [4.15, 5.85, 0.38]].forEach(([cx, cz, ct]) => {
+          list.push({ x: cx, z: cz, dir: cx < 0 ? 'LEFT' : 'RIGHT', type: 'car', tilt: ct });
         });
-      } else {
-        // Archetype 19: 5-POINTED ROYAL STARBURST ARENA (38 Vehicles!)
+        // 4. Skull Teeth Row & Lower Mandible Jaw (10 vehicles)
+        [-2.50, -1.50, -0.50, 0.50, 1.50, 2.50].forEach((cx, idx) => {
+          list.push({ x: cx, z: 8.45, dir: idx % 2 === 0 ? 'UP' : 'DOWN', type: 'bus' });
+        });
+        [-2.25, -0.75, 0.75, 2.25].forEach((cx) => {
+          list.push({ x: cx, z: 9.95, dir: cx < 0 ? 'LEFT' : 'RIGHT', type: 'bus' });
+        });
+      } else if (archetype === 19) {
+        // Archetype 19: 5-POINTED ROYAL STARBURST ARENA (☆ — 50 Vehicles!)
         for (let arm = 0; arm < 5; arm++) {
           const ang = (arm / 5) * Math.PI * 2 - Math.PI * 0.5;
           const tanRot = Math.atan2(-Math.cos(ang), -Math.sin(ang));
-          for (let step = 1; step <= 4; step++) {
-            const rad = 1.25 + (step - 1) * 1.05;
+          for (let step = 1; step <= 5; step++) {
+            const rad = 1.15 + (step - 1) * 0.88;
             const x = Math.cos(ang) * rad;
             const z = 5.60 + Math.sin(ang) * rad;
             list.push({
               x: Number(x.toFixed(2)),
               z: Number(z.toFixed(2)),
               dir: step % 2 === 0 ? 'UP' : 'DOWN',
-              type: step === 3 ? 'bus' : 'car',
+              type: step === 3 || step === 5 ? 'bus' : 'car',
               tilt: Number(tanRot.toFixed(3))
             });
           }
-          // Inter-arm valley wedge vehicles (3 per valley = 15 vehicles)
           const midAng = ang + Math.PI / 5;
           const midRot = Math.atan2(-Math.cos(midAng), -Math.sin(midAng));
-          [2.15, 3.25, 4.25].forEach((rad, rIdx) => {
+          [1.85, 2.75, 3.65, 4.45].forEach((rad, rIdx) => {
             const mx = Math.cos(midAng) * rad;
             const mz = 5.60 + Math.sin(midAng) * rad;
             list.push({
               x: Number(mx.toFixed(2)),
               z: Number(mz.toFixed(2)),
               dir: rIdx % 2 === 0 ? 'UP' : 'DOWN',
-              type: rIdx === 1 ? 'bus' : 'car',
+              type: rIdx === 1 || rIdx === 3 ? 'bus' : 'car',
               tilt: Number(midRot.toFixed(3))
             });
           });
         }
         list.push({ x: 0.0, z: 5.60, dir: 'UP', type: 'bus' });
-        list.push({ x: -4.15, z: 1.15, dir: 'LEFT', type: 'car', tilt: 0.35 });
-        list.push({ x: 4.15, z: 1.15, dir: 'RIGHT', type: 'car', tilt: -0.35 });
+        list.push({ x: -4.25, z: 1.05, dir: 'LEFT', type: 'car', tilt: 0.35 });
+        list.push({ x: 4.25, z: 1.05, dir: 'RIGHT', type: 'car', tilt: -0.35 });
+        list.push({ x: -4.25, z: 10.15, dir: 'LEFT', type: 'car', tilt: -0.35 });
+        list.push({ x: 4.25, z: 10.15, dir: 'RIGHT', type: 'car', tilt: 0.35 });
+      } else if (archetype === 20) {
+        // Archetype 20: IMAGE 13 — GIANT 8-LEGGED TARANTULA SPIDER (🕷️ — 56 Normal Rounded Vehicles!)
+        // 1. Twin Curved Fangs & Head at Top (6 vehicles)
+        list.push({ x: -1.35, z: 0.85, dir: 'UP', type: 'car', tilt: 0.35 });
+        list.push({ x: -0.52, z: 1.15, dir: 'UP', type: 'car', tilt: 0.15 });
+        list.push({ x: 0.52, z: 1.15, dir: 'UP', type: 'car', tilt: -0.15 });
+        list.push({ x: 1.35, z: 0.85, dir: 'UP', type: 'car', tilt: -0.35 });
+        list.push({ x: -0.55, z: 2.25, dir: 'UP', type: 'bus' });
+        list.push({ x: 0.55, z: 2.25, dir: 'UP', type: 'bus' });
+        // 2. 3-Column Cephalothorax & Rounded Spider Abdomen in Center (18 vehicles)
+        [-1.05, 0.0, 1.05].forEach((cx, cIdx) => {
+          [3.35, 4.45, 5.55].forEach((cz, rIdx) => {
+            list.push({
+              x: cx,
+              z: cz,
+              dir: (cIdx + rIdx) % 2 === 0 ? 'UP' : 'DOWN',
+              type: cIdx === 1 ? 'bus' : 'car'
+            });
+          });
+        });
+        [-1.55, -0.52, 0.52, 1.55].forEach((cx, cIdx) => {
+          [6.75, 7.95].forEach((cz, rIdx) => {
+            list.push({
+              x: cx,
+              z: cz,
+              dir: rIdx === 0 ? 'DOWN' : 'UP',
+              type: cIdx === 1 || cIdx === 2 ? 'bus' : 'car'
+            });
+          });
+        });
+        list.push({ x: 0.0, z: 9.25, dir: 'DOWN', type: 'bus' });
+        // 3. 8 Long Jointed Spider Legs (4 legs Left + 4 legs Right, 4 vehicles per leg = 32 vehicles!)
+        for (const side of [-1, 1]) {
+          // Leg 1 (Front-Reaching Leg)
+          list.push({ x: side * 2.15, z: 2.55, dir: 'UP', type: 'car', tilt: side * -0.45 });
+          list.push({ x: side * 3.15, z: 1.75, dir: 'UP', type: 'bus', tilt: side * -0.52 });
+          list.push({ x: side * 4.15, z: 1.05, dir: 'UP', type: 'car', tilt: side * -0.25 });
+          list.push({ x: side * 4.55, z: 2.15, dir: 'UP', type: 'car', tilt: side * 0.18 });
+          // Leg 2 (Upper-Mid Leg)
+          list.push({ x: side * 2.25, z: 3.85, dir: side < 0 ? 'LEFT' : 'RIGHT', type: 'car', tilt: side * 0.35 });
+          list.push({ x: side * 3.35, z: 3.35, dir: side < 0 ? 'LEFT' : 'RIGHT', type: 'bus', tilt: side * 0.22 });
+          list.push({ x: side * 4.35, z: 3.65, dir: 'DOWN', type: 'car', tilt: side * 0.35 });
+          list.push({ x: side * 4.55, z: 4.85, dir: 'DOWN', type: 'car', tilt: side * 0.15 });
+          // Leg 3 (Lower-Mid Leg)
+          list.push({ x: side * 2.35, z: 5.35, dir: side < 0 ? 'LEFT' : 'RIGHT', type: 'car', tilt: side * -0.25 });
+          list.push({ x: side * 3.45, z: 5.65, dir: 'DOWN', type: 'bus', tilt: side * 0.45 });
+          list.push({ x: side * 4.35, z: 6.35, dir: 'DOWN', type: 'car', tilt: side * 0.28 });
+          list.push({ x: side * 4.45, z: 7.65, dir: 'DOWN', type: 'car', tilt: side * 0.12 });
+          // Leg 4 (Rear-Swept Leg)
+          list.push({ x: side * 2.55, z: 7.15, dir: 'DOWN', type: 'car', tilt: side * 0.45 });
+          list.push({ x: side * 3.45, z: 8.15, dir: 'DOWN', type: 'bus', tilt: side * 0.38 });
+          list.push({ x: side * 3.85, z: 9.35, dir: 'DOWN', type: 'car', tilt: side * 0.22 });
+          list.push({ x: side * 3.15, z: 10.35, dir: 'DOWN', type: 'car', tilt: side * -0.25 });
+        }
+      } else {
+        // Archetype 21: IMAGE 14 — GIANT ARMORED SCORPION (🦂 — 54 Normal Rounded Vehicles!)
+        // 1. Segmented Central Torso & Vertical Rib Armor (14 vehicles)
+        [3.65, 4.65, 5.65, 6.65, 7.65].forEach((cz, rIdx) => {
+          list.push({ x: -0.55, z: cz, dir: rIdx % 2 === 0 ? 'LEFT' : 'RIGHT', type: 'car' });
+          list.push({ x: 0.55, z: cz, dir: rIdx % 2 === 0 ? 'RIGHT' : 'LEFT', type: 'car' });
+        });
+        list.push({ x: -1.65, z: 4.45, dir: 'DOWN', type: 'bus' });
+        list.push({ x: -1.65, z: 6.15, dir: 'DOWN', type: 'bus' });
+        list.push({ x: 1.65, z: 4.45, dir: 'DOWN', type: 'bus' });
+        list.push({ x: 1.65, z: 6.15, dir: 'DOWN', type: 'bus' });
+        // 2. Twin Giant Lower Pincer Claws (Chelae) at Bottom-Left & Bottom-Right (14 vehicles)
+        for (const side of [-1, 1]) {
+          list.push({ x: side * 1.45, z: 8.15, dir: 'DOWN', type: 'car', tilt: side * -0.35 });
+          list.push({ x: side * 2.45, z: 8.75, dir: 'DOWN', type: 'bus', tilt: side * -0.45 });
+          list.push({ x: side * 3.55, z: 9.15, dir: 'DOWN', type: 'car', tilt: side * -0.25 });
+          list.push({ x: side * 3.75, z: 10.15, dir: 'DOWN', type: 'car', tilt: side * 0.25 });
+          list.push({ x: side * 2.75, z: 10.45, dir: side < 0 ? 'RIGHT' : 'LEFT', type: 'car', tilt: side * 0.35 });
+          list.push({ x: side * 1.65, z: 9.35, dir: 'DOWN', type: 'car', tilt: side * 0.25 });
+          list.push({ x: side * 1.55, z: 10.25, dir: 'DOWN', type: 'car', tilt: side * -0.25 });
+        }
+        // 3. 8 Walking Legs (4 per side = 16 vehicles)
+        for (const side of [-1, 1]) {
+          list.push({ x: side * 2.85, z: 3.85, dir: side < 0 ? 'LEFT' : 'RIGHT', type: 'car', tilt: side * 0.38 });
+          list.push({ x: side * 4.15, z: 3.35, dir: side < 0 ? 'LEFT' : 'RIGHT', type: 'bus', tilt: side * 0.52 });
+          list.push({ x: side * 2.95, z: 5.05, dir: side < 0 ? 'LEFT' : 'RIGHT', type: 'car', tilt: side * 0.28 });
+          list.push({ x: side * 4.25, z: 4.75, dir: side < 0 ? 'LEFT' : 'RIGHT', type: 'bus', tilt: side * 0.42 });
+          list.push({ x: side * 2.95, z: 6.35, dir: side < 0 ? 'LEFT' : 'RIGHT', type: 'car', tilt: side * -0.25 });
+          list.push({ x: side * 4.25, z: 6.45, dir: side < 0 ? 'LEFT' : 'RIGHT', type: 'bus', tilt: side * -0.38 });
+          list.push({ x: side * 3.05, z: 7.65, dir: side < 0 ? 'LEFT' : 'RIGHT', type: 'car', tilt: side * -0.38 });
+          list.push({ x: side * 4.35, z: 7.95, dir: side < 0 ? 'LEFT' : 'RIGHT', type: 'car', tilt: side * -0.48 });
+        }
+        // 4. High Arched Segmented Scorpion Stinger Tail Over the Top (10 vehicles)
+        list.push({ x: 0.85, z: 2.65, dir: 'UP', type: 'car', tilt: -0.35 });
+        list.push({ x: 1.95, z: 2.35, dir: 'UP', type: 'car', tilt: -0.45 });
+        list.push({ x: 2.45, z: 1.45, dir: 'UP', type: 'bus', tilt: 0.20 });
+        list.push({ x: 1.65, z: 0.78, dir: 'LEFT', type: 'car', tilt: 0.35 });
+        list.push({ x: 0.55, z: 0.68, dir: 'LEFT', type: 'bus', tilt: 0.12 });
+        list.push({ x: -0.55, z: 0.68, dir: 'LEFT', type: 'bus', tilt: -0.12 });
+        list.push({ x: -1.65, z: 0.85, dir: 'LEFT', type: 'car', tilt: -0.35 });
+        list.push({ x: -2.55, z: 1.45, dir: 'DOWN', type: 'car', tilt: 0.38 });
+        list.push({ x: -1.85, z: 2.25, dir: 'RIGHT', type: 'car', tilt: -0.35 });
+        list.push({ x: -0.75, z: 2.45, dir: 'DOWN', type: 'car', tilt: 0.15 });
       }
 
-      if (shouldFlip && archetype !== 6 && archetype !== 13 && archetype !== 19) {
+      if (shouldFlip && ![6, 10, 11, 13, 18, 19, 20, 21].includes(archetype)) {
         list.forEach((item) => {
           if (item.dir === 'LEFT' || item.dir === 'RIGHT') {
             item.dir = flipDir(item.dir);
@@ -1975,22 +2224,11 @@
           const candV = initialFree[i];
           const oldD = candV.dir;
           const oldTilt = candV.tilt || 0;
+          // Strictly preserve the exact visual silhouette angle (oldTilt): only test 180-degree arrow reversal (oppDir)
+          // so outer vehicles in figures/spirals/stars/grids NEVER twist out of formation alignment!
           const candStates = [
-            { dir: oppDir(oldD), tilt: oldTilt },
-            { dir: oppDir(oldD), tilt: Number((oldTilt + 0.18).toFixed(3)) },
-            { dir: oppDir(oldD), tilt: Number((oldTilt - 0.18).toFixed(3)) },
-            { dir: oppDir(oldD), tilt: Number((oldTilt + 0.35).toFixed(3)) },
-            { dir: oppDir(oldD), tilt: Number((oldTilt - 0.35).toFixed(3)) }
+            { dir: oppDir(oldD), tilt: oldTilt }
           ];
-          // Also add direct aim angles toward the 4 nearest neighbors so outer wing/ring cars reliably lock onto their neighbors!
-          const nearNeighbors = vehicles
-            .filter((o) => o.id !== candV.id)
-            .sort((a, b) => Math.hypot(a.x - candV.x, a.z - candV.z) - Math.hypot(b.x - candV.x, b.z - candV.z))
-            .slice(0, 4);
-          for (const nb of nearNeighbors) {
-            const aimRot = Math.atan2(-(nb.x - candV.x), -(nb.z - candV.z));
-            candStates.push({ dir: 'UP', tilt: Number(aimRot.toFixed(3)) });
-          }
 
           const isWithinLot = (v) => {
             const s = v.scale || 1.0;
@@ -5297,19 +5535,20 @@
       return this.getTrackLoopPoint(levelNum, eqTheta, centerZ);
     }
 
-    buildEnvironment3D(levelNum = 1) {
-      while (this.envGroup.children.length > 0) {
-        this.envGroup.remove(this.envGroup.children[0]);
-      }
+    getEnvironmentThemeForLevel(levelNum = 1) {
+      const lvl = Math.max(1, levelNum || 1);
+      const worldEra = LevelGenerator.getWorldEraForLevel(lvl);
+      const archetype = LevelGenerator.getArchetypeForLevel(lvl);
 
-      // 12 Distinct, Vibrant Pixar 3D Architectural & Park Color Themes that evolve across all 5000 Levels!
-      const ENV_THEMES = [
+      // WORLD 1 (Levels 1 - 100): Classic Emerald & Sakura Plaza
+      const WORLD1_THEMES = [
         {
+          id: 'w1_emerald',
           name: 'Emerald Fountain Plaza',
+          worldEra: 1,
           farGrassHex: 0x558830,
           farLotHex: 0xaab5c8,
           grassStops: ['#689e3e', '#588c32', '#4a7a28'],
-          islStops: ['#629839', '#4c7b28'],
           lotStops: ['#b8c3d6', '#abb7cc', '#9ca9bf'],
           roadStops: ['#494f60', '#414757', '#3b404f'],
           curbTop: '#eef3fb',
@@ -5318,11 +5557,12 @@
           archType: 'fountain'
         },
         {
+          id: 'w1_sunset',
           name: 'Golden Sunset Palm Resort',
+          worldEra: 1,
           farGrassHex: 0x6d7c24,
           farLotHex: 0xc2b29b,
           grassStops: ['#879634', '#728228', '#5e6e1e'],
-          islStops: ['#7c8c2e', '#617020'],
           lotStops: ['#d1c2ab', '#c4b39b', '#b3a188'],
           roadStops: ['#4d4754', '#433e4a', '#393540'],
           curbTop: '#fff7e6',
@@ -5331,11 +5571,12 @@
           archType: 'palm_oasis'
         },
         {
+          id: 'w1_sakura',
           name: 'Sakura Cherry Blossom Temple',
+          worldEra: 1,
           farGrassHex: 0x458248,
           farLotHex: 0xb5b2c8,
           grassStops: ['#559658', '#468549', '#39733c'],
-          islStops: ['#508f53', '#3d7840'],
           lotStops: ['#c5c2d8', '#b6b3ca', '#a5a1ba'],
           roadStops: ['#48475c', '#3f3e52', '#363547'],
           curbTop: '#fdf2f8',
@@ -5344,128 +5585,204 @@
           archType: 'sakura_torii'
         },
         {
+          id: 'w1_castle',
           name: 'Royal Castle Kingdom',
+          worldEra: 1,
           farGrassHex: 0x5c7526,
           farLotHex: 0xb0a99f,
           grassStops: ['#708a32', '#5f7827', '#4e651d'],
-          islStops: ['#6a842e', '#536b20'],
           lotStops: ['#c2bbb0', '#b3aca0', '#a39b8e'],
           roadStops: ['#454854', '#3c3f4a', '#333640'],
           curbTop: '#f5f3ed',
           curbSide: '#9e988e',
           dappleRgba: 'rgba(251, 146, 60, 0.22)',
           archType: 'castle_kingdom'
-        },
-        {
-          name: 'Carnival Starlight Garden',
-          farGrassHex: 0x3b854e,
-          farLotHex: 0xaab8cc,
-          grassStops: ['#4ea163', '#3f8e53', '#327a44'],
-          islStops: ['#48995d', '#357d47'],
-          lotStops: ['#b8c6da', '#aab8cd', '#9aa9bf'],
-          roadStops: ['#464c5e', '#3e4454', '#373c4b'],
-          curbTop: '#f4f7fd',
-          curbSide: '#96a2b8',
-          dappleRgba: 'rgba(250, 204, 21, 0.22)',
-          archType: 'cyber_neon'
-        },
-        {
-          name: 'Royal Rose Botanical Garden',
-          farGrassHex: 0x46883c,
-          farLotHex: 0xaebbc9,
-          grassStops: ['#599e4c', '#4a8c3e', '#3c7a31'],
-          islStops: ['#539647', '#3f7c34'],
-          lotStops: ['#bccad8', '#aebcc9', '#9eaab9'],
-          roadStops: ['#474e5e', '#3e4554', '#363c49'],
-          curbTop: '#f4f8ff',
-          curbSide: '#94a5b8',
-          dappleRgba: 'rgba(134, 239, 172, 0.22)',
-          archType: 'alpine_crystal'
-        },
-        {
-          name: 'Tropical Aqua Lagoon',
-          farGrassHex: 0x328a5c,
-          farLotHex: 0xa6bcc7,
-          grassStops: ['#42a472', '#348d5f', '#28774e'],
-          islStops: ['#3d9c6b', '#2b7a51'],
-          lotStops: ['#b9ced9', '#a8bfcb', '#97b0bd'],
-          roadStops: ['#404d5c', '#374350', '#2f3a46'],
-          curbTop: '#ecfeff',
-          curbSide: '#8eaab8',
-          dappleRgba: 'rgba(56, 189, 248, 0.22)',
-          archType: 'palm_oasis'
-        },
-        {
-          name: 'Autumn Amber Maple Park',
-          farGrassHex: 0x6e7828,
-          farLotHex: 0xbcb0a2,
-          grassStops: ['#869136', '#727c2b', '#5e6721'],
-          islStops: ['#7d8831', '#616b23'],
-          lotStops: ['#ccc0b2', '#bdb0a1', '#ad9f90'],
-          roadStops: ['#4c4852', '#423e48', '#38353d'],
-          curbTop: '#fffbeb',
-          curbSide: '#b0a292',
-          dappleRgba: 'rgba(251, 191, 36, 0.24)',
-          archType: 'castle_kingdom'
-        },
-        {
-          name: 'Lavender Twilight Plaza',
-          farGrassHex: 0x4b7f52,
-          farLotHex: 0xb4b0c9,
-          grassStops: ['#5d9665', '#4d8255', '#3e6e46'],
-          islStops: ['#568e5e', '#417148'],
-          lotStops: ['#c4c0d8', '#b5b0ca', '#a59fbd'],
-          roadStops: ['#48455e', '#3e3c52', '#353346'],
-          curbTop: '#f5f3ff',
-          curbSide: '#a39cb8',
-          dappleRgba: 'rgba(192, 132, 252, 0.22)',
-          archType: 'sakura_torii'
-        },
-        {
-          name: 'Mint Meadow Springs',
-          farGrassHex: 0x489140,
-          farLotHex: 0xaabac4,
-          grassStops: ['#5cb052', '#4c9943', '#3d8235'],
-          islStops: ['#55a64b', '#408537'],
-          lotStops: ['#bad0dc', '#abc0cc', '#9bb0bc'],
-          roadStops: ['#444e5c', '#3b4450', '#333b46'],
-          curbTop: '#f0fdf4',
-          curbSide: '#92a8b4',
-          dappleRgba: 'rgba(74, 222, 128, 0.22)',
-          archType: 'fountain'
-        },
-        {
-          name: 'Coral Sunburst Resort',
-          farGrassHex: 0x568632,
-          farLotHex: 0xc0b4aa,
-          grassStops: ['#6ba042', '#598a34', '#487427'],
-          islStops: ['#63963c', '#4b7729'],
-          lotStops: ['#d0c4ba', '#c1b4a9', '#b1a398'],
-          roadStops: ['#4e4856', '#443f4b', '#3a3640'],
-          curbTop: '#fff1f2',
-          curbSide: '#b4a29a',
-          dappleRgba: 'rgba(251, 113, 133, 0.22)',
-          archType: 'cyber_neon'
-        },
-        {
-          name: 'Alpine Crystal Gardens',
-          farGrassHex: 0x3e884a,
-          farLotHex: 0xa8b8cc,
-          grassStops: ['#4fa25d', '#408d4d', '#33783f'],
-          islStops: ['#499956', '#367b42'],
-          lotStops: ['#b8c8dc', '#a9b9cd', '#99a9bd'],
-          roadStops: ['#434c5e', '#3a4252', '#323947'],
-          curbTop: '#f0f9ff',
-          curbSide: '#90a4bc',
-          dappleRgba: 'rgba(125, 211, 252, 0.24)',
-          archType: 'alpine_crystal'
         }
       ];
 
-      const themeIdx = (Math.max(1, levelNum) - 1) % ENV_THEMES.length;
-      const theme = ENV_THEMES[themeIdx];
+      // WORLD 2 (Levels 101 - 500): Countryside Cottage Green Meadow & Statue of Liberty Harbor Pier (Images 2, 3, 4)
+      const WORLD2_THEMES = {
+        cottage: {
+          id: 'w2_cottage_meadow',
+          name: 'Countryside Cottage Meadow',
+          worldEra: 2,
+          farGrassHex: 0x5b9c32,
+          farLotHex: 0x76ab3e,
+          grassStops: ['#74b846', '#61a336', '#4f8c28'],
+          boardwalkApron: ['#e8cfa8', '#d9bc91'],
+          lotStops: ['#8dc252', '#7eb344', '#6ea238'],
+          roadStops: ['#5a6275', '#4e5668', '#434a5a'],
+          curbTop: '#fffaf0',
+          curbSide: '#bfa78a',
+          dappleRgba: 'rgba(190, 242, 100, 0.25)',
+          archType: 'world2_cottage'
+        },
+        libertyHarbor: {
+          id: 'w2_liberty_harbor',
+          name: 'Statue of Liberty Harbor Pier',
+          worldEra: 2,
+          farGrassHex: 0x1e7db3,
+          farLotHex: 0x9aa7ba,
+          grassStops: ['#349fd6', '#2589c2', '#1b75ab'],
+          boardwalkApron: ['#e5d9c8', '#d4c5b0'],
+          lotStops: ['#b4bfd0', '#a5b1c4', '#96a3b6'],
+          roadStops: ['#4f586b', '#454d5e', '#3b4252'],
+          curbTop: '#f8fafc',
+          curbSide: '#9da8ba',
+          dappleRgba: 'rgba(125, 211, 252, 0.26)',
+          archType: 'world2_liberty_harbor'
+        }
+      };
+
+      // WORLD 3 (Levels 501 - 1000): Seaside Gazebo Lighthouse Bay, Pagoda Waterfall & Dutch Windmill Farm (Images 7, 8, 9)
+      const WORLD3_THEMES = {
+        lighthouse: {
+          id: 'w3_seaside_lighthouse',
+          name: 'Seaside Gazebo & Lighthouse Bay',
+          worldEra: 3,
+          farGrassHex: 0x1b82b8,
+          farLotHex: 0xa2afc2,
+          grassStops: ['#2ea0d6', '#2188bf', '#1770a3'],
+          boardwalkApron: ['#edd7b7', '#dcc29e'],
+          lotStops: ['#bcc6d6', '#adb8ca', '#9ea9bc'],
+          roadStops: ['#485266', '#3f4859', '#363e4d'],
+          curbTop: '#fffbeb',
+          curbSide: '#9ca8bc',
+          dappleRgba: 'rgba(56, 189, 248, 0.26)',
+          archType: 'world3_lighthouse'
+        },
+        pagoda: {
+          id: 'w3_pagoda_waterfall',
+          name: 'Japanese Waterfall & Lotus Pagoda',
+          worldEra: 3,
+          farGrassHex: 0x368552,
+          farLotHex: 0xa4b0c4,
+          grassStops: ['#49a067', '#398a55', '#2b7344'],
+          boardwalkApron: ['#e2d5c4', '#d1c2ae'],
+          lotStops: ['#b8c3d4', '#a9b4c7', '#9aa6ba'],
+          roadStops: ['#464d61', '#3d4355', '#343949'],
+          curbTop: '#fdf2f8',
+          curbSide: '#9aa4b8',
+          dappleRgba: 'rgba(45, 212, 191, 0.25)',
+          archType: 'world3_pagoda'
+        },
+        windmill: {
+          id: 'w3_windmill_farm',
+          name: 'Dutch Windmill & Lotus Farm',
+          worldEra: 3,
+          farGrassHex: 0x61942e,
+          farLotHex: 0xa6b1c2,
+          grassStops: ['#7ab040', '#659930', '#518022'],
+          boardwalkApron: ['#e8d2b0', '#d6bc96'],
+          lotStops: ['#bdc6d4', '#aeb8c8', '#9fa9ba'],
+          roadStops: ['#4b4f61', '#414555', '#373b49'],
+          curbTop: '#fefce8',
+          curbSide: '#a2abbc',
+          dappleRgba: 'rgba(250, 204, 21, 0.25)',
+          archType: 'world3_windmill'
+        }
+      };
+
+      // WORLD 4 (Levels 1001 - 1500): Haunted Horror Graveyard, Dark Carnival, Blood-Moon Crypt & Biohazard Lab (Images 10 - 15)
+      const WORLD4_THEMES = {
+        graveyard: {
+          id: 'w4_haunted_graveyard',
+          name: 'Haunted Ghost Barn & Graveyard',
+          worldEra: 4,
+          isHorror: true,
+          farGrassHex: 0x152420,
+          farLotHex: 0x232736,
+          grassStops: ['#1e332d', '#162722', '#101d19'],
+          lotStops: ['#32374a', '#282c3d', '#202432'],
+          roadStops: ['#1c202b', '#171a24', '#12151d'],
+          curbTop: '#64748b',
+          curbSide: '#334155',
+          dappleRgba: 'rgba(74, 222, 128, 0.24)',
+          archType: 'world4_graveyard'
+        },
+        carnival: {
+          id: 'w4_dark_carnival',
+          name: 'Spooky Dark Carnival Circus',
+          worldEra: 4,
+          isHorror: true,
+          farGrassHex: 0x1b122e,
+          farLotHex: 0x221e33,
+          grassStops: ['#281b42', '#1e1433', '#150d26'],
+          lotStops: ['#332c4a', '#29233d', '#201b30'],
+          roadStops: ['#1e192b', '#181423', '#13101c'],
+          curbTop: '#7c6f9b',
+          curbSide: '#3f3754',
+          dappleRgba: 'rgba(192, 132, 252, 0.24)',
+          archType: 'world4_carnival'
+        },
+        crypt: {
+          id: 'w4_blood_crypt',
+          name: 'Blood-Moon Spider & Scorpion Crypt',
+          worldEra: 4,
+          isHorror: true,
+          farGrassHex: 0x241118,
+          farLotHex: 0x261f29,
+          grassStops: ['#361923', '#28121a', '#1c0c12'],
+          lotStops: ['#382e3d', '#2d2532', '#231c27'],
+          roadStops: ['#211a24', '#1b151e', '#151017'],
+          curbTop: '#78687a',
+          curbSide: '#423745',
+          dappleRgba: 'rgba(244, 63, 94, 0.22)',
+          archType: 'world4_crypt'
+        },
+        biohazard: {
+          id: 'w4_biohazard_lab',
+          name: 'Biohazard Mutant Mecha Lab',
+          worldEra: 4,
+          isHorror: true,
+          farGrassHex: 0x122129,
+          farLotHex: 0x1f2933,
+          grassStops: ['#1a303b', '#13242d', '#0d1920'],
+          lotStops: ['#2c3a47', '#232f3a', '#1b242e'],
+          roadStops: ['#182129', '#131b22', '#0f151b'],
+          curbTop: '#648296',
+          curbSide: '#324452',
+          dappleRgba: 'rgba(34, 197, 94, 0.26)',
+          archType: 'world4_biohazard'
+        }
+      };
+
+      if (worldEra === 1) {
+        return WORLD1_THEMES[(lvl - 1) % WORLD1_THEMES.length];
+      }
+      if (worldEra === 2) {
+        if (archetype === 0) return WORLD2_THEMES.cottage;
+        if (archetype === 2 || archetype === 3) return WORLD2_THEMES.libertyHarbor;
+        return lvl % 2 === 1 ? WORLD2_THEMES.cottage : WORLD2_THEMES.libertyHarbor;
+      }
+      if (worldEra === 3) {
+        if (archetype === 5) return WORLD3_THEMES.lighthouse;
+        if (archetype === 7) return WORLD3_THEMES.pagoda;
+        if (archetype === 8) return WORLD3_THEMES.windmill;
+        const m = lvl % 3;
+        return m === 1 ? WORLD3_THEMES.lighthouse : m === 2 ? WORLD3_THEMES.pagoda : WORLD3_THEMES.windmill;
+      }
+      // World 4 (Levels 1001 - 1500+): Haunted Horror & Monster Realm
+      if (archetype === 9 || archetype === 10) return WORLD4_THEMES.graveyard;
+      if (archetype === 18) return WORLD4_THEMES.carnival;
+      if (archetype === 20 || archetype === 21) return WORLD4_THEMES.crypt;
+      if (archetype === 11) return WORLD4_THEMES.biohazard;
+      const m4 = lvl % 4;
+      return m4 === 1 ? WORLD4_THEMES.graveyard : m4 === 2 ? WORLD4_THEMES.carnival : m4 === 3 ? WORLD4_THEMES.crypt : WORLD4_THEMES.biohazard;
+    }
+
+    buildEnvironment3D(levelNum = 1) {
+      while (this.envGroup.children.length > 0) {
+        this.envGroup.remove(this.envGroup.children[0]);
+      }
+
+      const theme = this.getEnvironmentThemeForLevel(levelNum);
+      const archetype = LevelGenerator.getArchetypeForLevel(levelNum);
       const trackShape = this.getTrackShapeForLevel(levelNum);
-      const cacheKey = `${themeIdx}_${trackShape}`;
+      const lotFeatureKey = (theme.worldEra === 3 && (archetype === 5 || archetype === 7 || archetype === 8)) || (theme.worldEra === 4 && archetype === 9)
+        ? `_arch${archetype}`
+        : '';
+      const cacheKey = `${theme.id}_${trackShape}${lotFeatureKey}`;
       this._builtEnvLevelNum = levelNum;
 
       // Ultra-wide fallback planes (MeshBasicMaterial so lighting never blows out colors)
@@ -5560,6 +5877,21 @@
         drawTinyCluster(-6.55, -11.4);
         drawTinyCluster(6.55, -11.4);
 
+        // 1b. Optional World 2 & World 3 Boardwalk / Pier Quay Promenade Apron around Track & Bay
+        if (theme.boardwalkApron) {
+          const apronTopY = py(-10.85);
+          const apronGrad = ctx.createLinearGradient(0, apronTopY, 0, curbY);
+          apronGrad.addColorStop(0, theme.boardwalkApron[0]);
+          apronGrad.addColorStop(1, theme.boardwalkApron[1]);
+          ctx.fillStyle = apronGrad;
+          ctx.fillRect(0, apronTopY, cw, curbY - apronTopY);
+          // Crisp seawall / boardwalk border ledge at z = -10.85
+          ctx.fillStyle = '#f8fafc';
+          ctx.fillRect(0, apronTopY - 4, cw, 5);
+          ctx.fillStyle = 'rgba(15, 23, 42, 0.16)';
+          ctx.fillRect(0, apronTopY + 1, cw, 4);
+        }
+
         // 2. Lower Rich Parking Lot Plaza (z >= -0.72)
         const lotGrad = ctx.createLinearGradient(0, curbY, 0, py(16));
         lotGrad.addColorStop(0, theme.lotStops[0]);
@@ -5567,6 +5899,85 @@
         lotGrad.addColorStop(1, theme.lotStops[2]);
         ctx.fillStyle = lotGrad;
         ctx.fillRect(0, curbY, cw, ch - curbY);
+
+        // 2b. World-Specific Parking Lot Surface Features (Cobblestone Grid, Fountain Courtyard, Lotus Ponds, Swamp Pools!)
+        if (theme.isHorror) {
+          // Haunted Horror Midnight Cobblestone Grid Lines & Eerie Glow
+          ctx.save();
+          ctx.strokeStyle = 'rgba(15, 23, 42, 0.34)';
+          ctx.lineWidth = 1.4;
+          for (let wz = -0.2; wz <= 14.5; wz += 0.95) {
+            const yLine = py(wz);
+            ctx.beginPath();
+            ctx.moveTo(0, yLine);
+            ctx.lineTo(cw, yLine);
+            ctx.stroke();
+          }
+          for (let wx = -12; wx <= 12; wx += 1.25) {
+            const xLine = px(wx);
+            ctx.beginPath();
+            ctx.moveTo(xLine, curbY);
+            ctx.lineTo(xLine, ch);
+            ctx.stroke();
+          }
+          // Glowing horror center aura
+          const hGlow = ctx.createRadialGradient(px(0), py(5.55), 0, px(0), py(5.55), 5.2 * S);
+          hGlow.addColorStop(0, theme.dappleRgba);
+          hGlow.addColorStop(1, 'rgba(0,0,0,0)');
+          ctx.fillStyle = hGlow;
+          ctx.fillRect(0, curbY, cw, ch - curbY);
+          ctx.restore();
+        }
+
+        const drawLotWaterPool = (wx, wz, rx, rz, waterCol = '#2dd4bf', rimCol = '#e2e8f0', hasLotus = false) => {
+          ctx.save();
+          ctx.fillStyle = rimCol;
+          ctx.beginPath();
+          ctx.ellipse(px(wx), py(wz), (rx + 0.14) * S, (rz + 0.14) * S, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = waterCol;
+          ctx.beginPath();
+          ctx.ellipse(px(wx), py(wz), rx * S, rz * S, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = 'rgba(255,255,255,0.45)';
+          ctx.lineWidth = 1.8;
+          ctx.beginPath();
+          ctx.ellipse(px(wx), py(wz), rx * 0.65 * S, rz * 0.65 * S, 0, 0, Math.PI * 2);
+          ctx.stroke();
+          if (hasLotus) {
+            ctx.fillStyle = '#4ade80';
+            ctx.beginPath();
+            ctx.arc(px(wx - rx * 0.25), py(wz - rz * 0.18), 5.5, 0, Math.PI * 2);
+            ctx.arc(px(wx + rx * 0.28), py(wz + rz * 0.22), 4.8, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#f472b6';
+            ctx.beginPath();
+            ctx.arc(px(wx), py(wz), 4.5, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          ctx.restore();
+        };
+
+        if (theme.worldEra === 3 && archetype === 5) {
+          // Image 7: Central Fountain Pool in the middle of the Triple Rectangular Courtyard!
+          drawLotWaterPool(0, 5.55, 0.78, 0.78, '#38bdf8', '#f1f5f9', false);
+        } else if (theme.worldEra === 3 && archetype === 7) {
+          // Image 8: 4 Corner Turquoise Lotus Ponds!
+          drawLotWaterPool(-4.45, 0.95, 0.78, 0.68, '#2dd4bf', '#cbd5e1', true);
+          drawLotWaterPool(4.45, 0.95, 0.78, 0.68, '#2dd4bf', '#cbd5e1', true);
+          drawLotWaterPool(-4.45, 10.25, 0.78, 0.68, '#2dd4bf', '#cbd5e1', true);
+          drawLotWaterPool(4.45, 10.25, 0.78, 0.68, '#2dd4bf', '#cbd5e1', true);
+        } else if (theme.worldEra === 3 && archetype === 8) {
+          // Image 9: Twin Left & Right Semicircular Lotus Ponds!
+          drawLotWaterPool(-5.15, 5.55, 0.62, 1.35, '#2dd4bf', '#cbd5e1', true);
+          drawLotWaterPool(5.15, 5.55, 0.62, 1.35, '#2dd4bf', '#cbd5e1', true);
+        } else if (theme.worldEra === 4 && archetype === 9) {
+          // Image 10: 4 Corner Glowing Green Haunted Swamp Pools!
+          drawLotWaterPool(-4.45, 0.95, 0.75, 0.65, '#22c55e', '#334155', false);
+          drawLotWaterPool(4.45, 0.95, 0.75, 0.65, '#22c55e', '#334155', false);
+          drawLotWaterPool(-4.45, 10.25, 0.75, 0.65, '#22c55e', '#334155', false);
+          drawLotWaterPool(4.45, 10.25, 0.75, 0.65, '#22c55e', '#334155', false);
+        }
 
         // 3. Multi-Pass Seamless Connected Road Network (U-Feeders + Dynamic Track Shape + Gate + Boarding Bay)
         const traceFeederPath = (side, yOff = 0) => {
@@ -5718,77 +6129,421 @@
 
     buildThemeArchitecture3D(archType = 'fountain') {
       const lvl = Math.max(1, this.levelNum || 1);
+      const archetype = LevelGenerator.getArchetypeForLevel(lvl);
       const archIndexMap = {
         fountain: 0,
         palm_oasis: 1,
         sakura_torii: 2,
         castle_kingdom: 3,
         cyber_neon: 4,
-        alpine_crystal: 5
+        alpine_crystal: 5,
+        world2_cottage: 0,
+        world2_liberty_harbor: 1,
+        world3_lighthouse: 0,
+        world3_pagoda: 2,
+        world3_windmill: 3,
+        world4_graveyard: 4,
+        world4_carnival: 4,
+        world4_crypt: 5,
+        world4_biohazard: 4
       };
-      // Cycle centerpiece & roadside 3D architecture every level so each level has a fresh visual landmark!
       const baseIdx = archIndexMap[archType] !== undefined ? archIndexMap[archType] : 0;
       const archIdx = (baseIdx + lvl - 1) % 6;
       this._currentArchIdx = archIdx;
 
-      // 1. Roadside 3D Glass Bus Stop Shelters & Park Benches on Left & Right Aprons (x = ±5.55, z = -5.85, matching reference screenshots!)
+      // 1. Roadside 3D Glass Bus Stop Shelters & Park Benches on Left & Right Aprons (x = ±5.55, z = -5.85)
       this.addBusStopShelter3D(-5.58, -5.82, -1, lvl);
       this.addBusStopShelter3D(5.58, -5.82, 1, lvl);
 
-      // 2. Upper Park Lawn 3D Architectural Landmarks (x = ±2.45, z = -12.35 — safely between Left & Right Feeder Roads!)
-      const archStyle = (lvl - 1) % 8;
-      if (archStyle === 0) {
-        // Royal Marble Fountain & Twin Cypress Trees
-        this.addMarbleFountain3D(-2.45, -12.35);
-        this.addMarbleFountain3D(2.45, -12.35);
+      // 2. World-Specific 3D Architectural Landmarks at Top & Sides!
+      if (archType === 'world2_cottage') {
+        // World 2 (Image 2): Countryside Orange-Roof Cottage House & Green Meadow Trees
+        this.addCottageHouse3D(-2.35, -12.35);
+        this.addCottageHouse3D(2.35, -12.35);
         this.addTree(-7.15, -8.35);
         this.addTree(7.15, -8.35);
-      } else if (archStyle === 1) {
-        // Tropical Palm Oasis & Beach Resort
-        this.addPalmTree3D(-2.45, -12.35, -1);
-        this.addPalmTree3D(2.45, -12.35, 1);
+      } else if (archType === 'world2_liberty_harbor') {
+        // World 2 (Images 3 & 4): 3D Turquoise Statue of Liberty with Golden Torch + Harbor Shop & Sailboats!
+        this.addStatueOfLiberty3D(-2.25, -12.35);
+        this.addHarborShop3D(2.35, -12.35);
+        this.addSailboat3D(-7.15, -11.55);
+        this.addSailboat3D(7.15, -11.55);
+      } else if (archType === 'world3_lighthouse') {
+        // World 3 (Image 7): 3D Seaside Gazebo Pavilion & Red-White Striped Lighthouse Tower!
+        this.addGazeboPavilion3D(-2.35, -12.35);
+        this.addLighthouse3D(2.45, -12.35);
         this.addPalmTree3D(-7.10, -8.35, 1);
         this.addPalmTree3D(7.10, -8.35, -1);
-      } else if (archStyle === 2) {
-        // Sakura Torii Shrine Gates & Blossom Trees
-        this.addToriiGate3D(-2.45, -12.35);
-        this.addToriiGate3D(2.45, -12.35);
-        this.addSakuraTree3D(-7.15, -8.40, 0.88);
-        this.addSakuraTree3D(7.15, -8.40, 0.88);
-      } else if (archStyle === 3) {
-        // Royal Medieval Castle Turrets & Maple Trees
-        this.addCastleTurret3D(-2.45, -12.35, 0.92);
-        this.addCastleTurret3D(2.45, -12.35, 0.92);
+        if (archetype === 5) {
+          this.addMarbleFountain3D(0.0, 5.55);
+        }
+      } else if (archType === 'world3_pagoda') {
+        // World 3 (Image 8): 3D Japanese Multi-Tier Red Pagoda Temple, Torii Gate & Sakura Trees!
+        this.addPagodaTemple3D(-2.35, -12.35);
+        this.addToriiGate3D(2.35, -12.35);
+        this.addSakuraTree3D(-7.15, -8.40, 0.92);
+        this.addSakuraTree3D(7.15, -8.40, 0.92);
+      } else if (archType === 'world3_windmill') {
+        // World 3 (Image 9): 3D Dutch Windmill & Red Farm Barn!
+        this.addWindmill3D(-2.35, -12.35);
+        this.addFarmBarn3D(2.35, -12.35);
         this.addMapleTree3D(-7.15, -8.35);
         this.addMapleTree3D(7.15, -8.35);
-      } else if (archStyle === 4) {
-        // Dutch Windmill Gardens & Flowering Shrubs
-        this.addWindmill3D(-2.45, -12.35);
-        this.addWindmill3D(2.45, -12.35);
-        this.addTree(-7.15, -8.35);
-        this.addTree(7.15, -8.35);
-      } else if (archStyle === 5) {
-        // Cyber Neon Crystal Obelisks
-        this.addCyberPylon3D(-2.45, -12.35, 0x38bdf8);
-        this.addCyberPylon3D(2.45, -12.35, 0xf472b6);
-        this.addPineTree3D(-7.15, -8.35, 0.92);
-        this.addPineTree3D(7.15, -8.35, 0.92);
-      } else if (archStyle === 6) {
-        // Alpine Snow-Tipped Pine Forest & Crystal Towers
-        this.addPineTree3D(-2.45, -12.35, 1.05);
-        this.addPineTree3D(2.45, -12.35, 1.05);
-        this.addCastleTurret3D(-7.15, -8.35, 0.85);
-        this.addCastleTurret3D(7.15, -8.35, 0.85);
+      } else if (archType === 'world4_graveyard') {
+        // World 4 (Images 10 & 11): 3D Haunted Ghost Barn, Stone Crypt & Glowing Jack-o'-Lantern Pumpkins!
+        this.addHauntedBarn3D(-2.35, -12.35);
+        this.addGraveyardCrypt3D(2.35, -12.35);
+        this.addJackOLantern3D(-7.05, -8.35);
+        this.addJackOLantern3D(7.05, -8.35);
+      } else if (archType === 'world4_carnival') {
+        // World 4 (Image 12): 3D Spooky Dark Carnival Tent & Glowing Neon Ferris Wheel!
+        this.addCarnivalTent3D(-2.35, -12.35);
+        this.addSpookyFerrisWheel3D(2.45, -12.35);
+        this.addJackOLantern3D(-7.05, -8.35);
+        this.addJackOLantern3D(7.05, -8.35);
+      } else if (archType === 'world4_crypt') {
+        // World 4 (Images 13 & 14): 3D Blood-Moon Gothic Crypts & Glowing Red Cyber Obelisks!
+        this.addGraveyardCrypt3D(-2.35, -12.35);
+        this.addGraveyardCrypt3D(2.35, -12.35);
+        this.addCyberPylon3D(-7.15, -8.35, 0xf43f5e);
+        this.addCyberPylon3D(7.15, -8.35, 0xf43f5e);
+      } else if (archType === 'world4_biohazard') {
+        // World 4 (Image 15): 3D Glowing Green Biohazard Specimen Tanks!
+        this.addBiohazardTank3D(-2.35, -12.35);
+        this.addBiohazardTank3D(2.35, -12.35);
+        this.addCyberPylon3D(-7.15, -8.35, 0x22c55e);
+        this.addCyberPylon3D(7.15, -8.35, 0x22c55e);
       } else {
-        // Grand Mixed Botanical Resort (Fountain + Torii Shrine + Palms)
-        this.addMarbleFountain3D(-2.45, -12.35);
-        this.addToriiGate3D(2.45, -12.35);
-        this.addPalmTree3D(-7.10, -8.35, 1);
-        this.addPalmTree3D(7.10, -8.35, -1);
+        // World 1 (Levels 1-100): Classic Park Landmarks
+        const archStyle = (lvl - 1) % 8;
+        if (archStyle === 0) {
+          this.addMarbleFountain3D(-2.45, -12.35);
+          this.addMarbleFountain3D(2.45, -12.35);
+          this.addTree(-7.15, -8.35);
+          this.addTree(7.15, -8.35);
+        } else if (archStyle === 1) {
+          this.addPalmTree3D(-2.45, -12.35, -1);
+          this.addPalmTree3D(2.45, -12.35, 1);
+          this.addPalmTree3D(-7.10, -8.35, 1);
+          this.addPalmTree3D(7.10, -8.35, -1);
+        } else if (archStyle === 2) {
+          this.addToriiGate3D(-2.45, -12.35);
+          this.addToriiGate3D(2.45, -12.35);
+          this.addSakuraTree3D(-7.15, -8.40, 0.88);
+          this.addSakuraTree3D(7.15, -8.40, 0.88);
+        } else if (archStyle === 3) {
+          this.addCastleTurret3D(-2.45, -12.35, 0.92);
+          this.addCastleTurret3D(2.45, -12.35, 0.92);
+          this.addMapleTree3D(-7.15, -8.35);
+          this.addMapleTree3D(7.15, -8.35);
+        } else if (archStyle === 4) {
+          this.addWindmill3D(-2.45, -12.35);
+          this.addWindmill3D(2.45, -12.35);
+          this.addTree(-7.15, -8.35);
+          this.addTree(7.15, -8.35);
+        } else if (archStyle === 5) {
+          this.addCyberPylon3D(-2.45, -12.35, 0x38bdf8);
+          this.addCyberPylon3D(2.45, -12.35, 0xf472b6);
+          this.addPineTree3D(-7.15, -8.35, 0.92);
+          this.addPineTree3D(7.15, -8.35, 0.92);
+        } else if (archStyle === 6) {
+          this.addPineTree3D(-2.45, -12.35, 1.05);
+          this.addPineTree3D(2.45, -12.35, 1.05);
+          this.addCastleTurret3D(-7.15, -8.35, 0.85);
+          this.addCastleTurret3D(7.15, -8.35, 0.85);
+        } else {
+          this.addMarbleFountain3D(-2.45, -12.35);
+          this.addToriiGate3D(2.45, -12.35);
+          this.addPalmTree3D(-7.10, -8.35, 1);
+          this.addPalmTree3D(7.10, -8.35, -1);
+        }
       }
 
       // 3. Mount the Pixar 3D Architectural Landmark Sprite DEAD-CENTER inside the Center Grass Island!
       this.syncLevelArchitecturePropsOverlay();
+    }
+
+    addCottageHouse3D(x, z) {
+      const group = new THREE.Group();
+      const wallMat = new THREE.MeshStandardMaterial({ color: 0xfef3c7, roughness: 0.55 });
+      const roofMat = new THREE.MeshStandardMaterial({ color: 0xea580c, roughness: 0.45 });
+      const doorMat = new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.65 });
+      const winMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
+
+      const walls = new THREE.Mesh(new THREE.BoxGeometry(1.18, 0.72, 0.92), wallMat);
+      walls.position.y = 0.36;
+      const roof = new THREE.Mesh(new THREE.ConeGeometry(0.95, 0.62, 4), roofMat);
+      roof.position.y = 1.02;
+      roof.rotation.y = Math.PI / 4;
+      const door = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.42, 0.06), doorMat);
+      door.position.set(0, 0.21, 0.46);
+      const winL = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.22, 0.06), winMat);
+      winL.position.set(-0.34, 0.42, 0.46);
+      const winR = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.22, 0.06), winMat);
+      winR.position.set(0.34, 0.42, 0.46);
+      group.add(walls, roof, door, winL, winR);
+      group.position.set(x, 0.02, z);
+      this.envGroup.add(group);
+    }
+
+    addStatueOfLiberty3D(x, z) {
+      const group = new THREE.Group();
+      const pedMat = new THREE.MeshStandardMaterial({ color: 0xd6d3d1, roughness: 0.6 });
+      const tealMat = new THREE.MeshStandardMaterial({ color: 0x2dd4bf, roughness: 0.4 });
+      const goldMat = new THREE.MeshBasicMaterial({ color: 0xfacc15 });
+
+      const base = new THREE.Mesh(new THREE.BoxGeometry(1.05, 0.36, 1.05), pedMat);
+      base.position.y = 0.18;
+      const ped = new THREE.Mesh(new THREE.BoxGeometry(0.76, 0.42, 0.76), pedMat);
+      ped.position.y = 0.56;
+      const robe = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.34, 0.85, 12), tealMat);
+      robe.position.y = 1.18;
+      const head = new THREE.Mesh(new THREE.SphereGeometry(0.19, 12, 10), tealMat);
+      head.position.y = 1.72;
+      const crown = new THREE.Mesh(new THREE.ConeGeometry(0.25, 0.20, 7), goldMat);
+      crown.position.y = 1.92;
+      const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.07, 0.55, 8), tealMat);
+      arm.position.set(0.24, 1.78, 0.08);
+      arm.rotation.z = -0.25;
+      const torch = new THREE.Mesh(new THREE.SphereGeometry(0.13, 10, 10), goldMat);
+      torch.position.set(0.32, 2.08, 0.08);
+      group.add(base, ped, robe, head, crown, arm, torch);
+      group.position.set(x, 0.02, z);
+      this.envGroup.add(group);
+    }
+
+    addHarborShop3D(x, z) {
+      const group = new THREE.Group();
+      const wallMat = new THREE.MeshStandardMaterial({ color: 0xe0f2fe, roughness: 0.5 });
+      const awningMat = new THREE.MeshStandardMaterial({ color: 0x2563eb, roughness: 0.4 });
+      const signMat = new THREE.MeshBasicMaterial({ color: 0xfacc15 });
+
+      const body = new THREE.Mesh(new THREE.BoxGeometry(1.32, 0.78, 0.92), wallMat);
+      body.position.y = 0.39;
+      const awning = new THREE.Mesh(new THREE.BoxGeometry(1.38, 0.16, 0.36), awningMat);
+      awning.position.set(0, 0.68, 0.44);
+      awning.rotation.x = 0.25;
+      const sign = new THREE.Mesh(new THREE.BoxGeometry(0.75, 0.22, 0.10), signMat);
+      sign.position.set(0, 0.90, 0.25);
+      group.add(body, awning, sign);
+      group.position.set(x, 0.02, z);
+      this.envGroup.add(group);
+    }
+
+    addSailboat3D(x, z) {
+      const group = new THREE.Group();
+      const hullMat = new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.55 });
+      const sailMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+
+      const hull = new THREE.Mesh(new THREE.BoxGeometry(0.95, 0.24, 0.46), hullMat);
+      hull.position.y = 0.12;
+      const sail = new THREE.Mesh(new THREE.ConeGeometry(0.38, 0.85, 3), sailMat);
+      sail.position.set(0, 0.65, 0);
+      group.add(hull, sail);
+      group.position.set(x, 0.02, z);
+      this.envGroup.add(group);
+    }
+
+    addLighthouse3D(x, z) {
+      const group = new THREE.Group();
+      const whiteMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.4 });
+      const redMat = new THREE.MeshStandardMaterial({ color: 0xdc2626, roughness: 0.4 });
+      const beaconMat = new THREE.MeshBasicMaterial({ color: 0xfef08a });
+
+      const s1 = new THREE.Mesh(new THREE.CylinderGeometry(0.36, 0.44, 0.42, 14), redMat);
+      s1.position.y = 0.21;
+      const s2 = new THREE.Mesh(new THREE.CylinderGeometry(0.30, 0.36, 0.42, 14), whiteMat);
+      s2.position.y = 0.63;
+      const s3 = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.30, 0.42, 14), redMat);
+      s3.position.y = 1.05;
+      const lantern = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.28, 12), beaconMat);
+      lantern.position.y = 1.40;
+      const dome = new THREE.Mesh(new THREE.ConeGeometry(0.28, 0.32, 14), redMat);
+      dome.position.y = 1.70;
+      group.add(s1, s2, s3, lantern, dome);
+      group.position.set(x, 0.02, z);
+      this.envGroup.add(group);
+    }
+
+    addGazeboPavilion3D(x, z) {
+      const group = new THREE.Group();
+      const baseMat = new THREE.MeshStandardMaterial({ color: 0xf1f5f9, roughness: 0.45 });
+      const roofMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, roughness: 0.4 });
+
+      const base = new THREE.Mesh(new THREE.CylinderGeometry(0.68, 0.74, 0.18, 8), baseMat);
+      base.position.y = 0.09;
+      for (let i = 0; i < 6; i++) {
+        const ang = (i / 6) * Math.PI * 2;
+        const col = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.06, 0.68, 8), baseMat);
+        col.position.set(Math.cos(ang) * 0.52, 0.48, Math.sin(ang) * 0.52);
+        group.add(col);
+      }
+      const roof = new THREE.Mesh(new THREE.ConeGeometry(0.82, 0.52, 8), roofMat);
+      roof.position.y = 1.08;
+      group.add(base, roof);
+      group.position.set(x, 0.02, z);
+      this.envGroup.add(group);
+    }
+
+    addPagodaTemple3D(x, z) {
+      const group = new THREE.Group();
+      const wallMat = new THREE.MeshStandardMaterial({ color: 0xfef2f2, roughness: 0.5 });
+      const roofMat = new THREE.MeshStandardMaterial({ color: 0xdc2626, roughness: 0.4 });
+      const goldMat = new THREE.MeshBasicMaterial({ color: 0xfacc15 });
+
+      for (let tier = 0; tier < 3; tier++) {
+        const s = 1 - tier * 0.22;
+        const yBase = tier * 0.45;
+        const box = new THREE.Mesh(new THREE.BoxGeometry(0.78 * s, 0.34, 0.78 * s), wallMat);
+        box.position.y = yBase + 0.17;
+        const roof = new THREE.Mesh(new THREE.ConeGeometry(0.75 * s, 0.26, 4), roofMat);
+        roof.position.y = yBase + 0.44;
+        roof.rotation.y = Math.PI / 4;
+        group.add(box, roof);
+      }
+      const spire = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.07, 0.35, 8), goldMat);
+      spire.position.y = 1.58;
+      group.add(spire);
+      group.position.set(x, 0.02, z);
+      this.envGroup.add(group);
+    }
+
+    addFarmBarn3D(x, z) {
+      const group = new THREE.Group();
+      const redMat = new THREE.MeshStandardMaterial({ color: 0xb91c1c, roughness: 0.55 });
+      const trimMat = new THREE.MeshBasicMaterial({ color: 0xf8fafc });
+      const siloMat = new THREE.MeshStandardMaterial({ color: 0xd6d3d1, roughness: 0.45 });
+
+      const barn = new THREE.Mesh(new THREE.BoxGeometry(1.15, 0.75, 0.88), redMat);
+      barn.position.y = 0.38;
+      const roof = new THREE.Mesh(new THREE.ConeGeometry(0.88, 0.55, 4), redMat);
+      roof.position.y = 0.98;
+      roof.rotation.y = Math.PI / 4;
+      const door = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.42, 0.06), trimMat);
+      door.position.set(0, 0.22, 0.44);
+      const silo = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.24, 1.05, 12), siloMat);
+      silo.position.set(0.72, 0.52, -0.10);
+      group.add(barn, roof, door, silo);
+      group.position.set(x, 0.02, z);
+      this.envGroup.add(group);
+    }
+
+    addHauntedBarn3D(x, z) {
+      const group = new THREE.Group();
+      const darkWoodMat = new THREE.MeshStandardMaterial({ color: 0x3b2314, roughness: 0.8 });
+      const roofMat = new THREE.MeshStandardMaterial({ color: 0x1e1b2e, roughness: 0.7 });
+      const glowMat = new THREE.MeshBasicMaterial({ color: 0xa3e635 });
+
+      const body = new THREE.Mesh(new THREE.BoxGeometry(1.22, 0.82, 0.92), darkWoodMat);
+      body.position.y = 0.41;
+      const roof = new THREE.Mesh(new THREE.ConeGeometry(0.96, 0.65, 4), roofMat);
+      roof.position.y = 1.08;
+      roof.rotation.y = Math.PI / 4;
+      const eyeL = new THREE.Mesh(new THREE.BoxGeometry(0.20, 0.16, 0.06), glowMat);
+      eyeL.position.set(-0.28, 0.54, 0.46);
+      eyeL.rotation.z = -0.22;
+      const eyeR = new THREE.Mesh(new THREE.BoxGeometry(0.20, 0.16, 0.06), glowMat);
+      eyeR.position.set(0.28, 0.54, 0.46);
+      eyeR.rotation.z = 0.22;
+      const mouth = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.26, 0.06), glowMat);
+      mouth.position.set(0, 0.20, 0.46);
+      group.add(body, roof, eyeL, eyeR, mouth);
+      group.position.set(x, 0.02, z);
+      this.envGroup.add(group);
+    }
+
+    addGraveyardCrypt3D(x, z) {
+      const group = new THREE.Group();
+      const stoneMat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.7 });
+      const darkMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.8 });
+      const glowMat = new THREE.MeshBasicMaterial({ color: 0x4ade80 });
+
+      const crypt = new THREE.Mesh(new THREE.BoxGeometry(0.95, 0.82, 0.78), stoneMat);
+      crypt.position.y = 0.41;
+      const roof = new THREE.Mesh(new THREE.ConeGeometry(0.75, 0.48, 4), darkMat);
+      roof.position.y = 1.02;
+      roof.rotation.y = Math.PI / 4;
+      const portal = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.48, 0.06), glowMat);
+      portal.position.set(0, 0.24, 0.40);
+      group.add(crypt, roof, portal);
+      group.position.set(x, 0.02, z);
+      this.envGroup.add(group);
+    }
+
+    addCarnivalTent3D(x, z) {
+      const group = new THREE.Group();
+      const tentMat = new THREE.MeshStandardMaterial({ color: 0x9333ea, roughness: 0.5 });
+      const roofMat = new THREE.MeshStandardMaterial({ color: 0xe11d48, roughness: 0.45 });
+      const goldMat = new THREE.MeshBasicMaterial({ color: 0xfacc15 });
+
+      const base = new THREE.Mesh(new THREE.CylinderGeometry(0.72, 0.78, 0.65, 12), tentMat);
+      base.position.y = 0.32;
+      const top = new THREE.Mesh(new THREE.ConeGeometry(0.78, 0.65, 12), roofMat);
+      top.position.y = 0.96;
+      const star = new THREE.Mesh(new THREE.OctahedronGeometry(0.16, 0), goldMat);
+      star.position.y = 1.38;
+      group.add(base, top, star);
+      group.position.set(x, 0.02, z);
+      this.envGroup.add(group);
+    }
+
+    addSpookyFerrisWheel3D(x, z) {
+      const group = new THREE.Group();
+      const postMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.5 });
+      const rimMat = new THREE.MeshBasicMaterial({ color: 0xf43f5e });
+      const podMat = new THREE.MeshBasicMaterial({ color: 0xa855f7 });
+
+      const stand = new THREE.Mesh(new THREE.ConeGeometry(0.55, 0.95, 4), postMat);
+      stand.position.y = 0.48;
+      const wheel = new THREE.Mesh(new THREE.TorusGeometry(0.58, 0.06, 8, 18), rimMat);
+      wheel.position.set(0, 1.05, 0.12);
+      group.add(stand, wheel);
+      for (let i = 0; i < 6; i++) {
+        const ang = (i / 6) * Math.PI * 2;
+        const pod = new THREE.Mesh(new THREE.SphereGeometry(0.11, 8, 8), podMat);
+        pod.position.set(Math.cos(ang) * 0.58, 1.05 + Math.sin(ang) * 0.58, 0.16);
+        group.add(pod);
+      }
+      group.position.set(x, 0.02, z);
+      this.envGroup.add(group);
+    }
+
+    addBiohazardTank3D(x, z) {
+      const group = new THREE.Group();
+      const capMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.35, metalness: 0.7 });
+      const liquidMat = new THREE.MeshBasicMaterial({ color: 0x22c55e });
+
+      const base = new THREE.Mesh(new THREE.CylinderGeometry(0.52, 0.56, 0.22, 14), capMat);
+      base.position.y = 0.11;
+      const glass = new THREE.Mesh(new THREE.CylinderGeometry(0.44, 0.44, 0.92, 14), liquidMat);
+      glass.position.y = 0.68;
+      const topCap = new THREE.Mesh(new THREE.CylinderGeometry(0.50, 0.52, 0.20, 14), capMat);
+      topCap.position.y = 1.24;
+      group.add(base, glass, topCap);
+      group.position.set(x, 0.02, z);
+      this.envGroup.add(group);
+    }
+
+    addJackOLantern3D(x, z) {
+      const group = new THREE.Group();
+      const pumpkinMat = new THREE.MeshStandardMaterial({ color: 0xea580c, roughness: 0.55 });
+      const stemMat = new THREE.MeshStandardMaterial({ color: 0x15803d, roughness: 0.7 });
+      const glowMat = new THREE.MeshBasicMaterial({ color: 0xfef08a });
+
+      const body = new THREE.Mesh(new THREE.SphereGeometry(0.52, 14, 12), pumpkinMat);
+      body.scale.set(1.12, 0.85, 1.05);
+      body.position.y = 0.42;
+      const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.10, 0.22, 8), stemMat);
+      stem.position.y = 0.86;
+      const eyeL = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.14, 0.08), glowMat);
+      eyeL.position.set(-0.18, 0.48, 0.48);
+      const eyeR = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.14, 0.08), glowMat);
+      eyeR.position.set(0.18, 0.48, 0.48);
+      const grin = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.12, 0.08), glowMat);
+      grin.position.set(0, 0.28, 0.48);
+      group.add(body, stem, eyeL, eyeR, grin);
+      group.position.set(x, 0.02, z);
+      this.envGroup.add(group);
     }
 
     addBusStopShelter3D(x, z, side = 1, lvl = 1) {

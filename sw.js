@@ -1,4 +1,4 @@
-﻿const CACHE_NAME = 'bus-rush-party-v96';
+﻿const CACHE_NAME = 'bus-rush-party-v97';
 const ASSETS = [
   '/',
   '/?play=1',
