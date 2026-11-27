@@ -16,7 +16,7 @@
     html, body { margin: 0; padding: 0; width: 100%; height: 100%; background: #2e0559; overflow: hidden; }
     #app-wrapper { width: 100%; height: 100%; background: #2e0559; }
   </style>
-  <link rel="stylesheet" href="styles.css?v=85" />
+  <link rel="stylesheet" href="styles.css?v=87" />
 </head>
 <body>
   <div id="app-wrapper">
@@ -46,22 +46,7 @@
             </div>
           </div>
 
-          <div class="portal-name-wrap" id="portal-input-section">
-            <label for="portal-player-name" class="portal-name-label">👤 ENTER YOUR PLAYER NAME (REQUIRED)</label>
-            <input
-              type="text"
-              id="portal-player-name"
-              class="portal-name-input"
-              placeholder="Type your name first..."
-              maxlength="16"
-              autocomplete="off"
-            />
-            <div id="portal-name-error" class="portal-name-error" style="display:none; color:#f87171; font-size:12px; font-weight:800; margin-top:6px;">
-              ⚠️ Pehle apna Name likhein!
-            </div>
-          </div>
-
-          <button type="button" class="btn-oneclick-dl disabled-gate" id="btn-oneclick-download">
+          <button type="button" class="btn-oneclick-dl" id="btn-oneclick-download">
             <span id="dl-btn-icon">📲</span>
             <span id="dl-btn-text">DOWNLOAD APP</span>
           </button>
@@ -112,128 +97,23 @@
           portal.classList.remove('hidden');
           window.BFP_PORTAL_ACTIVE = true;
 
-          var nameInput = document.getElementById('portal-player-name');
-          var errEl = document.getElementById('portal-name-error');
           var dlBtn = document.getElementById('btn-oneclick-download');
           var dlIcon = document.getElementById('dl-btn-icon');
           var dlText = document.getElementById('dl-btn-text');
-
-          if (nameInput) {
-            try {
-              var prevPortalName = localStorage.getItem('BFP_PLAYER_NAME') || '';
-              nameInput.value = (prevPortalName && prevPortalName !== 'player_60913') ? prevPortalName : '';
-            } catch (e) {
-              nameInput.value = '';
-            }
-          }
           var hasDownloadedOnce = false;
-
-          function persistPortalDeviceName(rawVal) {
-            var cleanVal = String(rawVal || '').trim().slice(0, 16);
-            if (!cleanVal) return;
-            var nowTs = Date.now();
-            var screenSig = Math.min(window.screen ? window.screen.width : 360, window.screen ? window.screen.height : 800) +
-              'x' + Math.max(window.screen ? window.screen.width : 360, window.screen ? window.screen.height : 800);
-            var ua = navigator.userAgent || '';
-            var osTag = /Android/i.test(ua) ? 'android' : (/iPhone|iPad|iPod/i.test(ua) ? 'ios' : (/Windows/i.test(ua) ? 'win' : 'web'));
-            var devLabel = /Android/i.test(ua) ? '📱 Android Device' : (/iPhone|iPad|iPod/i.test(ua) ? '📱 iPhone / iOS' : (/Windows/i.test(ua) ? '💻 Windows PC' : '📱 Web Device'));
-            var devId = 'dev_' + osTag + '_' + screenSig;
-
-            try {
-              localStorage.setItem('BFP_DEVICE_ID', devId);
-              localStorage.setItem('BFP_PLAYER_NAME', cleanVal);
-              localStorage.setItem('BFP_NAME_UPDATED_AT', String(nowTs));
-
-              var rawSave = localStorage.getItem('bus_fever_party_save_v1');
-              var parsedSave = rawSave ? JSON.parse(rawSave) : {};
-              parsedSave.playerName = cleanVal;
-              parsedSave.nameUpdatedAt = nowTs;
-              localStorage.setItem('bus_fever_party_save_v1', JSON.stringify(parsedSave));
-
-              var rawReg = localStorage.getItem('BFP_DEVICE_REGISTRY_V1');
-              var regObj = rawReg ? JSON.parse(rawReg) : {};
-              var prevEntry = regObj[devId] || {};
-              regObj[devId] = {
-                deviceId: devId,
-                name: cleanVal,
-                nameUpdatedAt: nowTs,
-                lvl: Math.max(1, Number(parsedSave.currentLevel) || Number(prevEntry.lvl) || 1),
-                pass: Math.max(2800, Number(parsedSave.passengersHelped) || Number(prevEntry.pass) || 2800),
-                deviceLabel: devLabel,
-                isMyDevice: true
-              };
-              localStorage.setItem('BFP_DEVICE_REGISTRY_V1', JSON.stringify(regObj));
-            } catch (e) {}
-
-            try {
-              if (window.__busFeverGame && typeof window.__busFeverGame.setPlayerNameEverywhere === 'function') {
-                window.__busFeverGame.setPlayerNameEverywhere(cleanVal, false);
-              }
-            } catch (e) {}
-
-            try {
-              fetch('/api/player-name', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  name: cleanVal,
-                  fromPortal: true,
-                  forceNameUpdate: true,
-                  nameUpdatedAt: nowTs,
-                  screenSig: screenSig,
-                  deviceLabel: devLabel
-                })
-              }).catch(function () {});
-            } catch (e) {}
-          }
-
-          function syncButtonsLockState() {
-            if (hasDownloadedOnce) return;
-            var hasName = nameInput && nameInput.value.trim().length > 0;
-            if (dlBtn) {
-              dlBtn.classList.toggle('disabled-gate', !hasName);
-            }
-            if (hasName && errEl) {
-              errEl.style.display = 'none';
-            }
-          }
-
-          if (nameInput) {
-            nameInput.addEventListener('input', syncButtonsLockState);
-            nameInput.addEventListener('change', function () {
-              if (nameInput.value.trim()) persistPortalDeviceName(nameInput.value.trim());
-            });
-            nameInput.addEventListener('blur', function () {
-              if (nameInput.value.trim()) persistPortalDeviceName(nameInput.value.trim());
-            });
-            syncButtonsLockState();
-          }
 
           if (dlBtn) {
             dlBtn.addEventListener('click', function (ev) {
               ev.preventDefault();
               if (hasDownloadedOnce) return;
 
-              var val = nameInput ? nameInput.value.trim() : '';
-              if (!val) {
-                if (errEl) errEl.style.display = 'block';
-                if (nameInput) {
-                  nameInput.focus();
-                  nameInput.style.borderColor = '#ff3b5c';
-                }
-                return;
-              }
-
               hasDownloadedOnce = true;
               dlBtn.disabled = true;
               dlBtn.style.animation = 'none';
-              if (nameInput) nameInput.disabled = true;
-
-              persistPortalDeviceName(val);
 
               var isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
               var a = document.createElement('a');
-              a.href = isMobile ? 'Bus-Rush-Party.apk?v=86' : 'Bus-Fever-Party.exe?v=86';
+              a.href = isMobile ? 'Bus-Rush-Party.apk?v=87' : 'Bus-Fever-Party.exe?v=87';
               a.download = isMobile ? 'Bus Rush Party.apk' : 'Bus Rush Party.exe';
               document.body.appendChild(a);
               a.click();
@@ -1018,9 +898,20 @@
                       style="background:linear-gradient(180deg,#22c55e,#16a34a); color:#fff; border:2px solid #bbf7d0; border-radius:10px; padding:7px 11px; font-weight:900; font-size:12px; cursor:pointer; box-shadow:0 3px 0 #15803d; white-space:nowrap;"
                     >✓ Save</button>
                   </div>
-                  <div class="prof-current-rank-pill" id="prof-current-rank-pill">
-                    <span id="prof-rank-emoji">🥉</span>
-                    <span id="prof-rank-label">Bronze Rank</span>
+                  <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                    <div class="prof-current-rank-pill" id="prof-current-rank-pill">
+                      <span id="prof-rank-emoji">🥉</span>
+                      <span id="prof-rank-label">Bronze Rank</span>
+                    </div>
+                    <button
+                      type="button"
+                      id="btn-open-auth-from-profile"
+                      style="display:inline-flex; align-items:center; gap:4px; background:linear-gradient(180deg,#3b82f6,#1d4ed8); color:#fff; border:1.5px solid #93c5fd; border-radius:999px; padding:4px 10px; font-size:11px; font-weight:900; cursor:pointer; box-shadow:0 2px 0 #1e3a8a;"
+                      title="Account & Login Options"
+                    >
+                      <span id="prof-auth-provider-badge">🎮 Guest</span>
+                      <span style="opacity:0.85;">• 🔑 Login</span>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -1206,6 +1097,98 @@
         </div>
       </div>
 
+      <!-- =================================================================
+           MODAL 9: IN-GAME LOGIN & GUEST ACCOUNT POPUP (After Loading Screen!)
+           ================================================================= -->
+      <div class="modal-backdrop" id="modal-auth-login" style="z-index:260;">
+        <div style="width:92%; max-width:360px; background:linear-gradient(180deg,#1e293b 0%,#0f172a 100%); border:3px solid #60a5fa; border-radius:26px; padding:20px 18px 18px; box-shadow:0 20px 50px rgba(0,0,0,0.75), inset 0 2px 0 rgba(255,255,255,0.2); color:#fff; position:relative; text-align:center; font-family:'Segoe UI',system-ui,sans-serif;">
+          <button type="button" class="comp-orange-close" id="btn-close-auth-login" style="position:absolute; top:-12px; right:-10px;">✕</button>
+
+          <img src="icon_192.png" alt="Bus Rush Party" style="width:62px; height:62px; border-radius:16px; border:2.5px solid #fde047; box-shadow:0 6px 16px rgba(0,0,0,0.45); margin-bottom:6px;" />
+          <div style="font-size:21px; font-weight:900; color:#fde047; text-shadow:0 2px 0 #000; letter-spacing:0.3px;">Bus Rush Party</div>
+          <div style="font-size:12px; font-weight:700; color:#93c5fd; margin-bottom:14px;">Save Your Level, Rank &amp; Coins on Device &amp; Cloud</div>
+
+          <!-- 1. GUEST PLAY SECTION (Enter Name + Guest Button) -->
+          <div style="background:rgba(15,23,42,0.75); border:1.5px solid rgba(148,163,184,0.35); border-radius:18px; padding:12px; margin-bottom:12px; text-align:left;">
+            <label for="auth-guest-name-input" style="display:block; font-size:11px; font-weight:900; color:#fde047; margin-bottom:6px; letter-spacing:0.4px;">👤 ENTER YOUR PLAYER NAME</label>
+            <input
+              type="text"
+              id="auth-guest-name-input"
+              maxlength="16"
+              placeholder="Type your name..."
+              autocomplete="off"
+              style="width:100%; box-sizing:border-box; background:#0f172a; color:#ffffff; border:2px solid #38bdf8; border-radius:12px; padding:10px 12px; font-size:15px; font-weight:900; outline:none; margin-bottom:6px;"
+            />
+            <div id="auth-guest-error" style="display:none; color:#f87171; font-size:11.5px; font-weight:800; margin-bottom:6px;">
+              ⚠️ Pehle apna Name likhein!
+            </div>
+            <button
+              type="button"
+              id="btn-auth-guest"
+              style="width:100%; background:linear-gradient(180deg,#22c55e 0%,#16a34a 100%); color:#fff; border:2px solid #bbf7d0; border-radius:14px; padding:11px 14px; font-size:15px; font-weight:900; cursor:pointer; box-shadow:0 4px 0 #15803d; display:flex; align-items:center; justify-content:center; gap:8px;"
+            >
+              <span>🎮</span>
+              <span>Play as Guest</span>
+            </button>
+            <div style="text-align:center; font-size:10.5px; color:#94a3b8; font-weight:700; margin-top:6px;">
+              ✓ Progress &amp; Rank auto-saved on this device
+            </div>
+          </div>
+
+          <!-- DIVIDER -->
+          <div style="display:flex; align-items:center; gap:8px; margin:10px 0;">
+            <div style="flex:1; height:1px; background:rgba(148,163,184,0.28);"></div>
+            <span style="font-size:10.5px; font-weight:900; color:#94a3b8; letter-spacing:0.6px;">OR CONNECT ACCOUNT</span>
+            <div style="flex:1; height:1px; background:rgba(148,163,184,0.28);"></div>
+          </div>
+
+          <!-- 2. GOOGLE & FACEBOOK LOGIN BUTTONS -->
+          <div style="display:flex; flex-direction:column; gap:9px;">
+            <button
+              type="button"
+              id="btn-auth-google"
+              style="width:100%; background:linear-gradient(180deg,#ffffff 0%,#f1f5f9 100%); color:#0f172a; border:2px solid #cbd5e1; border-radius:14px; padding:10px 14px; font-size:14px; font-weight:900; cursor:pointer; box-shadow:0 4px 0 #94a3b8; display:flex; align-items:center; justify-content:center; gap:10px;"
+            >
+              <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
+                <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+                <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+                <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+                <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+              </svg>
+              <span>Continue with Google</span>
+            </button>
+
+            <button
+              type="button"
+              id="btn-auth-facebook"
+              style="width:100%; background:linear-gradient(180deg,#1877F2 0%,#1d4ed8 100%); color:#ffffff; border:2px solid #93c5fd; border-radius:14px; padding:10px 14px; font-size:14px; font-weight:900; cursor:pointer; box-shadow:0 4px 0 #1e3a8a; display:flex; align-items:center; justify-content:center; gap:10px;"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="#ffffff" aria-hidden="true">
+                <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+              </svg>
+              <span>Continue with Facebook</span>
+            </button>
+          </div>
+
+          <!-- Inline Social Account Link Box (Opens when Google or Facebook is clicked) -->
+          <div id="auth-social-subform" style="display:none; margin-top:10px; background:rgba(30,58,138,0.55); border:1.5px solid #60a5fa; border-radius:14px; padding:10px; text-align:left;">
+            <div id="auth-social-title" style="font-size:12px; font-weight:900; color:#93c5fd; margin-bottom:6px;">🔵 Connect Google Account</div>
+            <input
+              type="email"
+              id="auth-social-email-input"
+              placeholder="Enter your email address..."
+              autocomplete="email"
+              style="width:100%; box-sizing:border-box; background:#0f172a; color:#fff; border:1.5px solid #60a5fa; border-radius:10px; padding:8px 10px; font-size:13px; font-weight:700; outline:none; margin-bottom:7px;"
+            />
+            <button
+              type="button"
+              id="btn-auth-social-confirm"
+              style="width:100%; background:linear-gradient(180deg,#3b82f6,#1d4ed8); color:#fff; border:1.5px solid #93c5fd; border-radius:10px; padding:8px 12px; font-size:13px; font-weight:900; cursor:pointer;"
+            >✓ Link Account &amp; Save Progress</button>
+          </div>
+        </div>
+      </div>
+
       <!-- High-Priority "Ads are not available right now" Toast Popup -->
       <div id="ads-unavailable-toast" class="ads-unavailable-toast">⚠️ Ads are not available right now</div>
 
@@ -1219,6 +1202,6 @@
   <!-- Local Bundled Three.js -->
   <script src="three.min.js"></script>
   <!-- Main Bus Rush Party 3D Engine -->
-  <script src="game.js?v=85"></script>
+  <script src="game.js?v=87"></script>
 </body>
 </html>

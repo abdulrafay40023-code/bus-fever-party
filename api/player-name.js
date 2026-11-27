@@ -1,9 +1,25 @@
-// Strictly per-device Real Player & Device Registry for Bus Fever Party.
-// 1 physical device = 1 single entry (keyed by hardware device key: IP + OS Family + Screen Signature).
-// Changing your name multiple times on the same device (via Download Portal or in-game Profile)
-// ALWAYS overwrites that device's single entry with the LATEST new name (never duplicates old names!).
+// High-Concurrency, Secure Device & Account Database for Bus Rush Party (Guest, Google & Facebook Users).
+// Strictly 1 entry per physical device (keyed by hardware device key: IP + OS Family + Screen Signature, or client deviceId).
+// Changing player name or switching between Guest / Google / Facebook ALWAYS overwrites that device's single record with the LATEST name, avatar, rank, level, and passengers!
 
-const deviceStore = global._bfpDeviceRegistryStoreV82 || (global._bfpDeviceRegistryStoreV82 = new Map());
+const deviceStore = global._bfpDeviceRegistryStoreV87 || (global._bfpDeviceRegistryStoreV87 = new Map());
+// Migrate any existing entries from V82 store if present in warm container
+if (global._bfpDeviceRegistryStoreV82 && deviceStore.size === 0) {
+  for (const [k, v] of global._bfpDeviceRegistryStoreV82.entries()) {
+    deviceStore.set(k, v);
+  }
+}
+
+let cachedSortedList = null;
+let cachedSortedAt = 0;
+
+function sanitizeText(raw, maxLen = 16) {
+  if (!raw) return '';
+  return String(raw)
+    .replace(/[<>"'`\\]/g, '')
+    .trim()
+    .slice(0, maxLen);
+}
 
 function detectOsFamily(ua) {
   if (/Android/i.test(ua)) return 'Android';
@@ -11,21 +27,6 @@ function detectOsFamily(ua) {
   if (/Windows/i.test(ua)) return 'Windows';
   if (/Macintosh|Mac OS X/i.test(ua)) return 'Mac';
   return 'Device';
-}
-
-function detectDeviceLabel(ua) {
-  if (/Android/i.test(ua)) {
-    const modelMatch = ua.match(/Android\s+[^;]+;\s*([^)]+)\)/i);
-    let model = modelMatch ? modelMatch[1].replace(/Build\/.*$/i, '').replace(/;\s*wv$/i, '').trim() : '';
-    if (model && model !== 'K' && model.length >= 2) {
-      return `📱 Android (${model.slice(0, 18)})`;
-    }
-    return '📱 Android Device';
-  }
-  if (/iPhone|iPad|iPod/i.test(ua)) return '📱 iPhone / iOS';
-  if (/Windows/i.test(ua)) return '💻 Windows PC';
-  if (/Macintosh|Mac OS X/i.test(ua)) return '💻 Mac';
-  return '📱 Mobile / Web';
 }
 
 function getHardwareDeviceKey(req, body) {
@@ -45,6 +46,19 @@ function getHardwareFallbackKey(req) {
   return `${ip}__${osFamily}`;
 }
 
+function getSortedDevicesSnapshot() {
+  const now = Date.now();
+  if (cachedSortedList && now - cachedSortedAt < 400) {
+    return cachedSortedList;
+  }
+  const all = Array.from(deviceStore.values());
+  all.sort((a, b) => ((b.lvl || 1) !== (a.lvl || 1) ? (b.lvl || 1) - (a.lvl || 1) : (b.pass || 0) - (a.pass || 0)));
+  // Cap response snapshot to Top 200 active players so payload stays ultra-fast even with millions of users
+  cachedSortedList = all.slice(0, 200);
+  cachedSortedAt = now;
+  return cachedSortedList;
+}
+
 module.exports = (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -55,7 +69,6 @@ module.exports = (req, res) => {
     return res.status(200).end();
   }
 
-  const ua = req.headers['user-agent'] || '';
   let body = req.body || {};
   if (typeof body === 'string') {
     try { body = JSON.parse(body); } catch (e) { body = {}; }
@@ -64,7 +77,7 @@ module.exports = (req, res) => {
   const primaryKey = getHardwareDeviceKey(req, body);
   const fallbackKey = getHardwareFallbackKey(req);
 
-  // Find existing entry for this physical device (migrate fallbackKey -> primaryKey if needed so 1 device = strictly 1 record)
+  // Locate existing record for this physical device (1 physical device = strictly 1 record)
   let existing = deviceStore.get(primaryKey) || deviceStore.get(fallbackKey) || null;
   if (existing && primaryKey !== fallbackKey && deviceStore.has(fallbackKey)) {
     deviceStore.delete(fallbackKey);
@@ -72,31 +85,39 @@ module.exports = (req, res) => {
   }
 
   if (req.method === 'POST') {
-    const rawName = body && body.name ? String(body.name).trim().slice(0, 16) : '';
+    const rawName = sanitizeText(body.name, 16);
     const isPlaceholder = !rawName || rawName === 'player_60913' || rawName === 'Player';
     const incomingTs = Number(body.nameUpdatedAt) || Date.now();
-    const incomingLvl = Math.max(1, Number(body.lvl) || (existing ? existing.lvl : 1) || 1);
+    const incomingLvl = Math.max(1, Math.min(5000, Number(body.lvl) || (existing ? existing.lvl : 1) || 1));
     const incomingPass = Math.max(2800, Number(body.pass) || (existing ? existing.pass : 2800) || 2800);
-    const detectedLabel = detectDeviceLabel(ua);
-    const incomingLabel =
-      detectedLabel.indexOf('(') !== -1
-        ? detectedLabel
-        : (body.deviceLabel ? String(body.deviceLabel).slice(0, 28) : detectedLabel);
+    const incomingCoins = Math.max(0, Number(body.coins) || (existing ? existing.coins : 250) || 250);
+    const incomingAvatarId = sanitizeText(body.avatarId, 32) || (existing && existing.avatarId) || 'aviator_girl';
+    const incomingProvider = ['guest', 'google', 'facebook'].includes(body.authProvider)
+      ? body.authProvider
+      : ((existing && existing.authProvider) || 'guest');
+    const incomingEmail = sanitizeText(body.authEmail, 64) || (existing && existing.authEmail) || '';
 
     if (!existing) {
+      // Prevent unbounded memory growth under extreme load (evict oldest entry if > 50,000 in-memory keys)
+      if (deviceStore.size > 50000) {
+        const oldestKey = deviceStore.keys().next().value;
+        if (oldestKey) deviceStore.delete(oldestKey);
+      }
       existing = {
         deviceKey: primaryKey,
         name: isPlaceholder ? 'player_60913' : rawName,
         nameUpdatedAt: isPlaceholder ? 0 : incomingTs,
+        authProvider: incomingProvider,
+        authEmail: incomingEmail,
+        avatarId: incomingAvatarId,
         lvl: incomingLvl,
         pass: incomingPass,
-        deviceLabel: incomingLabel,
+        coins: incomingCoins,
         updatedAt: Date.now()
       };
       deviceStore.set(primaryKey, existing);
     } else {
       existing.deviceKey = primaryKey;
-      // Always overwrite with the user's latest non-placeholder name on this device!
       if (!isPlaceholder) {
         if (
           body.fromPortal === true ||
@@ -110,47 +131,54 @@ module.exports = (req, res) => {
         }
       }
       if (!body.fromPortal) {
-        existing.lvl = Math.max(1, Number(body.lvl) || existing.lvl || 1);
+        existing.lvl = Math.max(1, Math.min(5000, Number(body.lvl) || existing.lvl || 1));
         existing.pass = Math.max(2800, Number(body.pass) || existing.pass || 2800);
+        existing.coins = Math.max(0, Number(body.coins) || existing.coins || 250);
       }
-      if (incomingLabel.indexOf('(') !== -1 || !existing.deviceLabel) {
-        existing.deviceLabel = incomingLabel;
-      }
+      if (incomingAvatarId) existing.avatarId = incomingAvatarId;
+      if (incomingProvider) existing.authProvider = incomingProvider;
+      if (incomingEmail) existing.authEmail = incomingEmail;
       existing.updatedAt = Date.now();
       deviceStore.set(primaryKey, existing);
     }
+    cachedSortedList = null; // Invalidate sorted snapshot cache
 
-    const devices = Array.from(deviceStore.values()).map((d) => ({
+    const topList = getSortedDevicesSnapshot();
+    const devices = topList.map((d) => ({
       deviceKey: d.deviceKey,
       name: d.name || 'Player',
       nameUpdatedAt: d.nameUpdatedAt || 0,
+      authProvider: d.authProvider || 'guest',
+      avatarId: d.avatarId || 'aviator_girl',
       lvl: d.lvl || 1,
       pass: d.pass || 2800,
-      deviceLabel: d.deviceLabel || '📱 Device',
       isMyDevice: d.deviceKey === existing.deviceKey
     }));
 
     return res.status(200).json({
       ok: true,
+      totalRegisteredDevices: deviceStore.size,
       name: existing.name,
       myDevice: existing,
       devices
     });
   }
 
-  // GET request: return current device's latest record + all registered real devices
-  const devices = Array.from(deviceStore.values()).map((d) => ({
+  const topList = getSortedDevicesSnapshot();
+  const devices = topList.map((d) => ({
     deviceKey: d.deviceKey,
     name: d.name || 'Player',
     nameUpdatedAt: d.nameUpdatedAt || 0,
+    authProvider: d.authProvider || 'guest',
+    avatarId: d.avatarId || 'aviator_girl',
     lvl: d.lvl || 1,
     pass: d.pass || 2800,
-    deviceLabel: d.deviceLabel || '📱 Device',
     isMyDevice: existing ? d.deviceKey === existing.deviceKey : false
   }));
 
   return res.status(200).json({
     ok: true,
+    totalRegisteredDevices: deviceStore.size,
     name: existing ? existing.name : '',
     myDevice: existing || null,
     devices

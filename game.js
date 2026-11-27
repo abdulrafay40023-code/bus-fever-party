@@ -2296,6 +2296,14 @@
         spinOverlayImg: loadImg('home_spin_overlay_hd.png?v=54'),
         playBtnImg: loadImg('home_play_btn_hd.png?v=54')
       };
+      // Preload 3D Victory ("Great Job!") assets at startup so the Win popup renders on frame 1 with zero delay!
+      if (!this._win3dAssets) {
+        this._win3dAssets = {
+          girlImg: loadImg('win_girl_clean_3d.png?v=63'),
+          bannerImg: loadImg('win_banner_text_3d.png?v=49'),
+          coinsImg: loadImg('win_coins_3d.png?v=49')
+        };
+      }
       return this._homeNewAssets;
     }
 
@@ -2670,20 +2678,50 @@
       if (inp && document.activeElement !== inp) {
         inp.value = cleanName;
       }
-      const portalInp = document.getElementById('portal-player-name');
-      if (portalInp && document.activeElement !== portalInp) {
-        portalInp.value = cleanName;
+      const authInp = document.getElementById('auth-guest-name-input');
+      if (authInp && document.activeElement !== authInp) {
+        authInp.value = cleanName;
       }
       const hudNameEl = document.getElementById('hud-player-name');
       if (hudNameEl) {
         hudNameEl.textContent = cleanName;
       }
+      this.syncAuthProviderBadgeUI();
 
       this.syncDevicePlayerRegistry(true, true);
       this.populateLeaderboard();
       if (showToast) {
-        this.showAdsUnavailableToast(`✅ Name Saved: ${cleanName}`);
+        this.showAdsUnavailableToast(`✅ Saved: ${cleanName}`);
       }
+    }
+
+    syncAuthProviderBadgeUI() {
+      const badgeEl = document.getElementById('prof-auth-provider-badge');
+      if (!badgeEl) return;
+      const prov = (this.profile && this.profile.authProvider) || 'guest';
+      if (prov === 'google') {
+        badgeEl.textContent = '🔵 Google';
+      } else if (prov === 'facebook') {
+        badgeEl.textContent = '📘 Facebook';
+      } else {
+        badgeEl.textContent = '🎮 Guest';
+      }
+    }
+
+    openAuthLoginModal() {
+      this.syncAuthProviderBadgeUI();
+      const authInp = document.getElementById('auth-guest-name-input');
+      const curName = this.getEffectivePlayerName();
+      if (authInp) {
+        authInp.value = (curName && curName !== 'player_60913') ? curName : '';
+      }
+      const errEl = document.getElementById('auth-guest-error');
+      if (errEl) errEl.style.display = 'none';
+      const subForm = document.getElementById('auth-social-subform');
+      if (subForm) subForm.style.display = 'none';
+      const emailInp = document.getElementById('auth-social-email-input');
+      if (emailInp) emailInp.value = (this.profile && this.profile.authEmail) || '';
+      this.openModal('modal-auth-login');
     }
 
     syncDevicePlayerRegistry(pushToServer = false, forceNameUpdate = false) {
@@ -2691,7 +2729,10 @@
       const myName = this.getEffectivePlayerName();
       const myLvl = Math.max(1, (this.profile && this.profile.currentLevel) || 1);
       const myPass = Math.max(2800, (this.profile && this.profile.passengersHelped) || (myLvl * 95));
-      const myLabel = this.getDevicePlatformLabel();
+      const myAvatarId = (this.profile && this.profile.selectedAvatarId) || 'cool_hoodie';
+      const myProvider = (this.profile && this.profile.authProvider) || 'guest';
+      const myEmail = (this.profile && this.profile.authEmail) || '';
+      const myCoins = Math.max(0, (this.profile && this.profile.coins) || 250);
       const myTs = (this.profile && this.profile.nameUpdatedAt) || Date.now();
       const FAKE_NAMES = new Set(['Ayesha K.', 'Hamza_Pro', 'ZainRacer', 'Sara_Bus', 'Bilal_99', 'MinaPlays']);
 
@@ -2720,9 +2761,10 @@
         deviceId: myDevId,
         name: myName,
         nameUpdatedAt: myTs,
+        authProvider: myProvider,
+        avatarId: myAvatarId,
         lvl: myLvl,
         pass: myPass,
-        deviceLabel: myLabel,
         isMyDevice: true
       };
 
@@ -2749,9 +2791,12 @@
             name: myName,
             nameUpdatedAt: myTs,
             forceNameUpdate: !!forceNameUpdate,
+            authProvider: myProvider,
+            authEmail: myEmail,
+            avatarId: myAvatarId,
             lvl: myLvl,
             pass: myPass,
-            deviceLabel: myLabel,
+            coins: myCoins,
             screenSig: this.getDeviceScreenSig()
           })
         })
@@ -2760,7 +2805,6 @@
             if (!data || !data.ok) return;
             let nameChangedFromDevice = false;
 
-            // If user entered a newer name on the Download Portal on this same physical device, adopt it!
             if (data.myDevice && data.myDevice.name && data.myDevice.name !== 'player_60913') {
               const srvName = String(data.myDevice.name).trim();
               const srvTs = Number(data.myDevice.nameUpdatedAt) || 0;
@@ -2788,9 +2832,10 @@
               deviceId: myDevId,
               name: finalMyName,
               nameUpdatedAt: (this.profile && this.profile.nameUpdatedAt) || Date.now(),
+              authProvider: (this.profile && this.profile.authProvider) || 'guest',
+              avatarId: (this.profile && this.profile.selectedAvatarId) || 'cool_hoodie',
               lvl: Math.max(1, (this.profile && this.profile.currentLevel) || 1),
               pass: Math.max(2800, (this.profile && this.profile.passengersHelped) || (myLvl * 95)),
-              deviceLabel: (data.myDevice && data.myDevice.deviceLabel) ? data.myDevice.deviceLabel : myLabel,
               isMyDevice: true
             };
 
@@ -2805,9 +2850,10 @@
                   deviceId: remKey,
                   name: d.name || 'Player',
                   nameUpdatedAt: d.nameUpdatedAt || 0,
+                  authProvider: d.authProvider || 'guest',
+                  avatarId: d.avatarId || 'aviator_girl',
                   lvl: Math.max(1, Number(d.lvl) || 1),
                   pass: Math.max(2800, Number(d.pass) || 2800),
-                  deviceLabel: d.deviceLabel || '📱 Device',
                   isMyDevice: false
                 };
               });
@@ -3083,7 +3129,10 @@
 
       setTimeout(() => {
         this.flushPendingRewardPopups();
-      }, 480);
+        if (!animateBoardingFromPrevLevel && !this.profile.authCompletedV87) {
+          this.openAuthLoginModal();
+        }
+      }, 320);
 
       // If returning from winning a level, play the exact Upper-Deck Passenger Boarding & Level-Up sequence (Video 03:27 - 03:34)!
       if (animateBoardingFromPrevLevel) {
@@ -4319,6 +4368,7 @@
       const rk = this.getRankForLevel(myLvl);
 
       this.syncHomeRankBadgesOnly();
+      this.syncAuthProviderBadgeUI();
 
       // 1. Top Profile Stats & Custom 3D Rank Badge
       const lvlEl = document.getElementById('prof-stat-level');
@@ -4534,6 +4584,7 @@
 
     populateLeaderboard() {
       this.syncHomeRankBadgesOnly();
+      this.syncAuthProviderBadgeUI();
       const lockedEl = document.getElementById('leaderboard-locked-msg');
       const list = document.getElementById('home-ranks-list');
       if (lockedEl) lockedEl.style.display = 'none';
@@ -4552,7 +4603,8 @@
       const myName = this.getEffectivePlayerName();
       const myLvl = Math.max(1, (this.profile && this.profile.currentLevel) || 1);
       const myPass = Math.max(2800, (this.profile && this.profile.passengersHelped) || (myLvl * 95));
-      const myLabel = this.getDevicePlatformLabel();
+      const myAvatarId = (this.profile && this.profile.selectedAvatarId) || 'cool_hoodie';
+      const myProvider = (this.profile && this.profile.authProvider) || 'guest';
       const FAKE_NAMES = new Set(['Ayesha K.', 'Hamza_Pro', 'ZainRacer', 'Sara_Bus', 'Bilal_99', 'MinaPlays']);
 
       const entriesMap = new Map();
@@ -4564,21 +4616,23 @@
           entriesMap.set(k, {
             deviceId: k,
             name: String(d.name || 'Player').trim(),
+            avatarId: d.avatarId || 'aviator_girl',
+            authProvider: d.authProvider || 'guest',
             lvl: Math.max(1, Number(d.lvl) || 1),
             pass: Math.max(2800, Number(d.pass) || 2800),
-            deviceLabel: d.deviceLabel || '📱 Device',
             isMe: false
           });
         });
       }
 
-      // Strictly 1 entry for the current user's physical device, always with their latest new name!
+      // Strictly 1 entry per physical device, always showing the player's latest name, profile avatar, rank, passengers & level!
       entriesMap.set(myDevId, {
         deviceId: myDevId,
         name: myName,
+        avatarId: myAvatarId,
+        authProvider: myProvider,
         lvl: myLvl,
         pass: myPass,
-        deviceLabel: (regObj && regObj[myDevId] && regObj[myDevId].deviceLabel) ? regObj[myDevId].deviceLabel : myLabel,
         isMe: true
       });
 
@@ -4587,13 +4641,14 @@
 
       list.innerHTML = '';
 
-      // Top Real Device Counter & 1-Tap Name Edit Banner
+      // Top Clean Header (NO device model/OS shown — just Player Rank Summary & Quick Name Edit!)
+      const myRankObj = this.getRankForLevel(myLvl);
       const devBanner = document.createElement('div');
-      devBanner.style.cssText = 'display:flex; align-items:center; justify-content:space-between; background:rgba(15,23,42,0.55); border:1.5px solid rgba(96,165,250,0.45); border-radius:14px; padding:8px 12px; margin-bottom:4px; color:#e2e8f0; font-size:12px; font-weight:800;';
+      devBanner.style.cssText = 'display:flex; align-items:center; justify-content:space-between; background:rgba(15,23,42,0.58); border:1.5px solid rgba(96,165,250,0.45); border-radius:14px; padding:8px 12px; margin-bottom:4px; color:#e2e8f0; font-size:12px; font-weight:800;';
       devBanner.innerHTML = `
-        <div style="display:flex; align-items:center; gap:6px;">
-          <span>📱 Downloaded Devices: <strong style="color:#fde047;">${realDevicePlayers.length}</strong></span>
-          <span style="color:#93c5fd; font-size:11px;">(${myLabel})</span>
+        <div style="display:flex; align-items:center; gap:7px;">
+          <span>🏆 Active Players: <strong style="color:#fde047;">${realDevicePlayers.length}</strong></span>
+          <span style="color:#93c5fd; font-size:11px;">• ${myRankObj.name} Rank</span>
         </div>
         <button type="button" id="btn-lb-edit-name" style="background:linear-gradient(180deg,#3b82f6,#1d4ed8); color:#fff; border:1.5px solid #93c5fd; border-radius:999px; padding:4px 10px; font-size:11px; font-weight:900; cursor:pointer;">✎ Edit Name</button>
       `;
@@ -4614,40 +4669,49 @@
         });
       }
 
+      const renderRowAvatarHtml = (r) => {
+        if (r.isMe && this.profile && this.profile.selectedAvatarId === 'custom_photo' && this.profile.customPhotoDataUrl) {
+          return `<img src="${this.profile.customPhotoDataUrl}" alt="${r.name}" style="width:100%;height:100%;object-fit:cover;display:block;" />`;
+        }
+        const avSpec = PROFILE_AVATARS.find((a) => a.id === (r.avatarId || 'cool_hoodie')) || PROFILE_AVATARS[1] || PROFILE_AVATARS[0];
+        return getAvatarVisualHtml(avSpec);
+      };
+
       realDevicePlayers.forEach((r, idx) => {
         const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `#${idx + 1}`;
         const rRank = this.getRankForLevel(r.lvl);
         const passStr = (r.pass || 0) >= 1000 ? `${((r.pass || 0) / 1000).toFixed(1)}K` : `${r.pass || 0}`;
         const displayName = r.isMe ? `${r.name} (You)` : r.name;
+        const avatarInnerHtml = renderRowAvatarHtml(r);
+
         const row = document.createElement('div');
         row.className = 'rank-row' + (r.isMe ? ' me' : '');
         row.innerHTML = `
-          <div style="display:flex; align-items:center; gap:8px; min-width:0;">
-            <span style="min-width:26px; font-weight:900; color:#b45309;">${medal}</span>
-            ${getRankEmblemHtml(rRank.id, 24)}
-            <div style="display:flex; flex-direction:column; min-width:0;">
-              <span style="font-weight:900; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${displayName}</span>
-              <span style="font-size:10px; font-weight:800; color:#64748b;">${r.deviceLabel || '📱 Device'}</span>
+          <div style="display:flex; align-items:center; gap:8px; min-width:0; flex:1;">
+            <span style="min-width:24px; font-weight:900; color:#b45309; text-align:center;">${medal}</span>
+            <div style="width:36px; height:36px; border-radius:10px; overflow:hidden; border:2px solid #f59e0b; background:#1e293b; flex-shrink:0; position:relative; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 5px rgba(0,0,0,0.22);">
+              ${avatarInnerHtml}
+            </div>
+            <div style="display:flex; flex-direction:column; min-width:0; flex:1;">
+              <span style="font-weight:900; font-size:13.5px; color:#0f172a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${displayName}</span>
+              <span style="font-size:10.5px; font-weight:800; color:#475569;">${rRank.name} Rank • Lv.${r.lvl}</span>
             </div>
           </div>
-          <div style="display:flex; align-items:center; gap:5px; flex-shrink:0;">
-            <span style="background:#fef3c7; color:#b45309; padding:3px 7px; border-radius:999px; font-size:11px; font-weight:900;">🧍‍♂️ ${passStr}</span>
-            <span style="background:#dbeafe; color:#1d4ed8; padding:3px 9px; border-radius:999px; font-size:12px; font-weight:900;">Lv.${r.lvl}</span>
+          <div style="display:flex; align-items:center; gap:6px; flex-shrink:0;">
+            <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; min-width:48px; background:rgba(241,245,249,0.85); border:1px solid #cbd5e1; border-radius:10px; padding:2px 6px;">
+              ${getRankEmblemHtml(rRank.id, 22)}
+              <span style="font-size:9px; font-weight:900; color:#334155; line-height:1.1; margin-top:1px; white-space:nowrap;">${rRank.name}</span>
+            </div>
+            <span style="background:#fef3c7; color:#b45309; padding:4px 7px; border-radius:999px; font-size:11px; font-weight:900;">🧍‍♂️ ${passStr}</span>
+            <span style="background:#dbeafe; color:#1d4ed8; padding:4px 8px; border-radius:999px; font-size:11.5px; font-weight:900;">Lv.${r.lvl}</span>
           </div>
         `;
         if (r.isMe) {
           row.style.cursor = 'pointer';
-          row.title = 'Tap to edit your player name';
+          row.title = 'Tap to view your profile & edit name';
           row.addEventListener('click', () => {
             try { sound.playButtonClick(); } catch (e) {}
             this.openPlayerHub('profile');
-            setTimeout(() => {
-              const inp = document.getElementById('profile-name-input');
-              if (inp) {
-                inp.focus();
-                inp.select();
-              }
-            }, 120);
           });
         }
         list.appendChild(row);
@@ -8639,27 +8703,14 @@
         (this.totalDepartedThisLevel || 0) > 0;
 
       if (allVehiclesGone && totalInFlight === 0) {
-        if (this._winCheckTimer) return;
-        this._winCheckTimer = setTimeout(() => {
-          this._winCheckTimer = null;
-          if (this.isLevelOver) return;
-          const anyParked2 = this.slots.some((s) => s.vehicle !== null);
-          if (
-            this.jumpingPassengers.length > 0 ||
-            this.lotVehicles.length > 0 ||
-            this.movingVehicles.length > 0 ||
-            this.departingVehicles.length > 0 ||
-            anyParked2
-          ) return;
-          this._triggerWin();
-        }, 180);
+        this._triggerWin();
       }
     }
 
     _triggerWin() {
       if (this.isLevelOver) return;
-      if (this.lotVehicles.length > 0 || this.movingVehicles.length > 0 || this.departingVehicles.length > 0) {
-        return; // Guard: Never trigger win if vehicles are still active
+      if (this.lotVehicles.length > 0 || this.movingVehicles.length > 0 || this.slots.some((s) => s.vehicle !== null)) {
+        return; // Guard: Never trigger win if vehicles are still in lot, moving to slots, or parked
       }
       this.isLevelOver = true;
       if (this._extratimeInterval) {
@@ -8736,7 +8787,7 @@
       if (
         this.lotVehicles.length > 0 ||
         this.movingVehicles.length > 0 ||
-        this.departingVehicles.length > 0 ||
+        this.slots.some((s) => s.vehicle !== null) ||
         this.totalBusesSentThisLevel === 0 ||
         !this.isLevelOver
       ) {
@@ -9817,10 +9868,26 @@
           dv.smokeTimer = 0.075;
           this.spawnExhaustSmoke(dv.mesh.position.x - 0.9, dv.mesh.position.z);
         }
+        // Trigger "Great Job!" win popup smoothly right as the final bus unfolds its wings and lifts off (ft >= 0.24s) — zero waiting!
+        if (
+          !dv._winTriggeredEarly &&
+          ft >= 0.24 &&
+          !this.isLevelOver &&
+          this.lotVehicles.length === 0 &&
+          this.movingVehicles.length === 0 &&
+          this.jumpingPassengers.length === 0 &&
+          !this.slots.some((s) => s.vehicle !== null)
+        ) {
+          dv._winTriggeredEarly = true;
+          this.totalDepartedThisLevel = (this.totalDepartedThisLevel || 0) + 1;
+          this._triggerWin();
+        }
         if (dv.mesh.position.x > 13.5 || dv.mesh.position.y > 12.0) {
           this.vehiclesGroup.remove(dv.mesh);
           this.departingVehicles.splice(i, 1);
-          this.totalDepartedThisLevel = (this.totalDepartedThisLevel || 0) + 1;
+          if (!dv._winTriggeredEarly) {
+            this.totalDepartedThisLevel = (this.totalDepartedThisLevel || 0) + 1;
+          }
           this.checkLevelWinCondition();
         }
       }
@@ -9956,6 +10023,7 @@
       if (homeBusLvl) homeBusLvl.textContent = `LEVEL ${this.profile.currentLevel || this.levelNum}`;
 
       this.syncHomeRankBadgesOnly();
+      this.syncAuthProviderBadgeUI();
 
       this._lastShownPassCount = -1;
       this.updatePassengerCountOnly();
@@ -10605,6 +10673,83 @@
         if (inp && inp.value.trim()) {
           this.setPlayerNameEverywhere(inp.value.trim(), true);
         }
+      }, 220);
+
+      bindTap('btn-open-auth-from-profile', () => {
+        try { sound.playButtonClick(); } catch (err) {}
+        this.openAuthLoginModal();
+      }, 220);
+
+      // In-Game Login & Guest Account Modal Handlers (#modal-auth-login)
+      let pendingSocialProvider = 'google';
+      const completeAuthLogin = (provider, emailVal = '') => {
+        try { sound.playButtonClick(); } catch (err) {}
+        const authInp = document.getElementById('auth-guest-name-input');
+        const errEl = document.getElementById('auth-guest-error');
+        let rawName = authInp ? authInp.value.trim() : '';
+        if (!rawName && emailVal) {
+          rawName = emailVal.split('@')[0].slice(0, 16);
+          if (authInp) authInp.value = rawName;
+        }
+        if (!rawName) {
+          if (errEl) errEl.style.display = 'block';
+          if (authInp) authInp.focus();
+          return;
+        }
+        if (errEl) errEl.style.display = 'none';
+        this.profile.authProvider = provider;
+        if (emailVal) this.profile.authEmail = emailVal.trim().slice(0, 64);
+        this.profile.authCompletedV87 = true;
+        this.setPlayerNameEverywhere(rawName, false);
+        this.syncAuthProviderBadgeUI();
+        this.closeModal('modal-auth-login');
+        const label = provider === 'google' ? '🔵 Google Account Linked' : (provider === 'facebook' ? '📘 Facebook Account Linked' : '🎮 Guest Profile Saved');
+        this.showAdsUnavailableToast(`✅ ${label}: ${rawName}`);
+      };
+
+      bindTap('btn-auth-guest', () => {
+        completeAuthLogin('guest');
+      }, 220);
+
+      bindTap('btn-auth-google', () => {
+        try { sound.playButtonClick(); } catch (err) {}
+        pendingSocialProvider = 'google';
+        const subForm = document.getElementById('auth-social-subform');
+        const titleEl = document.getElementById('auth-social-title');
+        const emailInp = document.getElementById('auth-social-email-input');
+        if (titleEl) titleEl.textContent = '🔵 Connect Google Account (Saves Progress to Cloud)';
+        if (subForm) subForm.style.display = 'block';
+        if (emailInp) emailInp.focus();
+      }, 220);
+
+      bindTap('btn-auth-facebook', () => {
+        try { sound.playButtonClick(); } catch (err) {}
+        pendingSocialProvider = 'facebook';
+        const subForm = document.getElementById('auth-social-subform');
+        const titleEl = document.getElementById('auth-social-title');
+        const emailInp = document.getElementById('auth-social-email-input');
+        if (titleEl) titleEl.textContent = '📘 Connect Facebook Account (Saves Progress to Cloud)';
+        if (subForm) subForm.style.display = 'block';
+        if (emailInp) emailInp.focus();
+      }, 220);
+
+      bindTap('btn-auth-social-confirm', () => {
+        const emailInp = document.getElementById('auth-social-email-input');
+        const emailVal = emailInp ? emailInp.value.trim() : '';
+        completeAuthLogin(pendingSocialProvider, emailVal);
+      }, 220);
+
+      bindTap('btn-close-auth-login', () => {
+        try { sound.playButtonClick(); } catch (err) {}
+        const authInp = document.getElementById('auth-guest-name-input');
+        if (authInp && authInp.value.trim()) {
+          this.profile.authCompletedV87 = true;
+          this.setPlayerNameEverywhere(authInp.value.trim(), false);
+        } else if (this.getEffectivePlayerName() !== 'player_60913') {
+          this.profile.authCompletedV87 = true;
+          this.saveGameProgress(false);
+        }
+        this.closeModal('modal-auth-login');
       }, 220);
 
       const saveAndCloseProfile = () => {
