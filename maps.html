@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Bus Rush Party — Level 1 to 5000 Visual Map Atlas (v97)</title>
+  <title>Bus Rush Party — Level 1 to 5000 Visual Map Atlas (v99)</title>
   <style>
     * { box-sizing: border-box; }
     body {
@@ -74,10 +74,10 @@
     }
     .grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
       gap: 16px;
       padding: 18px;
-      max-width: 1640px;
+      max-width: 1680px;
       margin: 0 auto;
     }
     .card {
@@ -122,7 +122,7 @@
     }
     .map-canvas {
       width: 100%;
-      aspect-ratio: 340 / 500;
+      aspect-ratio: 360 / 520;
       display: block;
     }
   </style>
@@ -130,7 +130,7 @@
 <body>
   <div class="topbar">
     <div class="topbar-row">
-      <div class="brand">🚌 Bus Rush Party — All Level Maps Atlas (Levels 1 – 1500 & up to 5000)</div>
+      <div class="brand">🚌 Bus Rush Party — Full Scenic Level Maps Atlas (Levels 1 – 1500 & up to 5000)</div>
       <div class="controls">
         <button class="btn" id="btn-prev">◀ Prev 50</button>
         <span id="page-label" style="font-weight:900; font-size:14px; color:#e2e8f0; min-width:140px; text-align:center;">Levels 1 – 50</span>
@@ -142,8 +142,8 @@
     </div>
     <div class="world-tabs">
       <button class="btn w1" onclick="window.jumpToPage(1)">🌍 World 1: Lv 1–100 (Classic Plaza • 48–56 Buses)</button>
-      <button class="btn w2" onclick="window.jumpToPage(101)">🗽 World 2: Lv 101–500 (Cottage & Liberty Harbor • Boy/Fortress/Crab)</button>
-      <button class="btn w3" onclick="window.jumpToPage(501)">🏮 World 3: Lv 501–1000 (Lighthouse Fountain, Pagoda Lotus & Windmill)</button>
+      <button class="btn w2" onclick="window.jumpToPage(101)">🗽 World 2: Lv 101–500 (Cottage Meadow & Statue of Liberty Harbor)</button>
+      <button class="btn w3" onclick="window.jumpToPage(501)">🏮 World 3: Lv 501–1000 (Lighthouse Fountain, Pagoda Lotus & Windmill Farm)</button>
       <button class="btn w4" onclick="window.jumpToPage(1001)">💀 World 4: Lv 1001–1500 (Horror Graveyard, Dragon, Skull, Spider, Scorpion & Mecha)</button>
     </div>
   </div>
@@ -195,34 +195,34 @@
       function getWorldThemePreview(lvl, arch) {
         const era = LevelGen.getWorldEraForLevel(lvl);
         if (era === 1) {
-          return { badge: 'W1 • Classic Plaza', topCol: '#588c32', apronCol: null, lotCol: '#abb7cc', roadCol: '#414757', isHorror: false, era: 1 };
+          return { badge: 'W1 • Classic Plaza', topCol: '#588c32', apronCol: null, lotCol: '#abb7cc', roadCol: '#414757', isHorror: false, era: 1, scene: 'plaza' };
         }
         if (era === 2) {
           const isCottage = arch === 0 || (arch !== 2 && arch !== 3 && lvl % 2 === 1);
           if (isCottage) {
-            return { badge: 'W2 • Cottage Meadow', topCol: '#61a336', apronCol: '#e8cfa8', lotCol: '#7eb344', roadCol: '#4e5668', isHorror: false, era: 2, sub: 'cottage' };
+            return { badge: 'W2 • Cottage Meadow', topCol: '#61a336', apronCol: '#e8cfa8', lotCol: '#7eb344', roadCol: '#4e5668', isHorror: false, era: 2, scene: 'cottage' };
           }
-          return { badge: 'W2 • Liberty Harbor', topCol: '#2589c2', apronCol: '#e5d9c8', lotCol: '#a5b1c4', roadCol: '#454d5e', isHorror: false, era: 2, sub: 'harbor' };
+          return { badge: 'W2 • Liberty Harbor', topCol: '#2589c2', apronCol: '#e5d9c8', lotCol: '#a5b1c4', roadCol: '#454d5e', isHorror: false, era: 2, scene: 'harbor' };
         }
         if (era === 3) {
           if (arch === 5 || (arch !== 7 && arch !== 8 && lvl % 3 === 1)) {
-            return { badge: 'W3 • Lighthouse Bay', topCol: '#2188bf', apronCol: '#edd7b7', lotCol: '#adb8ca', roadCol: '#3f4859', isHorror: false, era: 3, sub: 'lighthouse' };
+            return { badge: 'W3 • Lighthouse Bay', topCol: '#2188bf', apronCol: '#edd7b7', lotCol: '#adb8ca', roadCol: '#3f4859', isHorror: false, era: 3, scene: 'lighthouse' };
           }
           if (arch === 7 || (arch !== 8 && lvl % 3 === 2)) {
-            return { badge: 'W3 • Pagoda Waterfall', topCol: '#398a55', apronCol: '#e2d5c4', lotCol: '#a9b4c7', roadCol: '#3d4355', isHorror: false, era: 3, sub: 'pagoda' };
+            return { badge: 'W3 • Pagoda Waterfall', topCol: '#398a55', apronCol: '#e2d5c4', lotCol: '#a9b4c7', roadCol: '#3d4355', isHorror: false, era: 3, scene: 'pagoda' };
           }
-          return { badge: 'W3 • Dutch Windmill', topCol: '#659930', apronCol: '#e8d2b0', lotCol: '#aeb8c8', roadCol: '#414555', isHorror: false, era: 3, sub: 'windmill' };
+          return { badge: 'W3 • Dutch Windmill', topCol: '#659930', apronCol: '#e8d2b0', lotCol: '#79ae40', roadCol: '#414555', isHorror: false, era: 3, scene: 'windmill' };
         }
         if (arch === 9 || arch === 10 || (arch !== 18 && arch !== 20 && arch !== 21 && arch !== 11 && lvl % 4 === 1)) {
-          return { badge: 'W4 • Haunted Graveyard', topCol: '#162722', apronCol: null, lotCol: '#282c3d', roadCol: '#171a24', isHorror: true, era: 4, sub: 'graveyard' };
+          return { badge: 'W4 • Haunted Graveyard', topCol: '#1e3329', apronCol: '#cbb598', lotCol: arch === 9 ? '#36543b' : '#282c3d', roadCol: '#1b1e27', isHorror: true, era: 4, scene: 'graveyard' };
         }
         if (arch === 18 || (arch !== 20 && arch !== 21 && arch !== 11 && lvl % 4 === 2)) {
-          return { badge: 'W4 • Spooky Carnival', topCol: '#1e1433', apronCol: null, lotCol: '#29233d', roadCol: '#181423', isHorror: true, era: 4, sub: 'carnival' };
+          return { badge: 'W4 • Spooky Carnival', topCol: '#1e1433', apronCol: null, lotCol: '#29233d', roadCol: '#181423', isHorror: true, era: 4, scene: 'carnival' };
         }
         if (arch === 20 || arch === 21 || (arch !== 11 && lvl % 4 === 3)) {
-          return { badge: 'W4 • Blood-Moon Crypt', topCol: '#28121a', apronCol: null, lotCol: '#2d2532', roadCol: '#1b151e', isHorror: true, era: 4, sub: 'crypt' };
+          return { badge: 'W4 • Blood-Moon Crypt', topCol: '#28121a', apronCol: null, lotCol: '#2d2532', roadCol: '#1b151e', isHorror: true, era: 4, scene: 'crypt' };
         }
-        return { badge: 'W4 • Biohazard Mecha Lab', topCol: '#13242d', apronCol: null, lotCol: '#232f3a', roadCol: '#131b22', isHorror: true, era: 4, sub: 'biohazard' };
+        return { badge: 'W4 • Biohazard Mecha Lab', topCol: '#13242d', apronCol: null, lotCol: '#232f3a', roadCol: '#131b22', isHorror: true, era: 4, scene: 'biohazard' };
       }
 
       function getTrackPoint(shape, rawTheta) {
@@ -272,7 +272,7 @@
 
       let LevelGen = null;
       async function loadLevelGen() {
-        const res = await fetch('game.js?v=98');
+        const res = await fetch('game.js?v=99');
         const code = await res.text();
         const start = code.indexOf('class LevelGenerator');
         const end = code.indexOf('// MAIN 3D GAME CONTROLLER');
@@ -287,8 +287,35 @@
       let currentStart = 1;
       const PAGE_SIZE = 50;
 
+      function drawTree(ctx, x, y, r, col) {
+        ctx.fillStyle = '#5c3a21';
+        ctx.fillRect(x - r * 0.22, y + r * 0.3, r * 0.44, r * 0.7);
+        ctx.fillStyle = col;
+        ctx.beginPath();
+        ctx.ellipse(x, y, r, r * 0.88, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      function drawPumpkin(ctx, x, y, r) {
+        ctx.fillStyle = '#ea580c';
+        ctx.beginPath();
+        ctx.ellipse(x, y, r, r * 0.8, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#fef08a';
+        ctx.fillRect(x - r * 0.45, y - r * 0.25, r * 0.32, r * 0.32);
+        ctx.fillRect(x + r * 0.15, y - r * 0.25, r * 0.32, r * 0.32);
+        ctx.fillRect(x - r * 0.4, y + r * 0.2, r * 0.8, r * 0.2);
+      }
+
+      function drawTombstone(ctx, x, y, w, h) {
+        ctx.fillStyle = '#64748b';
+        ctx.beginPath();
+        ctx.roundRect(x - w * 0.5, y - h * 0.5, w, h, [w * 0.5, w * 0.5, 2, 2]);
+        ctx.fill();
+      }
+
       function drawLevelCanvas(canvas, lvl) {
-        const W = 340, H = 500;
+        const W = 360, H = 520;
         canvas.width = W;
         canvas.height = H;
         const ctx = canvas.getContext('2d');
@@ -297,17 +324,87 @@
         const shape = getTrackShape(lvl);
         const theme = getWorldThemePreview(lvl, arch);
 
-        // Background zones
+        // 1. Background zones & scenic landmarks
         ctx.fillStyle = theme.topCol;
         ctx.fillRect(0, 0, W, 168);
         if (theme.apronCol) {
           ctx.fillStyle = theme.apronCol;
-          ctx.fillRect(0, 48, W, 120);
+          ctx.fillRect(0, 82, W, 86);
         }
         ctx.fillStyle = theme.roadCol;
         ctx.fillRect(0, 168, W, 50);
         ctx.fillStyle = theme.lotCol;
         ctx.fillRect(0, 218, W, H - 218);
+
+        if (!theme.isHorror && theme.scene !== 'cottage' && theme.scene !== 'windmill') {
+          ctx.fillStyle = '#65a338';
+          ctx.fillRect(0, 218, 16, H - 218);
+          ctx.fillRect(W - 16, 218, 16, H - 218);
+          ctx.fillRect(0, H - 20, W, 20);
+        }
+
+        const midX = W * 0.5;
+        if (theme.scene === 'cottage') {
+          ctx.fillStyle = '#7dd3fc'; ctx.fillRect(0, 0, W, 38);
+          ctx.fillStyle = '#fef3c7'; ctx.fillRect(midX - 30, 26, 60, 40);
+          ctx.fillStyle = '#ea580c';
+          ctx.beginPath(); ctx.moveTo(midX - 38, 28); ctx.lineTo(midX, 4); ctx.lineTo(midX + 38, 28); ctx.fill();
+          drawTree(ctx, 36, 40, 17, '#4d9c2a');
+          drawTree(ctx, W - 36, 40, 17, '#4d9c2a');
+        } else if (theme.scene === 'harbor') {
+          ctx.fillStyle = '#93c5fd'; ctx.fillRect(0, 0, W, 32);
+          ctx.fillStyle = '#2589c2'; ctx.fillRect(0, 32, W, 50);
+          ctx.fillStyle = '#d6d3d1'; ctx.fillRect(midX - 42, 48, 42, 22);
+          ctx.fillStyle = '#2dd4bf'; ctx.fillRect(midX - 30, 18, 18, 30);
+          ctx.fillStyle = '#facc15'; ctx.beginPath(); ctx.arc(midX - 8, 10, 5, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = '#e0f2fe'; ctx.fillRect(midX + 36, 30, 60, 38);
+          ctx.fillStyle = '#2563eb'; ctx.fillRect(midX + 34, 26, 64, 10);
+        } else if (theme.scene === 'lighthouse') {
+          ctx.fillStyle = '#dc2626'; ctx.fillRect(88, 8, 15, 42);
+          ctx.fillStyle = '#ffffff'; ctx.fillRect(88, 20, 15, 12);
+          ctx.fillStyle = '#2563eb'; ctx.beginPath(); ctx.ellipse(midX, 24, 32, 16, 0, Math.PI, 0); ctx.fill();
+          ctx.fillStyle = '#f1f5f9'; ctx.fillRect(midX - 28, 24, 56, 38);
+          drawTree(ctx, 26, 44, 20, '#f472b6');
+          drawTree(ctx, W - 26, 44, 20, '#f472b6');
+        } else if (theme.scene === 'pagoda') {
+          ctx.fillStyle = '#2dd4bf'; ctx.fillRect(50, 10, 165, 58);
+          ctx.fillStyle = '#e0f2fe'; ctx.fillRect(midX - 20, 6, 18, 36);
+          ctx.fillStyle = '#dc2626'; ctx.fillRect(W - 76, 22, 48, 36);
+          drawTree(ctx, 32, 38, 22, '#f472b6');
+        } else if (theme.scene === 'windmill') {
+          ctx.fillStyle = '#d97706'; ctx.fillRect(midX - 18, 18, 36, 46);
+          ctx.strokeStyle = '#fef3c7'; ctx.lineWidth = 3.5;
+          ctx.beginPath(); ctx.moveTo(midX - 30, 4); ctx.lineTo(midX + 30, 52); ctx.moveTo(midX + 30, 4); ctx.lineTo(midX - 30, 52); ctx.stroke();
+          ctx.fillStyle = '#dc2626'; ctx.fillRect(W - 74, 24, 42, 34);
+          drawTree(ctx, 14, 340, 13, '#15803d');
+          drawTree(ctx, W - 14, 340, 13, '#15803d');
+        } else if (theme.scene === 'graveyard') {
+          ctx.fillStyle = '#e2e8f0'; ctx.beginPath(); ctx.arc(88, 22, 16, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = '#7c2d12'; ctx.fillRect(midX - 36, 22, 72, 44);
+          ctx.fillStyle = '#4ade80'; ctx.beginPath(); ctx.arc(midX, 34, 8, 0, Math.PI * 2); ctx.fill();
+          drawPumpkin(ctx, 38, H - 24, 12);
+          drawPumpkin(ctx, W - 38, H - 24, 12);
+          drawTombstone(ctx, 18, H - 30, 18, 26);
+          drawTombstone(ctx, W - 18, H - 30, 18, 26);
+        } else if (theme.scene === 'carnival') {
+          ctx.fillStyle = '#9333ea'; ctx.fillRect(midX - 34, 24, 68, 42);
+          ctx.fillStyle = '#e11d48'; ctx.beginPath(); ctx.arc(midX - 12, 38, 5, 0, Math.PI * 2); ctx.arc(midX + 12, 38, 5, 0, Math.PI * 2); ctx.fill();
+          ctx.strokeStyle = '#f43f5e'; ctx.lineWidth = 2.5;
+          ctx.beginPath(); ctx.arc(W - 46, 34, 24, 0, Math.PI * 2); ctx.stroke();
+          drawPumpkin(ctx, 36, H - 24, 12);
+          drawPumpkin(ctx, W - 36, H - 24, 12);
+        } else if (theme.scene === 'crypt') {
+          ctx.fillStyle = '#f43f5e'; ctx.beginPath(); ctx.arc(W - 85, 24, 18, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = '#1e293b'; ctx.fillRect(midX - 36, 14, 72, 52);
+          drawPumpkin(ctx, 36, H - 24, 12);
+          drawTombstone(ctx, W - 24, H - 28, 18, 26);
+        } else if (theme.scene === 'biohazard') {
+          ctx.fillStyle = '#22c55e';
+          ctx.fillRect(18, 14, 36, 62);
+          ctx.fillRect(W - 54, 14, 36, 62);
+          ctx.fillStyle = '#eab308';
+          ctx.beginPath(); ctx.arc(midX, 38, 13, 0, Math.PI * 2); ctx.fill();
+        }
 
         const scX = W / 14.0;
         const scZ = (H - 16) / 25.5;
@@ -337,20 +434,22 @@
           ctx.fill();
         };
         if (theme.era === 3 && arch === 5) {
-          drawPool(0, 5.55, 0.78, 0.78, '#38bdf8');
+          ctx.fillStyle = '#e2e8f0';
+          ctx.fillRect(px(-1.15), py(4.40), 2.30 * scX, 2.30 * scZ);
+          drawPool(0, 5.55, 0.65, 0.65, '#38bdf8');
         } else if (theme.era === 3 && arch === 7) {
           drawPool(-4.45, 0.95, 0.75, 0.65, '#2dd4bf');
           drawPool(4.45, 0.95, 0.75, 0.65, '#2dd4bf');
           drawPool(-4.45, 10.25, 0.75, 0.65, '#2dd4bf');
           drawPool(4.45, 10.25, 0.75, 0.65, '#2dd4bf');
         } else if (theme.era === 3 && arch === 8) {
-          drawPool(-5.15, 5.55, 0.58, 1.35, '#2dd4bf');
-          drawPool(5.15, 5.55, 0.58, 1.35, '#2dd4bf');
+          drawPool(-5.25, 5.55, 0.62, 1.40, '#2dd4bf');
+          drawPool(5.25, 5.55, 0.62, 1.40, '#2dd4bf');
         } else if (theme.era === 4 && arch === 9) {
-          drawPool(-4.45, 0.95, 0.72, 0.62, '#22c55e');
-          drawPool(4.45, 0.95, 0.72, 0.62, '#22c55e');
-          drawPool(-4.45, 10.25, 0.72, 0.62, '#22c55e');
-          drawPool(4.45, 10.25, 0.72, 0.62, '#22c55e');
+          drawPool(-4.55, 0.95, 0.72, 0.62, '#22c55e');
+          drawPool(4.55, 0.95, 0.72, 0.62, '#22c55e');
+          drawPool(-4.55, 10.25, 0.72, 0.62, '#22c55e');
+          drawPool(4.55, 10.25, 0.72, 0.62, '#22c55e');
         }
 
         // Track loop
@@ -358,14 +457,16 @@
         for (let i = 0; i <= 64; i++) {
           const th = (i / 64) * Math.PI * 2;
           const pt = getTrackPoint(shape, th);
-          if (i === 0) ctx.moveTo(px(pt.x), py(pt.z));
-          else ctx.lineTo(px(pt.x), py(pt.z));
+          const tx = px(pt.x) * 0.72 + W * 0.14;
+          const ty = py(pt.z) * 0.55 + 48;
+          if (i === 0) ctx.moveTo(tx, ty);
+          else ctx.lineTo(tx, ty);
         }
         ctx.closePath();
-        ctx.lineWidth = 24;
+        ctx.lineWidth = 20;
         ctx.strokeStyle = theme.isHorror ? '#64748b' : '#eef3fb';
         ctx.stroke();
-        ctx.lineWidth = 20;
+        ctx.lineWidth = 16;
         ctx.strokeStyle = theme.roadCol;
         ctx.stroke();
 
@@ -373,49 +474,60 @@
         for (let k = 0; k < 32; k++) {
           const th = (k / 32) * Math.PI * 2;
           const pt = getTrackPoint(shape, th);
+          const tx = px(pt.x) * 0.72 + W * 0.14;
+          const ty = py(pt.z) * 0.55 + 48;
           const r = d.ovalRingSlots[k];
           ctx.fillStyle = r ? (COLORS_HEX[r.color] || '#1565d8') : '#64748b';
           ctx.beginPath();
-          ctx.arc(px(pt.x), py(pt.z), 4.5, 0, Math.PI * 2);
+          ctx.arc(tx, ty, 4.0, 0, Math.PI * 2);
           ctx.fill();
         }
 
         // 8 Boarding slots
         const slotXs = [-5.85, -4.18, -2.51, -0.84, 0.84, 2.51, 4.18, 5.85];
-        ctx.strokeStyle = 'rgba(226,232,240,0.65)';
-        ctx.lineWidth = 1.4;
+        ctx.strokeStyle = 'rgba(250,204,21,0.75)';
+        ctx.lineWidth = 1.5;
         slotXs.forEach((sx) => {
           ctx.strokeRect(px(sx) - 9, py(-3.22) - 14, 18, 28);
         });
 
-        // Vehicles (normal rounded buses)
+        // 3D-Styled Rounded Buses (with tires, roof, windshield & directional arrow!)
         d.vehicles.forEach((v) => {
           const vx = px(v.x);
           const vz = py(v.z);
-          const vSc = v.scale || 1.0;
-          const vw = (v.type === 'bus' ? 1.16 : 1.06) * vSc * scX;
-          const vh = (v.type === 'bus' ? 2.44 : 1.76) * vSc * scZ;
+          const vSc = v.scale || 0.52;
+          const vw = (v.type === 'bus' ? 1.22 : 1.08) * vSc * scX;
+          const vh = (v.type === 'bus' ? 2.48 : 1.78) * vSc * scZ;
           const rotY = LevelGen.getVehicleRotY(v);
 
           ctx.save();
           ctx.translate(vx, vz);
           ctx.rotate(-rotY);
+
+          // Tires
+          ctx.fillStyle = '#18181b';
+          ctx.fillRect(-vw * 0.58, -vh * 0.34, vw * 1.16, vh * 0.18);
+          ctx.fillRect(-vw * 0.58, vh * 0.16, vw * 1.16, vh * 0.18);
+
+          // Body
           ctx.fillStyle = COLORS_HEX[v.color] || '#1565d8';
           ctx.beginPath();
-          ctx.roundRect(-vw * 0.5, -vh * 0.5, vw, vh, 4);
+          ctx.roundRect(-vw * 0.5, -vh * 0.5, vw, vh, 3.5);
           ctx.fill();
+          ctx.fillStyle = 'rgba(15,23,42,0.55)';
+          ctx.fillRect(-vw * 0.38, -vh * 0.44, vw * 0.76, vh * 0.16);
           ctx.lineWidth = 1.2;
           ctx.strokeStyle = '#ffffff';
           ctx.stroke();
 
           // Arrow
-          const aLen = vh * 0.27;
+          const aLen = vh * 0.25;
           ctx.beginPath();
-          ctx.moveTo(0, aLen);
-          ctx.lineTo(0, -aLen);
-          ctx.moveTo(-3.2, -aLen + 4);
-          ctx.lineTo(0, -aLen);
-          ctx.lineTo(3.2, -aLen + 4);
+          ctx.moveTo(0, aLen + 1.5);
+          ctx.lineTo(0, -aLen + 1.5);
+          ctx.moveTo(-3.2, -aLen + 5.0);
+          ctx.lineTo(0, -aLen + 1.5);
+          ctx.lineTo(3.2, -aLen + 5.0);
           ctx.lineWidth = 1.8;
           ctx.strokeStyle = '#ffffff';
           ctx.stroke();

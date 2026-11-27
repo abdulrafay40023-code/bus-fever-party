@@ -860,22 +860,19 @@
 
       let slots = this.buildDistinctFormationArchetype(archetype, levelNum, rand);
 
-      // Dynamic parking-lot vehicle scale so all 48-58 vehicles fit cleanly inside the formation silhouette with 0 overlap!
-      const lotScale = slots.length >= 52 ? 0.65 : slots.length >= 46 ? 0.68 : 0.72;
+      // Clean non-overlapping parking-lot scale so 48-58 buses keep 100% of their exact hand-crafted formation coordinates
+      // (bus length = 2.49 * 0.43 = 1.07, car length = 1.79 * 0.55 = 0.98) without pushing each other out of shape!
       slots.forEach((s) => {
-        s.scale = lotScale;
+        s.scale = s.type === 'bus' ? 0.50 : 0.62;
       });
 
       // Continuous per-level positional & directional mutation ("buses ki assign location change krtey rehna koj alg alg hee")
-      // so every single level across 1..5000 has a unique arrangement while preserving recognizable figure silhouettes!
+      // while strictly preserving crisp, straight, distortion-free formation silhouettes (zero shear slant!).
       const isUprightFigure = (archetype === 0 || archetype === 3 || archetype === 6 || archetype === 10 || archetype === 11 || archetype === 17 || archetype === 18 || archetype === 20 || archetype === 21);
       if (subCycle > 0) {
         const mirrorX = (subCycle % 2 === 1);
         const mirrorZ = !isUprightFigure && (subCycle % 4 >= 2);
         const transposeXZ = !isUprightFigure && (subCycle % 5 === 3);
-        const shearX = ((subCycle % 3) - 1) * 0.055;
-        const scalePulseX = 1.0 + (((subCycle + levelNum) % 3) - 1) * 0.03;
-        const scalePulseZ = 1.0 + (((subCycle * 2 + levelNum) % 3) - 1) * 0.03;
 
         slots.forEach((s) => {
           if (transposeXZ) {
@@ -900,13 +897,11 @@
             else if (s.dir === 'DOWN') s.dir = 'UP';
             if (s.tilt) s.tilt = -s.tilt;
           }
-          s.x = Number((s.x * scalePulseX + (s.z - 5.58) * shearX).toFixed(2));
-          s.z = Number((5.58 + (s.z - 5.58) * scalePulseZ).toFixed(2));
         });
       }
 
-      // Ensure base formation has crisp, open spacing while preserving its exact visual silhouette
-      this.enforceCleanVehicleSpacing(slots, 0.14);
+      // Gentle micro-gap enforcement (0.04) so vehicles never overlap while staying at their exact formation coordinates
+      this.enforceCleanVehicleSpacing(slots, 0.04);
 
       // Strict Vehicle Capacities requested by User:
       // - Small Bus / Van (type !== 'bus'): strictly 16 passengers (4 full rows of 4)
@@ -2004,8 +1999,8 @@
 
       relax(130, effGap);
 
-      // Prune if any physical overlap or tight cluster remains
-      const strictGap = Math.max(0.08, effGap * 0.75);
+      // Prune ONLY if a true physical overlap remains after relaxation (never delete separated formation vehicles!)
+      const strictGap = Math.min(0.01, effGap * 0.5);
       let pruneGuard = 0;
       while (vehicles.length > 14 && pruneGuard < 10) {
         pruneGuard++;
@@ -2193,7 +2188,7 @@
         }
       });
 
-      this.enforceCleanVehicleSpacing(vehicles, 0.18);
+      this.enforceCleanVehicleSpacing(vehicles, 0.04);
       this.ensureNoCyclicDeadlock(vehicles);
 
       // Tighten outer puzzle locks AFTER final spacing so 88%-92% of vehicles start locked inside multi-layer knots!
@@ -2558,7 +2553,7 @@
           loadingSplash.style.backgroundImage = "url('loading_bg.jpg?v=83')";
         }
         // Auto-upgrade live webview if an older HTML shell was served from Android disk cache (strictly guarded against reload loops!)
-        const CLIENT_BUILD_TAG = 'bus-rush-party-v98';
+        const CLIENT_BUILD_TAG = 'bus-rush-party-v99';
         const checkServerBuild = () => {
           if (location.protocol !== 'http:' && location.protocol !== 'https:') return;
           fetch('/sw.js?t=' + Date.now(), { cache: 'no-store' })
@@ -5671,10 +5666,10 @@
           name: 'Dutch Windmill & Lotus Farm',
           worldEra: 3,
           farGrassHex: 0x61942e,
-          farLotHex: 0xa6b1c2,
+          farLotHex: 0x72a83c,
           grassStops: ['#7ab040', '#659930', '#518022'],
           boardwalkApron: ['#e8d2b0', '#d6bc96'],
-          lotStops: ['#bdc6d4', '#aeb8c8', '#9fa9ba'],
+          lotStops: ['#88be4e', '#79ae40', '#699c34'],
           roadStops: ['#4b4f61', '#414555', '#373b49'],
           curbTop: '#fefce8',
           curbSide: '#a2abbc',
@@ -5690,13 +5685,14 @@
           name: 'Haunted Ghost Barn & Graveyard',
           worldEra: 4,
           isHorror: true,
-          farGrassHex: 0x152420,
-          farLotHex: 0x232736,
-          grassStops: ['#1e332d', '#162722', '#101d19'],
-          lotStops: ['#32374a', '#282c3d', '#202432'],
-          roadStops: ['#1c202b', '#171a24', '#12151d'],
-          curbTop: '#64748b',
-          curbSide: '#334155',
+          farGrassHex: 0x1e3329,
+          farLotHex: 0x2e4736,
+          grassStops: ['#284235', '#1e3329', '#15241d'],
+          boardwalkApron: ['#cbb598', '#b59d7e'],
+          lotStops: ['#426347', '#36543b', '#2b4530'],
+          roadStops: ['#2b303c', '#232732', '#1b1e27'],
+          curbTop: '#94a3b8',
+          curbSide: '#475569',
           dappleRgba: 'rgba(74, 222, 128, 0.24)',
           archType: 'world4_graveyard'
         },
@@ -5959,24 +5955,52 @@
         };
 
         if (theme.worldEra === 3 && archetype === 5) {
-          // Image 7: Central Fountain Pool in the middle of the Triple Rectangular Courtyard!
-          drawLotWaterPool(0, 5.55, 0.78, 0.78, '#38bdf8', '#f1f5f9', false);
+          // Image 7: Square Stone Central Courtyard with Flowerbeds & Circular Turquoise Fountain!
+          ctx.save();
+          ctx.fillStyle = '#e2e8f0';
+          ctx.fillRect(px(-1.15), py(4.40), 2.30 * S, 2.30 * S);
+          ctx.strokeStyle = '#94a3b8';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(px(-1.15), py(4.40), 2.30 * S, 2.30 * S);
+          [[-0.82, 4.72], [0.82, 4.72], [-0.82, 6.38], [0.82, 6.38]].forEach(([fx, fz]) => {
+            ctx.fillStyle = '#22c55e';
+            ctx.beginPath(); ctx.arc(px(fx), py(fz), 8, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = '#f472b6';
+            ctx.beginPath(); ctx.arc(px(fx), py(fz), 4, 0, Math.PI * 2); ctx.fill();
+          });
+          ctx.restore();
+          drawLotWaterPool(0, 5.55, 0.65, 0.65, '#38bdf8', '#f8fafc', false);
         } else if (theme.worldEra === 3 && archetype === 7) {
-          // Image 8: 4 Corner Turquoise Lotus Ponds!
-          drawLotWaterPool(-4.45, 0.95, 0.78, 0.68, '#2dd4bf', '#cbd5e1', true);
-          drawLotWaterPool(4.45, 0.95, 0.78, 0.68, '#2dd4bf', '#cbd5e1', true);
-          drawLotWaterPool(-4.45, 10.25, 0.78, 0.68, '#2dd4bf', '#cbd5e1', true);
-          drawLotWaterPool(4.45, 10.25, 0.78, 0.68, '#2dd4bf', '#cbd5e1', true);
+          // Image 8: 4 Corner Raised Stone-Bordered Turquoise Lotus Ponds!
+          drawLotWaterPool(-4.45, 0.95, 0.78, 0.68, '#2dd4bf', '#e2e8f0', true);
+          drawLotWaterPool(4.45, 0.95, 0.78, 0.68, '#2dd4bf', '#e2e8f0', true);
+          drawLotWaterPool(-4.45, 10.25, 0.78, 0.68, '#2dd4bf', '#e2e8f0', true);
+          drawLotWaterPool(4.45, 10.25, 0.78, 0.68, '#2dd4bf', '#e2e8f0', true);
         } else if (theme.worldEra === 3 && archetype === 8) {
-          // Image 9: Twin Left & Right Semicircular Lotus Ponds!
-          drawLotWaterPool(-5.15, 5.55, 0.62, 1.35, '#2dd4bf', '#cbd5e1', true);
-          drawLotWaterPool(5.15, 5.55, 0.62, 1.35, '#2dd4bf', '#cbd5e1', true);
+          // Image 9: Twin Left & Right Semicircular Stone-Bordered Lotus Ponds!
+          drawLotWaterPool(-5.25, 5.55, 0.65, 1.45, '#2dd4bf', '#cbd5e1', true);
+          drawLotWaterPool(5.25, 5.55, 0.65, 1.45, '#2dd4bf', '#cbd5e1', true);
         } else if (theme.worldEra === 4 && archetype === 9) {
-          // Image 10: 4 Corner Glowing Green Haunted Swamp Pools!
-          drawLotWaterPool(-4.45, 0.95, 0.75, 0.65, '#22c55e', '#334155', false);
-          drawLotWaterPool(4.45, 0.95, 0.75, 0.65, '#22c55e', '#334155', false);
-          drawLotWaterPool(-4.45, 10.25, 0.75, 0.65, '#22c55e', '#334155', false);
-          drawLotWaterPool(4.45, 10.25, 0.75, 0.65, '#22c55e', '#334155', false);
+          // Image 10: 4 Corner Glowing Green Haunted Swamp Pools & Center Gargoyle Pedestal!
+          drawLotWaterPool(-4.55, 0.95, 0.75, 0.65, '#22c55e', '#475569', true);
+          drawLotWaterPool(4.55, 0.95, 0.75, 0.65, '#22c55e', '#475569', true);
+          drawLotWaterPool(-4.55, 10.25, 0.75, 0.65, '#22c55e', '#475569', true);
+          drawLotWaterPool(4.55, 10.25, 0.75, 0.65, '#22c55e', '#475569', true);
+          ctx.save();
+          ctx.fillStyle = '#475569';
+          ctx.fillRect(px(-0.55), py(5.00), 1.10 * S, 1.10 * S);
+          ctx.fillStyle = '#22c55e';
+          ctx.beginPath(); ctx.arc(px(0), py(5.55), 7, 0, Math.PI * 2); ctx.fill();
+          ctx.restore();
+        } else if (theme.id === 'w4_biohazard_lab') {
+          // Image 15: Biohazard Lab Yellow-and-Black Hazard Warning Stripes along Left/Right/Bottom borders!
+          ctx.save();
+          for (let hz = 0.5; hz <= 11.5; hz += 0.7) {
+            ctx.fillStyle = Math.round(hz * 2) % 2 === 0 ? '#eab308' : '#0f172a';
+            ctx.fillRect(px(-6.85), py(hz), 0.35 * S, 0.35 * S);
+            ctx.fillRect(px(6.50), py(hz), 0.35 * S, 0.35 * S);
+          }
+          ctx.restore();
         }
 
         // 3. Multi-Pass Seamless Connected Road Network (U-Feeders + Dynamic Track Shape + Gate + Boarding Bay)
@@ -6162,6 +6186,10 @@
         this.addCottageHouse3D(2.35, -12.35);
         this.addTree(-7.15, -8.35);
         this.addTree(7.15, -8.35);
+        this.addTree(-7.25, 3.50);
+        this.addTree(7.25, 3.50);
+        this.addTree(-7.25, 9.20);
+        this.addTree(7.25, 9.20);
       } else if (archType === 'world2_liberty_harbor') {
         // World 2 (Images 3 & 4): 3D Turquoise Statue of Liberty with Golden Torch + Harbor Shop & Sailboats!
         this.addStatueOfLiberty3D(-2.25, -12.35);
@@ -6172,8 +6200,12 @@
         // World 3 (Image 7): 3D Seaside Gazebo Pavilion & Red-White Striped Lighthouse Tower!
         this.addGazeboPavilion3D(-2.35, -12.35);
         this.addLighthouse3D(2.45, -12.35);
-        this.addPalmTree3D(-7.10, -8.35, 1);
-        this.addPalmTree3D(7.10, -8.35, -1);
+        this.addSakuraTree3D(-7.15, -8.35, 0.92);
+        this.addSakuraTree3D(7.15, -8.35, 0.92);
+        this.addTree(-7.25, 3.50);
+        this.addTree(7.25, 3.50);
+        this.addTree(-7.25, 9.20);
+        this.addTree(7.25, 9.20);
         if (archetype === 5) {
           this.addMarbleFountain3D(0.0, 5.55);
         }
@@ -6183,36 +6215,58 @@
         this.addToriiGate3D(2.35, -12.35);
         this.addSakuraTree3D(-7.15, -8.40, 0.92);
         this.addSakuraTree3D(7.15, -8.40, 0.92);
+        this.addTree(-7.25, 3.50);
+        this.addTree(7.25, 3.50);
+        this.addTree(-7.25, 9.20);
+        this.addTree(7.25, 9.20);
       } else if (archType === 'world3_windmill') {
-        // World 3 (Image 9): 3D Dutch Windmill & Red Farm Barn!
+        // World 3 (Image 9): 3D Dutch Windmill & Red Farm Barn + Pine Trees!
         this.addWindmill3D(-2.35, -12.35);
         this.addFarmBarn3D(2.35, -12.35);
         this.addMapleTree3D(-7.15, -8.35);
         this.addMapleTree3D(7.15, -8.35);
+        this.addPineTree3D(-7.25, 3.50, 0.95);
+        this.addPineTree3D(7.25, 3.50, 0.95);
+        this.addPineTree3D(-7.25, 9.50, 0.95);
+        this.addPineTree3D(7.25, 9.50, 0.95);
       } else if (archType === 'world4_graveyard') {
         // World 4 (Images 10 & 11): 3D Haunted Ghost Barn, Stone Crypt & Glowing Jack-o'-Lantern Pumpkins!
         this.addHauntedBarn3D(-2.35, -12.35);
         this.addGraveyardCrypt3D(2.35, -12.35);
         this.addJackOLantern3D(-7.05, -8.35);
         this.addJackOLantern3D(7.05, -8.35);
+        this.addGraveyardCrypt3D(-7.25, 3.50);
+        this.addGraveyardCrypt3D(7.25, 3.50);
+        this.addJackOLantern3D(-7.15, 9.80);
+        this.addJackOLantern3D(7.15, 9.80);
       } else if (archType === 'world4_carnival') {
         // World 4 (Image 12): 3D Spooky Dark Carnival Tent & Glowing Neon Ferris Wheel!
         this.addCarnivalTent3D(-2.35, -12.35);
         this.addSpookyFerrisWheel3D(2.45, -12.35);
         this.addJackOLantern3D(-7.05, -8.35);
         this.addJackOLantern3D(7.05, -8.35);
+        this.addGraveyardCrypt3D(-7.25, 3.50);
+        this.addGraveyardCrypt3D(7.25, 3.50);
+        this.addJackOLantern3D(-7.15, 9.80);
+        this.addJackOLantern3D(7.15, 9.80);
       } else if (archType === 'world4_crypt') {
         // World 4 (Images 13 & 14): 3D Blood-Moon Gothic Crypts & Glowing Red Cyber Obelisks!
         this.addGraveyardCrypt3D(-2.35, -12.35);
         this.addGraveyardCrypt3D(2.35, -12.35);
         this.addCyberPylon3D(-7.15, -8.35, 0xf43f5e);
         this.addCyberPylon3D(7.15, -8.35, 0xf43f5e);
+        this.addGraveyardCrypt3D(-7.25, 3.80);
+        this.addGraveyardCrypt3D(7.25, 3.80);
+        this.addJackOLantern3D(-7.15, 9.80);
+        this.addJackOLantern3D(7.15, 9.80);
       } else if (archType === 'world4_biohazard') {
         // World 4 (Image 15): 3D Glowing Green Biohazard Specimen Tanks!
         this.addBiohazardTank3D(-2.35, -12.35);
         this.addBiohazardTank3D(2.35, -12.35);
         this.addCyberPylon3D(-7.15, -8.35, 0x22c55e);
         this.addCyberPylon3D(7.15, -8.35, 0x22c55e);
+        this.addBiohazardTank3D(-7.25, 4.20);
+        this.addBiohazardTank3D(7.25, 4.20);
       } else {
         // World 1 (Levels 1-100): Classic Park Landmarks
         const archStyle = (lvl - 1) % 8;
