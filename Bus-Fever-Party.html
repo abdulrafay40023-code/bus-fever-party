@@ -7469,16 +7469,16 @@ body, #app-wrapper, #game-container {
           <!-- DIVIDER -->
           <div style="display:flex; align-items:center; gap:8px; margin:10px 0;">
             <div style="flex:1; height:1px; background:rgba(148,163,184,0.28);"></div>
-            <span style="font-size:10.5px; font-weight:900; color:#94a3b8; letter-spacing:0.6px;">OR CONNECT ACCOUNT</span>
+            <span style="font-size:10.5px; font-weight:900; color:#94a3b8; letter-spacing:0.6px;">OR SYNC ACROSS ANY DEVICE</span>
             <div style="flex:1; height:1px; background:rgba(148,163,184,0.28);"></div>
           </div>
 
-          <!-- 2. GOOGLE & FACEBOOK LOGIN BUTTONS -->
-          <div style="display:flex; flex-direction:column; gap:9px;">
+          <!-- 2. GOOGLE / GMAIL LOGIN BUTTON (Restores Full ID on Any Device!) -->
+          <div style="display:flex; flex-direction:column; gap:8px;">
             <button
               type="button"
               id="btn-auth-google"
-              style="width:100%; background:linear-gradient(180deg,#ffffff 0%,#f1f5f9 100%); color:#0f172a; border:2px solid #cbd5e1; border-radius:14px; padding:10px 14px; font-size:14px; font-weight:900; cursor:pointer; box-shadow:0 4px 0 #94a3b8; display:flex; align-items:center; justify-content:center; gap:10px;"
+              style="width:100%; background:linear-gradient(180deg,#ffffff 0%,#f1f5f9 100%); color:#0f172a; border:2px solid #cbd5e1; border-radius:14px; padding:11px 14px; font-size:14.5px; font-weight:900; cursor:pointer; box-shadow:0 4px 0 #94a3b8; display:flex; align-items:center; justify-content:center; gap:10px;"
             >
               <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
                 <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
@@ -7486,28 +7486,20 @@ body, #app-wrapper, #game-container {
                 <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
                 <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
               </svg>
-              <span>Continue with Google</span>
+              <span>Continue with Google / Gmail</span>
             </button>
-
-            <button
-              type="button"
-              id="btn-auth-facebook"
-              style="width:100%; background:linear-gradient(180deg,#1877F2 0%,#1d4ed8 100%); color:#ffffff; border:2px solid #93c5fd; border-radius:14px; padding:10px 14px; font-size:14px; font-weight:900; cursor:pointer; box-shadow:0 4px 0 #1e3a8a; display:flex; align-items:center; justify-content:center; gap:10px;"
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="#ffffff" aria-hidden="true">
-                <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-              </svg>
-              <span>Continue with Facebook</span>
-            </button>
+            <div style="text-align:center; font-size:10.5px; color:#93c5fd; font-weight:700;">
+              ☁️ Login with Gmail on any phone or PC to open your full saved ID
+            </div>
           </div>
 
-          <!-- Inline Social Account Link Box (Opens when Google or Facebook is clicked) -->
+          <!-- Inline Gmail Account Link Box -->
           <div id="auth-social-subform" style="display:none; margin-top:10px; background:rgba(30,58,138,0.55); border:1.5px solid #60a5fa; border-radius:14px; padding:10px; text-align:left;">
-            <div id="auth-social-title" style="font-size:12px; font-weight:900; color:#93c5fd; margin-bottom:6px;">🔵 Connect Google Account</div>
+            <div id="auth-social-title" style="font-size:12px; font-weight:900; color:#93c5fd; margin-bottom:6px;">🔵 Enter Gmail to Load / Save Your ID</div>
             <input
               type="email"
               id="auth-social-email-input"
-              placeholder="Enter your email address..."
+              placeholder="yourname@gmail.com"
               autocomplete="email"
               style="width:100%; box-sizing:border-box; background:#0f172a; color:#fff; border:1.5px solid #60a5fa; border-radius:10px; padding:8px 10px; font-size:13px; font-weight:700; outline:none; margin-bottom:7px;"
             />
@@ -7515,7 +7507,7 @@ body, #app-wrapper, #game-container {
               type="button"
               id="btn-auth-social-confirm"
               style="width:100%; background:linear-gradient(180deg,#3b82f6,#1d4ed8); color:#fff; border:1.5px solid #93c5fd; border-radius:10px; padding:8px 12px; font-size:13px; font-weight:900; cursor:pointer;"
-            >✓ Link Account &amp; Save Progress</button>
+            >✓ Sign In with Gmail &amp; Sync ID</button>
           </div>
         </div>
       </div>
@@ -10270,14 +10262,14 @@ body, #app-wrapper, #game-container {
       this.openModal('modal-auth-login');
     }
 
-    syncDevicePlayerRegistry(pushToServer = false, forceNameUpdate = false) {
+    syncDevicePlayerRegistry(pushToServer = false, forceNameUpdate = false, isGmailLogin = false) {
       const myDevId = this.getOrCreateDeviceId();
       const myName = this.getEffectivePlayerName();
       const myLvl = Math.max(1, (this.profile && this.profile.currentLevel) || 1);
       const myPass = Math.max(2800, (this.profile && this.profile.passengersHelped) || (myLvl * 95));
       const myAvatarId = (this.profile && this.profile.selectedAvatarId) || 'cool_hoodie';
-      const myProvider = (this.profile && this.profile.authProvider) || 'guest';
-      const myEmail = (this.profile && this.profile.authEmail) || '';
+      const myProvider = (this.profile && this.profile.authProvider === 'google') ? 'google' : 'guest';
+      const myEmail = (myProvider === 'google' && this.profile && this.profile.authEmail) ? String(this.profile.authEmail).trim().toLowerCase() : '';
       const myCoins = Math.max(0, (this.profile && this.profile.coins) || 250);
       const myTs = (this.profile && this.profile.nameUpdatedAt) || Date.now();
       const FAKE_NAMES = new Set(['Ayesha K.', 'Hamza_Pro', 'ZainRacer', 'Sara_Bus', 'Bilal_99', 'MinaPlays']);
@@ -10319,7 +10311,7 @@ body, #app-wrapper, #game-container {
       } catch (e) {}
 
       const nowMs = Date.now();
-      if (!pushToServer && this._lastDeviceServerSyncMs && (nowMs - this._lastDeviceServerSyncMs < 8000)) {
+      if (!pushToServer && !isGmailLogin && this._lastDeviceServerSyncMs && (nowMs - this._lastDeviceServerSyncMs < 8000)) {
         return regObj;
       }
       this._lastDeviceServerSyncMs = nowMs;
@@ -10337,21 +10329,64 @@ body, #app-wrapper, #game-container {
             name: myName,
             nameUpdatedAt: myTs,
             forceNameUpdate: !!forceNameUpdate,
+            isGmailLogin: !!isGmailLogin,
             authProvider: myProvider,
             authEmail: myEmail,
             avatarId: myAvatarId,
             lvl: myLvl,
             pass: myPass,
             coins: myCoins,
+            boosters: (this.profile && this.profile.boosters) || { vip: 1, shuffle: 2, magnet: 2 },
+            claimedRanks: (this.profile && this.profile.claimedRanks) || { bronze: true },
+            claimedMilestones: (this.profile && this.profile.claimedMilestones) || {},
             screenSig: this.getDeviceScreenSig()
           })
         })
           .then((r) => (r && r.ok ? r.json() : null))
           .then((data) => {
             if (!data || !data.ok) return;
-            let nameChangedFromDevice = false;
+            let profileRestoredOrChanged = false;
 
-            if (data.myDevice && data.myDevice.name && data.myDevice.name !== 'player_60913') {
+            // If logged in with Gmail on any device, restore the player's full saved Gmail ID (level, coins, boosters, avatar, name)!
+            if (myProvider === 'google' && myEmail && data.myDevice) {
+              const cloud = data.myDevice;
+              if (data.restoredFromGmail || isGmailLogin || (Number(cloud.lvl) || 1) > ((this.profile && this.profile.currentLevel) || 1)) {
+                if (cloud.name && cloud.name !== 'player_60913') {
+                  this.profile.playerName = String(cloud.name).trim();
+                  try { localStorage.setItem('BFP_PLAYER_NAME', this.profile.playerName); } catch (e) {}
+                }
+                if (Number(cloud.lvl) >= 1) {
+                  this.profile.currentLevel = Math.max(this.profile.currentLevel || 1, Number(cloud.lvl));
+                  this.profile.highestLevel = this.profile.currentLevel;
+                  this.levelNum = this.profile.currentLevel;
+                }
+                if (Number(cloud.pass) >= 2800) {
+                  this.profile.passengersHelped = Math.max(this.profile.passengersHelped || 2800, Number(cloud.pass));
+                }
+                if (typeof cloud.coins === 'number') {
+                  this.profile.coins = Math.max(this.profile.coins || 0, cloud.coins);
+                }
+                if (cloud.avatarId) {
+                  this.profile.selectedAvatarId = cloud.avatarId;
+                }
+                if (cloud.boosters && typeof cloud.boosters === 'object') {
+                  this.profile.boosters = { ...this.profile.boosters, ...cloud.boosters };
+                }
+                if (cloud.claimedRanks && typeof cloud.claimedRanks === 'object') {
+                  this.profile.claimedRanks = { ...this.profile.claimedRanks, ...cloud.claimedRanks };
+                }
+                if (cloud.claimedMilestones && typeof cloud.claimedMilestones === 'object') {
+                  this.profile.claimedMilestones = { ...this.profile.claimedMilestones, ...cloud.claimedMilestones };
+                }
+                profileRestoredOrChanged = true;
+                try {
+                  localStorage.setItem(SAVE_KEY, JSON.stringify(this.profile));
+                } catch (e) {}
+                if (isGmailLogin) {
+                  this.showAdsUnavailableToast(`☁️ Gmail ID Restored: ${this.profile.playerName} (Lv.${this.profile.currentLevel})`);
+                }
+              }
+            } else if (data.myDevice && data.myDevice.name && data.myDevice.name !== 'player_60913') {
               const srvName = String(data.myDevice.name).trim();
               const srvTs = Number(data.myDevice.nameUpdatedAt) || 0;
               const curName = this.getEffectivePlayerName();
@@ -10362,7 +10397,7 @@ body, #app-wrapper, #game-container {
               ) {
                 this.profile.playerName = srvName;
                 this.profile.nameUpdatedAt = srvTs || Date.now();
-                nameChangedFromDevice = true;
+                profileRestoredOrChanged = true;
                 try {
                   localStorage.setItem('BFP_PLAYER_NAME', srvName);
                   localStorage.setItem('BFP_NAME_UPDATED_AT', String(this.profile.nameUpdatedAt));
@@ -10371,7 +10406,7 @@ body, #app-wrapper, #game-container {
               }
             }
 
-            // Rebuild local device registry strictly from real devices (1 entry per device!)
+            // Rebuild local device registry strictly from real accounts/devices (1 entry per player!)
             const merged = {};
             const finalMyName = this.getEffectivePlayerName();
             merged[myDevId] = {
@@ -10409,10 +10444,11 @@ body, #app-wrapper, #game-container {
               localStorage.setItem('BFP_DEVICE_REGISTRY_V1', JSON.stringify(merged));
             } catch (e) {}
 
-            if (nameChangedFromDevice) {
+            if (profileRestoredOrChanged) {
               const inp = document.getElementById('profile-name-input');
               if (inp && document.activeElement !== inp) inp.value = finalMyName;
               this.updateHUD();
+              this.syncPlayerHubUI();
             }
             this._renderLeaderboardRowsFromRegistry(merged);
           })
@@ -18236,7 +18272,6 @@ body, #app-wrapper, #game-container {
       }, 220);
 
       // In-Game Login & Guest Account Modal Handlers (#modal-auth-login)
-      let pendingSocialProvider = 'google';
       const completeAuthLogin = (provider, emailVal = '') => {
         try { sound.playButtonClick(); } catch (err) {}
         const authInp = document.getElementById('auth-guest-name-input');
@@ -18252,14 +18287,18 @@ body, #app-wrapper, #game-container {
           return;
         }
         if (errEl) errEl.style.display = 'none';
-        this.profile.authProvider = provider;
-        if (emailVal) this.profile.authEmail = emailVal.trim().slice(0, 64);
+        const isGmail = provider === 'google' && emailVal && emailVal.includes('@');
+        this.profile.authProvider = isGmail ? 'google' : 'guest';
+        this.profile.authEmail = isGmail ? emailVal.trim().toLowerCase().slice(0, 64) : '';
         this.profile.authCompletedV87 = true;
         this.setPlayerNameEverywhere(rawName, false);
+        if (isGmail) {
+          this.syncDevicePlayerRegistry(true, false, true);
+        }
         this.syncAuthProviderBadgeUI();
         this.closeModal('modal-auth-login');
-        const label = provider === 'google' ? '🔵 Google Account Linked' : (provider === 'facebook' ? '📘 Facebook Account Linked' : '🎮 Guest Profile Saved');
-        this.showAdsUnavailableToast(`✅ ${label}: ${rawName}`);
+        const label = isGmail ? `🔵 Gmail Linked (${this.profile.authEmail})` : '🎮 Guest Profile Saved on Device';
+        this.showAdsUnavailableToast(`✅ ${label}`);
       };
 
       bindTap('btn-auth-guest', () => {
@@ -18270,9 +18309,16 @@ body, #app-wrapper, #game-container {
 
       bindTap('btn-auth-google', () => {
         try { sound.playButtonClick(); } catch (err) {}
-        pendingSocialProvider = 'google';
 
-        // Try live Google OAuth 2.0 Account Picker via Google Identity Services first!
+        // Also show the direct Gmail box so the user can either pick via Google OAuth popup OR enter their Gmail directly on any device!
+        const subForm = document.getElementById('auth-social-subform');
+        const emailInp = document.getElementById('auth-social-email-input');
+        if (subForm) subForm.style.display = 'block';
+        if (emailInp && !emailInp.value && this.profile && this.profile.authEmail) {
+          emailInp.value = this.profile.authEmail;
+        }
+
+        // Launch live Google OAuth 2.0 Account Picker via Google Identity Services if available
         if (
           typeof window !== 'undefined' &&
           window.google &&
@@ -18292,9 +18338,10 @@ body, #app-wrapper, #game-container {
                     .then((info) => {
                       if (info) {
                         const gName = String(info.given_name || info.name || 'Player').trim().slice(0, 16);
-                        const gEmail = String(info.email || '').trim();
+                        const gEmail = String(info.email || '').trim().toLowerCase();
                         const authInp = document.getElementById('auth-guest-name-input');
                         if (authInp && gName) authInp.value = gName;
+                        if (emailInp && gEmail) emailInp.value = gEmail;
                         completeAuthLogin('google', gEmail);
                       }
                     })
@@ -18307,30 +18354,20 @@ body, #app-wrapper, #game-container {
           } catch (e) {}
         }
 
-        // Instant fallback for offline standalone / WebViews where external popups are blocked
-        const subForm = document.getElementById('auth-social-subform');
-        const titleEl = document.getElementById('auth-social-title');
-        const emailInp = document.getElementById('auth-social-email-input');
-        if (titleEl) titleEl.textContent = '🔵 Connect Google Account (Saves Progress to Cloud)';
-        if (subForm) subForm.style.display = 'block';
-        if (emailInp) emailInp.focus();
-      }, 220);
-
-      bindTap('btn-auth-facebook', () => {
-        try { sound.playButtonClick(); } catch (err) {}
-        pendingSocialProvider = 'facebook';
-        const subForm = document.getElementById('auth-social-subform');
-        const titleEl = document.getElementById('auth-social-title');
-        const emailInp = document.getElementById('auth-social-email-input');
-        if (titleEl) titleEl.textContent = '📘 Connect Facebook Account (Saves Progress to Cloud)';
-        if (subForm) subForm.style.display = 'block';
         if (emailInp) emailInp.focus();
       }, 220);
 
       bindTap('btn-auth-social-confirm', () => {
         const emailInp = document.getElementById('auth-social-email-input');
-        const emailVal = emailInp ? emailInp.value.trim() : '';
-        completeAuthLogin(pendingSocialProvider, emailVal);
+        const emailVal = emailInp ? emailInp.value.trim().toLowerCase() : '';
+        if (!emailVal || !emailVal.includes('@')) {
+          if (emailInp) {
+            emailInp.focus();
+            emailInp.style.borderColor = '#f87171';
+          }
+          return;
+        }
+        completeAuthLogin('google', emailVal);
       }, 220);
 
       bindTap('btn-close-auth-login', () => {

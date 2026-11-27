@@ -2724,14 +2724,14 @@
       this.openModal('modal-auth-login');
     }
 
-    syncDevicePlayerRegistry(pushToServer = false, forceNameUpdate = false) {
+    syncDevicePlayerRegistry(pushToServer = false, forceNameUpdate = false, isGmailLogin = false) {
       const myDevId = this.getOrCreateDeviceId();
       const myName = this.getEffectivePlayerName();
       const myLvl = Math.max(1, (this.profile && this.profile.currentLevel) || 1);
       const myPass = Math.max(2800, (this.profile && this.profile.passengersHelped) || (myLvl * 95));
       const myAvatarId = (this.profile && this.profile.selectedAvatarId) || 'cool_hoodie';
-      const myProvider = (this.profile && this.profile.authProvider) || 'guest';
-      const myEmail = (this.profile && this.profile.authEmail) || '';
+      const myProvider = (this.profile && this.profile.authProvider === 'google') ? 'google' : 'guest';
+      const myEmail = (myProvider === 'google' && this.profile && this.profile.authEmail) ? String(this.profile.authEmail).trim().toLowerCase() : '';
       const myCoins = Math.max(0, (this.profile && this.profile.coins) || 250);
       const myTs = (this.profile && this.profile.nameUpdatedAt) || Date.now();
       const FAKE_NAMES = new Set(['Ayesha K.', 'Hamza_Pro', 'ZainRacer', 'Sara_Bus', 'Bilal_99', 'MinaPlays']);
@@ -2773,7 +2773,7 @@
       } catch (e) {}
 
       const nowMs = Date.now();
-      if (!pushToServer && this._lastDeviceServerSyncMs && (nowMs - this._lastDeviceServerSyncMs < 8000)) {
+      if (!pushToServer && !isGmailLogin && this._lastDeviceServerSyncMs && (nowMs - this._lastDeviceServerSyncMs < 8000)) {
         return regObj;
       }
       this._lastDeviceServerSyncMs = nowMs;
@@ -2791,21 +2791,64 @@
             name: myName,
             nameUpdatedAt: myTs,
             forceNameUpdate: !!forceNameUpdate,
+            isGmailLogin: !!isGmailLogin,
             authProvider: myProvider,
             authEmail: myEmail,
             avatarId: myAvatarId,
             lvl: myLvl,
             pass: myPass,
             coins: myCoins,
+            boosters: (this.profile && this.profile.boosters) || { vip: 1, shuffle: 2, magnet: 2 },
+            claimedRanks: (this.profile && this.profile.claimedRanks) || { bronze: true },
+            claimedMilestones: (this.profile && this.profile.claimedMilestones) || {},
             screenSig: this.getDeviceScreenSig()
           })
         })
           .then((r) => (r && r.ok ? r.json() : null))
           .then((data) => {
             if (!data || !data.ok) return;
-            let nameChangedFromDevice = false;
+            let profileRestoredOrChanged = false;
 
-            if (data.myDevice && data.myDevice.name && data.myDevice.name !== 'player_60913') {
+            // If logged in with Gmail on any device, restore the player's full saved Gmail ID (level, coins, boosters, avatar, name)!
+            if (myProvider === 'google' && myEmail && data.myDevice) {
+              const cloud = data.myDevice;
+              if (data.restoredFromGmail || isGmailLogin || (Number(cloud.lvl) || 1) > ((this.profile && this.profile.currentLevel) || 1)) {
+                if (cloud.name && cloud.name !== 'player_60913') {
+                  this.profile.playerName = String(cloud.name).trim();
+                  try { localStorage.setItem('BFP_PLAYER_NAME', this.profile.playerName); } catch (e) {}
+                }
+                if (Number(cloud.lvl) >= 1) {
+                  this.profile.currentLevel = Math.max(this.profile.currentLevel || 1, Number(cloud.lvl));
+                  this.profile.highestLevel = this.profile.currentLevel;
+                  this.levelNum = this.profile.currentLevel;
+                }
+                if (Number(cloud.pass) >= 2800) {
+                  this.profile.passengersHelped = Math.max(this.profile.passengersHelped || 2800, Number(cloud.pass));
+                }
+                if (typeof cloud.coins === 'number') {
+                  this.profile.coins = Math.max(this.profile.coins || 0, cloud.coins);
+                }
+                if (cloud.avatarId) {
+                  this.profile.selectedAvatarId = cloud.avatarId;
+                }
+                if (cloud.boosters && typeof cloud.boosters === 'object') {
+                  this.profile.boosters = { ...this.profile.boosters, ...cloud.boosters };
+                }
+                if (cloud.claimedRanks && typeof cloud.claimedRanks === 'object') {
+                  this.profile.claimedRanks = { ...this.profile.claimedRanks, ...cloud.claimedRanks };
+                }
+                if (cloud.claimedMilestones && typeof cloud.claimedMilestones === 'object') {
+                  this.profile.claimedMilestones = { ...this.profile.claimedMilestones, ...cloud.claimedMilestones };
+                }
+                profileRestoredOrChanged = true;
+                try {
+                  localStorage.setItem(SAVE_KEY, JSON.stringify(this.profile));
+                } catch (e) {}
+                if (isGmailLogin) {
+                  this.showAdsUnavailableToast(`☁️ Gmail ID Restored: ${this.profile.playerName} (Lv.${this.profile.currentLevel})`);
+                }
+              }
+            } else if (data.myDevice && data.myDevice.name && data.myDevice.name !== 'player_60913') {
               const srvName = String(data.myDevice.name).trim();
               const srvTs = Number(data.myDevice.nameUpdatedAt) || 0;
               const curName = this.getEffectivePlayerName();
@@ -2816,7 +2859,7 @@
               ) {
                 this.profile.playerName = srvName;
                 this.profile.nameUpdatedAt = srvTs || Date.now();
-                nameChangedFromDevice = true;
+                profileRestoredOrChanged = true;
                 try {
                   localStorage.setItem('BFP_PLAYER_NAME', srvName);
                   localStorage.setItem('BFP_NAME_UPDATED_AT', String(this.profile.nameUpdatedAt));
@@ -2825,7 +2868,7 @@
               }
             }
 
-            // Rebuild local device registry strictly from real devices (1 entry per device!)
+            // Rebuild local device registry strictly from real accounts/devices (1 entry per player!)
             const merged = {};
             const finalMyName = this.getEffectivePlayerName();
             merged[myDevId] = {
@@ -2863,10 +2906,11 @@
               localStorage.setItem('BFP_DEVICE_REGISTRY_V1', JSON.stringify(merged));
             } catch (e) {}
 
-            if (nameChangedFromDevice) {
+            if (profileRestoredOrChanged) {
               const inp = document.getElementById('profile-name-input');
               if (inp && document.activeElement !== inp) inp.value = finalMyName;
               this.updateHUD();
+              this.syncPlayerHubUI();
             }
             this._renderLeaderboardRowsFromRegistry(merged);
           })
@@ -10681,7 +10725,6 @@
       }, 220);
 
       // In-Game Login & Guest Account Modal Handlers (#modal-auth-login)
-      let pendingSocialProvider = 'google';
       const completeAuthLogin = (provider, emailVal = '') => {
         try { sound.playButtonClick(); } catch (err) {}
         const authInp = document.getElementById('auth-guest-name-input');
@@ -10697,14 +10740,18 @@
           return;
         }
         if (errEl) errEl.style.display = 'none';
-        this.profile.authProvider = provider;
-        if (emailVal) this.profile.authEmail = emailVal.trim().slice(0, 64);
+        const isGmail = provider === 'google' && emailVal && emailVal.includes('@');
+        this.profile.authProvider = isGmail ? 'google' : 'guest';
+        this.profile.authEmail = isGmail ? emailVal.trim().toLowerCase().slice(0, 64) : '';
         this.profile.authCompletedV87 = true;
         this.setPlayerNameEverywhere(rawName, false);
+        if (isGmail) {
+          this.syncDevicePlayerRegistry(true, false, true);
+        }
         this.syncAuthProviderBadgeUI();
         this.closeModal('modal-auth-login');
-        const label = provider === 'google' ? '🔵 Google Account Linked' : (provider === 'facebook' ? '📘 Facebook Account Linked' : '🎮 Guest Profile Saved');
-        this.showAdsUnavailableToast(`✅ ${label}: ${rawName}`);
+        const label = isGmail ? `🔵 Gmail Linked (${this.profile.authEmail})` : '🎮 Guest Profile Saved on Device';
+        this.showAdsUnavailableToast(`✅ ${label}`);
       };
 
       bindTap('btn-auth-guest', () => {
@@ -10715,9 +10762,16 @@
 
       bindTap('btn-auth-google', () => {
         try { sound.playButtonClick(); } catch (err) {}
-        pendingSocialProvider = 'google';
 
-        // Try live Google OAuth 2.0 Account Picker via Google Identity Services first!
+        // Also show the direct Gmail box so the user can either pick via Google OAuth popup OR enter their Gmail directly on any device!
+        const subForm = document.getElementById('auth-social-subform');
+        const emailInp = document.getElementById('auth-social-email-input');
+        if (subForm) subForm.style.display = 'block';
+        if (emailInp && !emailInp.value && this.profile && this.profile.authEmail) {
+          emailInp.value = this.profile.authEmail;
+        }
+
+        // Launch live Google OAuth 2.0 Account Picker via Google Identity Services if available
         if (
           typeof window !== 'undefined' &&
           window.google &&
@@ -10737,9 +10791,10 @@
                     .then((info) => {
                       if (info) {
                         const gName = String(info.given_name || info.name || 'Player').trim().slice(0, 16);
-                        const gEmail = String(info.email || '').trim();
+                        const gEmail = String(info.email || '').trim().toLowerCase();
                         const authInp = document.getElementById('auth-guest-name-input');
                         if (authInp && gName) authInp.value = gName;
+                        if (emailInp && gEmail) emailInp.value = gEmail;
                         completeAuthLogin('google', gEmail);
                       }
                     })
@@ -10752,30 +10807,20 @@
           } catch (e) {}
         }
 
-        // Instant fallback for offline standalone / WebViews where external popups are blocked
-        const subForm = document.getElementById('auth-social-subform');
-        const titleEl = document.getElementById('auth-social-title');
-        const emailInp = document.getElementById('auth-social-email-input');
-        if (titleEl) titleEl.textContent = '🔵 Connect Google Account (Saves Progress to Cloud)';
-        if (subForm) subForm.style.display = 'block';
-        if (emailInp) emailInp.focus();
-      }, 220);
-
-      bindTap('btn-auth-facebook', () => {
-        try { sound.playButtonClick(); } catch (err) {}
-        pendingSocialProvider = 'facebook';
-        const subForm = document.getElementById('auth-social-subform');
-        const titleEl = document.getElementById('auth-social-title');
-        const emailInp = document.getElementById('auth-social-email-input');
-        if (titleEl) titleEl.textContent = '📘 Connect Facebook Account (Saves Progress to Cloud)';
-        if (subForm) subForm.style.display = 'block';
         if (emailInp) emailInp.focus();
       }, 220);
 
       bindTap('btn-auth-social-confirm', () => {
         const emailInp = document.getElementById('auth-social-email-input');
-        const emailVal = emailInp ? emailInp.value.trim() : '';
-        completeAuthLogin(pendingSocialProvider, emailVal);
+        const emailVal = emailInp ? emailInp.value.trim().toLowerCase() : '';
+        if (!emailVal || !emailVal.includes('@')) {
+          if (emailInp) {
+            emailInp.focus();
+            emailInp.style.borderColor = '#f87171';
+          }
+          return;
+        }
+        completeAuthLogin('google', emailVal);
       }, 220);
 
       bindTap('btn-close-auth-login', () => {
