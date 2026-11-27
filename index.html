@@ -16,7 +16,7 @@
     html, body { margin: 0; padding: 0; width: 100%; height: 100%; background: #2e0559; overflow: hidden; }
     #app-wrapper { width: 100%; height: 100%; background: #2e0559; }
   </style>
-  <link rel="stylesheet" href="styles.css?v=99" />
+  <link rel="stylesheet" href="styles.css?v=100" />
 </head>
 <body>
   <div id="app-wrapper">
@@ -75,7 +75,12 @@
           if (!portal) return;
 
           var urlParams = new URLSearchParams(window.location.search);
+          var isInsideIframe = false;
+          try { isInsideIframe = (window.self !== window.top); } catch (e) { isInsideIframe = true; }
+          var isGamePortalHost = /crazygames|poki|itch\.io|hwcdn|gamedistribution|y8|lagged|kongregate/i.test(window.location.hostname || '');
           var isPlayTest =
+            isInsideIframe ||
+            isGamePortalHost ||
             window.location.protocol === 'file:' ||
             window.location.protocol === 'content:' ||
             window.location.protocol === 'blob:' ||
@@ -1195,6 +1200,6 @@
   <!-- Local Bundled Three.js -->
   <script src="three.min.js"></script>
   <!-- Main Bus Rush Party 3D Engine -->
-  <script src="game.js?v=99"></script>
+  <script src="game.js?v=100"></script>
 </body>
 </html>

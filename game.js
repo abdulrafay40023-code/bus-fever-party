@@ -2553,7 +2553,7 @@
           loadingSplash.style.backgroundImage = "url('loading_bg.jpg?v=83')";
         }
         // Auto-upgrade live webview if an older HTML shell was served from Android disk cache (strictly guarded against reload loops!)
-        const CLIENT_BUILD_TAG = 'bus-rush-party-v99';
+        const CLIENT_BUILD_TAG = 'bus-rush-party-v100';
         const checkServerBuild = () => {
           if (location.protocol !== 'http:' && location.protocol !== 'https:') return;
           fetch('/sw.js?t=' + Date.now(), { cache: 'no-store' })
