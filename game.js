@@ -2708,12 +2708,19 @@
       }
     }
 
-    openAuthLoginModal() {
+    openAuthLoginModal(fromProfile = false) {
       this.syncAuthProviderBadgeUI();
       const authInp = document.getElementById('auth-guest-name-input');
       const curName = this.getEffectivePlayerName();
       if (authInp) {
-        authInp.value = (curName && curName !== 'player_60913') ? curName : '';
+        authInp.style.borderColor = '#38bdf8';
+        // Only pre-fill name if player already completed login earlier and opened from Profile;
+        // on initial mandatory login, start empty so they must enter their name or sign in with Gmail!
+        if (fromProfile && this.profile && this.profile.authCompletedV90 && curName && curName !== 'player_60913') {
+          authInp.value = curName;
+        } else {
+          authInp.value = '';
+        }
       }
       const errEl = document.getElementById('auth-guest-error');
       if (errEl) errEl.style.display = 'none';
@@ -3173,8 +3180,8 @@
 
       setTimeout(() => {
         this.flushPendingRewardPopups();
-        if (!animateBoardingFromPrevLevel && !this.profile.authCompletedV87) {
-          this.openAuthLoginModal();
+        if (!animateBoardingFromPrevLevel && !this.profile.authCompletedV90) {
+          this.openAuthLoginModal(false);
         }
       }, 320);
 
@@ -10721,36 +10728,56 @@
 
       bindTap('btn-open-auth-from-profile', () => {
         try { sound.playButtonClick(); } catch (err) {}
-        this.openAuthLoginModal();
+        this.openAuthLoginModal(true);
       }, 220);
 
-      // In-Game Login & Guest Account Modal Handlers (#modal-auth-login)
+      const authGuestInp = document.getElementById('auth-guest-name-input');
+      if (authGuestInp) {
+        authGuestInp.addEventListener('input', () => {
+          if (authGuestInp.value.trim().length > 0) {
+            authGuestInp.style.borderColor = '#38bdf8';
+            const errEl = document.getElementById('auth-guest-error');
+            if (errEl) errEl.style.display = 'none';
+          }
+        });
+      }
+
+      // In-Game Login & Guest Account Modal Handlers (#modal-auth-login — Mandatory Sign-In Gate, No Close X!)
       const completeAuthLogin = (provider, emailVal = '') => {
         try { sound.playButtonClick(); } catch (err) {}
         const authInp = document.getElementById('auth-guest-name-input');
         const errEl = document.getElementById('auth-guest-error');
         let rawName = authInp ? authInp.value.trim() : '';
-        if (!rawName && emailVal) {
+        if (!rawName && provider === 'google' && emailVal) {
           rawName = emailVal.split('@')[0].slice(0, 16);
           if (authInp) authInp.value = rawName;
         }
         if (!rawName) {
-          if (errEl) errEl.style.display = 'block';
-          if (authInp) authInp.focus();
+          if (errEl) {
+            errEl.textContent = '⚠️ Please enter your player name first!';
+            errEl.style.display = 'block';
+          }
+          if (authInp) {
+            authInp.style.borderColor = '#ff3b5c';
+            authInp.focus();
+          }
+          this.showAdsUnavailableToast('Please enter your player name first!');
           return;
         }
         if (errEl) errEl.style.display = 'none';
+        if (authInp) authInp.style.borderColor = '#38bdf8';
         const isGmail = provider === 'google' && emailVal && emailVal.includes('@');
         this.profile.authProvider = isGmail ? 'google' : 'guest';
         this.profile.authEmail = isGmail ? emailVal.trim().toLowerCase().slice(0, 64) : '';
         this.profile.authCompletedV87 = true;
+        this.profile.authCompletedV90 = true;
         this.setPlayerNameEverywhere(rawName, false);
         if (isGmail) {
           this.syncDevicePlayerRegistry(true, false, true);
         }
         this.syncAuthProviderBadgeUI();
         this.closeModal('modal-auth-login');
-        const label = isGmail ? `🔵 Gmail Linked (${this.profile.authEmail})` : '🎮 Guest Profile Saved on Device';
+        const label = isGmail ? `🔵 Signed in with Gmail (${this.profile.authEmail})` : `🎮 Welcome, ${rawName}!`;
         this.showAdsUnavailableToast(`✅ ${label}`);
       };
 
@@ -10818,22 +10845,10 @@
             emailInp.focus();
             emailInp.style.borderColor = '#f87171';
           }
+          this.showAdsUnavailableToast('Please enter a valid Gmail address!');
           return;
         }
         completeAuthLogin('google', emailVal);
-      }, 220);
-
-      bindTap('btn-close-auth-login', () => {
-        try { sound.playButtonClick(); } catch (err) {}
-        const authInp = document.getElementById('auth-guest-name-input');
-        if (authInp && authInp.value.trim()) {
-          this.profile.authCompletedV87 = true;
-          this.setPlayerNameEverywhere(authInp.value.trim(), false);
-        } else if (this.getEffectivePlayerName() !== 'player_60913') {
-          this.profile.authCompletedV87 = true;
-          this.saveGameProgress(false);
-        }
-        this.closeModal('modal-auth-login');
       }, 220);
 
       const saveAndCloseProfile = () => {
