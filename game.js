@@ -2320,7 +2320,7 @@
           loadingSplash.style.backgroundImage = "url('loading_bg.jpg?v=83')";
         }
         // Auto-upgrade live webview if an older HTML shell was served from Android disk cache
-        const CLIENT_BUILD_TAG = 'bus-rush-party-v95';
+        const CLIENT_BUILD_TAG = 'bus-rush-party-v96';
         const checkServerBuild = () => {
           if (location.protocol !== 'http:' && location.protocol !== 'https:') return;
           fetch('/sw.js?t=' + Date.now(), { cache: 'no-store' })
@@ -7102,22 +7102,6 @@
               this.ovalRingSlots[k] = pulled;
               this._rightFeederSlideOffset = Math.min(6.0, (this._rightFeederSlideOffset || 0) + 1.0);
             }
-          } else if (hasAnyPartiallyBoarded && !anyParkedHasMatchInRing && !parkedColorsSet.has(rowData.color)) {
-            if (this.leftFeederRows.length > 0 && distLeft < juncTol) {
-              const swapped = swapNeededFromFeederQueue(this.leftFeederRows, rowData);
-              if (swapped) {
-                swapped.joinBlend = 0.0;
-                swapped.joinSide = -1;
-                this.ovalRingSlots[k] = swapped;
-              }
-            } else if (this.rightFeederRows.length > 0 && distRight < juncTol) {
-              const swapped = swapNeededFromFeederQueue(this.rightFeederRows, rowData);
-              if (swapped) {
-                swapped.joinBlend = 0.0;
-                swapped.joinSide = 1;
-                this.ovalRingSlots[k] = swapped;
-              }
-            }
           }
         }
       }
@@ -8499,16 +8483,7 @@
         return;
       }
 
-      // IMPORTANT: If the oval ring currently has empty slots AND feeder roads still have waiting passengers,
-      // wait for the spinning ring to rotate to the feeder junctions and refill before declaring deadlock!
-      const hasEmptyRingSlot = this.ovalRingSlots.some((r) => !r || r.count <= 0);
-      const hasWaitingFeeder = this.leftFeederRows.length > 0 || this.rightFeederRows.length > 0;
-      if (hasEmptyRingSlot && hasWaitingFeeder) {
-        this._deadlockHoldSec = 0;
-        return;
-      }
-
-      // Check if ANY passenger currently inside the revolving oval ring matches ANY parked bus
+      // Check if ANY passenger currently inside the revolving ring matches ANY parked bus
       const colorsInOvalRing = new Set();
       for (const r of this.ovalRingSlots) {
         if (r && r.count > 0) colorsInOvalRing.add(r.color);
@@ -8518,30 +8493,20 @@
         (s) => s.vehicle && s.vehicle.cap > 0 && colorsInOvalRing.has(s.vehicle.color)
       );
 
-      // Also check if any partially-boarded vehicle has its remaining passengers waiting in a feeder road (about to be swapped into the ring!)
-      const colorsInFeeders = new Set();
-      for (const r of this.leftFeederRows) {
-        if (r && r.count > 0) colorsInFeeders.add(r.color);
-      }
-      for (const r of this.rightFeederRows) {
-        if (r && r.count > 0) colorsInFeeders.add(r.color);
-      }
-      const anyPartialMatchingInFeeder = this.slots.some(
-        (s) =>
-          s.vehicle &&
-          s.vehicle.cap > 0 &&
-          s.vehicle.cap < (s.vehicle.maxCap || s.vehicle.cap) &&
-          colorsInFeeders.has(s.vehicle.color)
-      );
-
-      if (anyMatchingInRing || anyPartialMatchingInFeeder) {
+      if (anyMatchingInRing) {
         this._deadlockHoldSec = 0;
         return;
       }
 
-      // Require true deadlock to persist for 1.1s so mid-rotation frames never false-trigger!
+      // If all unlocked boarding slots are full AND 0 passengers in the revolving circle match any parked bus:
+      // - When the 32-slot circle is already full (!hasEmptyRingSlot), trigger "Out of Space!" after 0.85s!
+      // - If the circle still has an empty slot rotating toward a feeder junction, allow 1.75s for it to pull; if still no match, trigger "Out of Space!"!
+      const hasEmptyRingSlot = this.ovalRingSlots.some((r) => !r || r.count <= 0);
+      const hasWaitingFeeder = this.leftFeederRows.length > 0 || this.rightFeederRows.length > 0;
+      const requiredHoldSec = (hasEmptyRingSlot && hasWaitingFeeder) ? 1.75 : 0.85;
+
       this._deadlockHoldSec = (this._deadlockHoldSec || 0) + dt;
-      if (this._deadlockHoldSec < 1.1) return;
+      if (this._deadlockHoldSec < requiredHoldSec) return;
       this._deadlockHoldSec = 0;
 
       this.isLevelOver = true;
