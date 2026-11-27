@@ -262,13 +262,13 @@
   ];
 
   const getAvatarVisualHtml = (avSpec) => {
-    if (!avSpec) return `<img src="home_avatar_3d.png?v=50" alt="Avatar" />`;
+    if (!avSpec) return `<img src="home_avatar_3d.png?v=50" alt="Avatar" style="width:100%;height:100%;object-fit:cover;display:block;" />`;
     if (avSpec.type === 'atlas100') {
       const px = ((avSpec.atlasCol / 9) * 100).toFixed(3);
       const py = ((avSpec.atlasRow / 9) * 100).toFixed(3);
-      return `<div class="char-100-sprite" style="background-position:${px}% ${py}%;"></div>`;
+      return `<div class="char-100-sprite" style="width:100%;height:100%;background-position:${px}% ${py}%;"></div>`;
     }
-    return `<img src="${avSpec.src}" alt="${avSpec.name}" />`;
+    return `<img src="${avSpec.src}" alt="${avSpec.name}" style="width:100%;height:100%;object-fit:cover;display:block;" />`;
   };
 
   const PADLOCK_SVG = `
@@ -2294,7 +2294,9 @@
         girlImg: loadImg('home_girl_hd.png?v=54'),
         spinWheelImg: loadImg('home_spin_wheel_hd.png?v=54'),
         spinOverlayImg: loadImg('home_spin_overlay_hd.png?v=54'),
-        playBtnImg: loadImg('home_play_btn_hd.png?v=54')
+        playBtnImg: loadImg('home_play_btn_hd.png?v=54'),
+        homeAvatar3dImg: loadImg('home_avatar_3d.png?v=50'),
+        avatars100AtlasImg: loadImg('avatars_100_atlas.jpg?v=68')
       };
       // Preload 3D Victory ("Great Job!") assets at startup so the Win popup renders on frame 1 with zero delay!
       if (!this._win3dAssets) {
@@ -3728,15 +3730,19 @@
         ctx.fillText(`${coinBalance}`, 386, 94);
         ctx.restore();
 
-        // Periodic specular glint on Top-Left Avatar (cx=103, cy=96) + Custom Selected Avatar / Uploaded Real Photo Override!
-        if (this.profile && this.profile.selectedAvatarId && this.profile.selectedAvatarId !== 'aviator_girl') {
+        // Always draw the player's currently selected Profile Avatar (aviator_girl, girl_redcap, custom_photo, or 100-Character Atlas!)
+        // onto the Home Screen Top-Left Avatar frame (38, 30, 128, 128) so Home Screen & Profile & Leaderboard ALWAYS match 100%!
+        if (this.profile) {
+          const activeAvId = this.profile.selectedAvatarId || 'aviator_girl';
           ctx.save();
           ctx.beginPath();
           ctx.roundRect(38, 30, 128, 128, 26);
           ctx.clip();
-          if (this.profile.selectedAvatarId === 'custom_photo' && this._customPhotoImg && this._customPhotoImg.complete && this._customPhotoImg.naturalWidth > 0) {
+          if (activeAvId === 'custom_photo' && this._customPhotoImg && this._customPhotoImg.complete && this._customPhotoImg.naturalWidth > 0) {
             ctx.drawImage(this._customPhotoImg, 38, 30, 128, 128);
-          } else if (this.profile.selectedAvatarId === 'girl_redcap' && this._win3dAssets && this._win3dAssets.girlImg && this._win3dAssets.girlImg.complete) {
+          } else if (activeAvId === 'aviator_girl' && this._homeNewAssets && this._homeNewAssets.homeAvatar3dImg && this._homeNewAssets.homeAvatar3dImg.complete && this._homeNewAssets.homeAvatar3dImg.naturalWidth > 0) {
+            ctx.drawImage(this._homeNewAssets.homeAvatar3dImg, 38, 30, 128, 128);
+          } else if (activeAvId === 'girl_redcap' && this._win3dAssets && this._win3dAssets.girlImg && this._win3dAssets.girlImg.complete && this._win3dAssets.girlImg.naturalWidth > 0) {
             const gbg = ctx.createRadialGradient(102, 84, 8, 102, 94, 72);
             gbg.addColorStop(0, '#7dd3fc');
             gbg.addColorStop(1, '#0284c7');
@@ -3744,20 +3750,24 @@
             ctx.fillRect(38, 30, 128, 128);
             ctx.drawImage(this._win3dAssets.girlImg, 40, 32, 124, 124);
           } else {
-            const avSpec = PROFILE_AVATARS.find((a) => a.id === this.profile.selectedAvatarId);
+            const avSpec = PROFILE_AVATARS.find((a) => a.id === activeAvId);
             const avAtlas = this._homeNewAssets && this._homeNewAssets.avatars100AtlasImg;
             if (avSpec && avSpec.type === 'atlas100' && avAtlas && avAtlas.complete && avAtlas.naturalWidth > 0) {
+              const cellW = avAtlas.naturalWidth / 10;
+              const cellH = avAtlas.naturalHeight / 10;
               ctx.drawImage(
                 avAtlas,
-                avSpec.atlasCol * 160,
-                avSpec.atlasRow * 160,
-                160,
-                160,
+                avSpec.atlasCol * cellW,
+                avSpec.atlasRow * cellH,
+                cellW,
+                cellH,
                 38,
                 30,
                 128,
                 128
               );
+            } else if (this._homeNewAssets && this._homeNewAssets.homeAvatar3dImg && this._homeNewAssets.homeAvatar3dImg.complete && this._homeNewAssets.homeAvatar3dImg.naturalWidth > 0) {
+              ctx.drawImage(this._homeNewAssets.homeAvatar3dImg, 38, 30, 128, 128);
             }
           }
           ctx.lineWidth = 7;
@@ -4654,7 +4664,7 @@
       const myName = this.getEffectivePlayerName();
       const myLvl = Math.max(1, (this.profile && this.profile.currentLevel) || 1);
       const myPass = Math.max(2800, (this.profile && this.profile.passengersHelped) || (myLvl * 95));
-      const myAvatarId = (this.profile && this.profile.selectedAvatarId) || 'cool_hoodie';
+      const myAvatarId = (this.profile && this.profile.selectedAvatarId) || 'aviator_girl';
       const myProvider = (this.profile && this.profile.authProvider) || 'guest';
       const FAKE_NAMES = new Set(['Ayesha K.', 'Hamza_Pro', 'ZainRacer', 'Sara_Bus', 'Bilal_99', 'MinaPlays']);
 
@@ -4692,39 +4702,12 @@
 
       list.innerHTML = '';
 
-      // Top Clean Header (NO device model/OS shown — just Player Rank Summary & Quick Name Edit!)
-      const myRankObj = this.getRankForLevel(myLvl);
-      const devBanner = document.createElement('div');
-      devBanner.style.cssText = 'display:flex; align-items:center; justify-content:space-between; background:rgba(15,23,42,0.58); border:1.5px solid rgba(96,165,250,0.45); border-radius:14px; padding:8px 12px; margin-bottom:4px; color:#e2e8f0; font-size:12px; font-weight:800;';
-      devBanner.innerHTML = `
-        <div style="display:flex; align-items:center; gap:7px;">
-          <span>🏆 Active Players: <strong style="color:#fde047;">${realDevicePlayers.length}</strong></span>
-          <span style="color:#93c5fd; font-size:11px;">• ${myRankObj.name} Rank</span>
-        </div>
-        <button type="button" id="btn-lb-edit-name" style="background:linear-gradient(180deg,#3b82f6,#1d4ed8); color:#fff; border:1.5px solid #93c5fd; border-radius:999px; padding:4px 10px; font-size:11px; font-weight:900; cursor:pointer;">✎ Edit Name</button>
-      `;
-      list.appendChild(devBanner);
-
-      const editBtn = devBanner.querySelector('#btn-lb-edit-name');
-      if (editBtn) {
-        editBtn.addEventListener('click', () => {
-          try { sound.playButtonClick(); } catch (e) {}
-          this.openPlayerHub('profile');
-          setTimeout(() => {
-            const inp = document.getElementById('profile-name-input');
-            if (inp) {
-              inp.focus();
-              inp.select();
-            }
-          }, 120);
-        });
-      }
-
       const renderRowAvatarHtml = (r) => {
         if (r.isMe && this.profile && this.profile.selectedAvatarId === 'custom_photo' && this.profile.customPhotoDataUrl) {
           return `<img src="${this.profile.customPhotoDataUrl}" alt="${r.name}" style="width:100%;height:100%;object-fit:cover;display:block;" />`;
         }
-        const avSpec = PROFILE_AVATARS.find((a) => a.id === (r.avatarId || 'cool_hoodie')) || PROFILE_AVATARS[1] || PROFILE_AVATARS[0];
+        const avId = r.isMe ? ((this.profile && this.profile.selectedAvatarId) || 'aviator_girl') : (r.avatarId || 'aviator_girl');
+        const avSpec = PROFILE_AVATARS.find((a) => a.id === avId) || PROFILE_AVATARS[0];
         return getAvatarVisualHtml(avSpec);
       };
 
