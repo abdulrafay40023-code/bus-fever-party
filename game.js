@@ -2600,6 +2600,10 @@
           this.profile.playerName = 'player_60913';
         }
         try {
+          if (localStorage.getItem('BFP_AUTH_LOGGED_IN') === '1' && localStorage.getItem('BFP_AUTH_LOGGED_OUT') !== '1') {
+            this.profile.authCompletedV90 = true;
+            this.profile.authCompletedV87 = true;
+          }
           if (this.profile.playerName && this.profile.playerName !== 'player_60913') {
             localStorage.setItem('BFP_PLAYER_NAME', this.profile.playerName);
           }
@@ -10711,7 +10715,16 @@
 
       bindTap('btn-open-auth-from-profile', () => {
         try { sound.playButtonClick(); } catch (err) {}
-        this.openAuthLoginModal(true);
+        this.profile.authCompletedV90 = false;
+        this.profile.authCompletedV87 = false;
+        try {
+          localStorage.removeItem('BFP_AUTH_LOGGED_IN');
+          localStorage.setItem('BFP_AUTH_LOGGED_OUT', '1');
+          localStorage.setItem(SAVE_KEY, JSON.stringify(this.profile));
+        } catch (e) {}
+        this.closeModal('modal-profile');
+        this.openAuthLoginModal(false);
+        this.showAdsUnavailableToast('Logged out. Please sign in to continue.');
       }, 220);
 
       const authGuestInp = document.getElementById('auth-guest-name-input');
@@ -10725,7 +10738,7 @@
         });
       }
 
-      // In-Game Login & Guest Account Modal Handlers (#modal-auth-login — Mandatory Sign-In Gate, No Close X!)
+      // In-Game Login & Guest Account Modal Handlers (#modal-auth-login — Shows ONLY ONCE until user clicks Logout!)
       const completeAuthLogin = (provider, emailVal = '') => {
         try { sound.playButtonClick(); } catch (err) {}
         const authInp = document.getElementById('auth-guest-name-input');
@@ -10754,6 +10767,10 @@
         this.profile.authEmail = isGmail ? emailVal.trim().toLowerCase().slice(0, 64) : '';
         this.profile.authCompletedV87 = true;
         this.profile.authCompletedV90 = true;
+        try {
+          localStorage.setItem('BFP_AUTH_LOGGED_IN', '1');
+          localStorage.removeItem('BFP_AUTH_LOGGED_OUT');
+        } catch (e) {}
         this.setPlayerNameEverywhere(rawName, false);
         if (isGmail) {
           this.syncDevicePlayerRegistry(true, false, true);

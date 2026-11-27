@@ -7238,11 +7238,11 @@ body, #app-wrapper, #game-container {
                     <button
                       type="button"
                       id="btn-open-auth-from-profile"
-                      style="display:inline-flex; align-items:center; gap:3px; background:linear-gradient(180deg,#3b82f6,#1d4ed8); color:#fff; border:1.5px solid #93c5fd; border-radius:999px; padding:3px 8px; font-size:10.5px; font-weight:900; cursor:pointer; box-shadow:0 2px 0 #1e3a8a; white-space:nowrap; flex-shrink:0;"
-                      title="Account &amp; Login Options"
+                      style="display:inline-flex; align-items:center; gap:3px; background:linear-gradient(180deg,#ef4444,#b91c1c); color:#fff; border:1.5px solid #fca5a5; border-radius:999px; padding:3px 8px; font-size:10.5px; font-weight:900; cursor:pointer; box-shadow:0 2px 0 #7f1d1d; white-space:nowrap; flex-shrink:0;"
+                      title="Logout &amp; Switch Account"
                     >
                       <span id="prof-auth-provider-badge">🎮 Guest</span>
-                      <span style="opacity:0.9;">• 🔑 Login</span>
+                      <span style="opacity:0.95;">• 🚪 Logout</span>
                     </button>
                   </div>
                 </div>
@@ -10138,6 +10138,10 @@ body, #app-wrapper, #game-container {
           this.profile.playerName = 'player_60913';
         }
         try {
+          if (localStorage.getItem('BFP_AUTH_LOGGED_IN') === '1' && localStorage.getItem('BFP_AUTH_LOGGED_OUT') !== '1') {
+            this.profile.authCompletedV90 = true;
+            this.profile.authCompletedV87 = true;
+          }
           if (this.profile.playerName && this.profile.playerName !== 'player_60913') {
             localStorage.setItem('BFP_PLAYER_NAME', this.profile.playerName);
           }
@@ -18258,7 +18262,16 @@ body, #app-wrapper, #game-container {
 
       bindTap('btn-open-auth-from-profile', () => {
         try { sound.playButtonClick(); } catch (err) {}
-        this.openAuthLoginModal(true);
+        this.profile.authCompletedV90 = false;
+        this.profile.authCompletedV87 = false;
+        try {
+          localStorage.removeItem('BFP_AUTH_LOGGED_IN');
+          localStorage.setItem('BFP_AUTH_LOGGED_OUT', '1');
+          localStorage.setItem(SAVE_KEY, JSON.stringify(this.profile));
+        } catch (e) {}
+        this.closeModal('modal-profile');
+        this.openAuthLoginModal(false);
+        this.showAdsUnavailableToast('Logged out. Please sign in to continue.');
       }, 220);
 
       const authGuestInp = document.getElementById('auth-guest-name-input');
@@ -18272,7 +18285,7 @@ body, #app-wrapper, #game-container {
         });
       }
 
-      // In-Game Login & Guest Account Modal Handlers (#modal-auth-login — Mandatory Sign-In Gate, No Close X!)
+      // In-Game Login & Guest Account Modal Handlers (#modal-auth-login — Shows ONLY ONCE until user clicks Logout!)
       const completeAuthLogin = (provider, emailVal = '') => {
         try { sound.playButtonClick(); } catch (err) {}
         const authInp = document.getElementById('auth-guest-name-input');
@@ -18301,6 +18314,10 @@ body, #app-wrapper, #game-container {
         this.profile.authEmail = isGmail ? emailVal.trim().toLowerCase().slice(0, 64) : '';
         this.profile.authCompletedV87 = true;
         this.profile.authCompletedV90 = true;
+        try {
+          localStorage.setItem('BFP_AUTH_LOGGED_IN', '1');
+          localStorage.removeItem('BFP_AUTH_LOGGED_OUT');
+        } catch (e) {}
         this.setPlayerNameEverywhere(rawName, false);
         if (isGmail) {
           this.syncDevicePlayerRegistry(true, false, true);
