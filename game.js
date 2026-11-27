@@ -10711,9 +10711,48 @@
         completeAuthLogin('guest');
       }, 220);
 
+      const GOOGLE_CLIENT_ID = '470454222038-n0v8k6sb1jdbuiam3k14go92ia0nrhka.apps.googleusercontent.com';
+
       bindTap('btn-auth-google', () => {
         try { sound.playButtonClick(); } catch (err) {}
         pendingSocialProvider = 'google';
+
+        // Try live Google OAuth 2.0 Account Picker via Google Identity Services first!
+        if (
+          typeof window !== 'undefined' &&
+          window.google &&
+          window.google.accounts &&
+          window.google.accounts.oauth2
+        ) {
+          try {
+            const tokenClient = window.google.accounts.oauth2.initTokenClient({
+              client_id: GOOGLE_CLIENT_ID,
+              scope: 'openid email profile',
+              callback: (tokenResponse) => {
+                if (tokenResponse && tokenResponse.access_token) {
+                  fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+                    headers: { Authorization: `Bearer ${tokenResponse.access_token}` }
+                  })
+                    .then((r) => (r.ok ? r.json() : null))
+                    .then((info) => {
+                      if (info) {
+                        const gName = String(info.given_name || info.name || 'Player').trim().slice(0, 16);
+                        const gEmail = String(info.email || '').trim();
+                        const authInp = document.getElementById('auth-guest-name-input');
+                        if (authInp && gName) authInp.value = gName;
+                        completeAuthLogin('google', gEmail);
+                      }
+                    })
+                    .catch(() => {});
+                }
+              }
+            });
+            tokenClient.requestAccessToken({ prompt: 'select_account' });
+            return;
+          } catch (e) {}
+        }
+
+        // Instant fallback for offline standalone / WebViews where external popups are blocked
         const subForm = document.getElementById('auth-social-subform');
         const titleEl = document.getElementById('auth-social-title');
         const emailInp = document.getElementById('auth-social-email-input');
